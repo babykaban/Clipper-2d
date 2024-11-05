@@ -20,6 +20,17 @@ GetPathsVertexCount(paths_s64 *Paths)
     return(Result);
 }
 
+inline void
+InitClipper(clipper *Clipper, s32 Precision)
+{
+    Clipper->Scale = pow((f64)FLT_RADIX, ilogb(pow(10, Precision)) + 1);
+    Clipper->InvScale = 1.0 / Clipper->Scale;
+    InitHeap(&Clipper->ScanLineMaxHeap, 256, HeapType_S64);
+    Clipper->OutRecList = MallocArray(512, output_rectangle);
+    Clipper->HorzSegList = MallocArray(512, horz_segment);
+    Clipper->IntersectNodes = MallocArray(512, intersect_node);
+}
+
 internal void
 AddLocMin(clipper *Clipper, vertex *vert, path_type Type, b32 IsOpen)
 {
@@ -41,8 +52,7 @@ AddPathsInternal(clipper *Clipper, paths_s64 *Paths, path_type Type, b32 IsOpen)
     if(TotalVertexCout == 0)
         return;
 
-    Clipper->VertexLists = ReallocArray(Clipper->VertexLists,
-                                        Clipper->VertexListCount,
+    Clipper->VertexLists = ReallocArray(Clipper->VertexLists, Clipper->VertexListCount,
                                         (Clipper->VertexListCount + 1), vertex *);
     ++Clipper->VertexListCount;
 
@@ -178,28 +188,17 @@ AddPaths(clipper *Clipper, paths_s64 *Paths, path_type Type, b32 IsOpen)
 }
 
 inline void
-AddSubjects(clipper *Clipper, paths_f64 *Subjects)
+AddSubjects(clipper *Clipper, paths_s64 *Subjects)
 {
-    paths_s64 Paths = ScalePathsF64(Subjects, Clipper->Scale);
+    paths_s64 Paths = ScalePaths(Subjects, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Subject, false);
 }
 
 inline void
-AddClips(clipper *Clipper, paths_f64 *Clips)
+AddClips(clipper *Clipper, paths_s64 *Clips)
 {
-    paths_s64 Paths = ScalePathsF64(Clips, Clipper->Scale);
+    paths_s64 Paths = ScalePaths(Clips, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Clip, false);
-}
-
-inline void
-InitClipper(clipper *Clipper, s32 Precision)
-{
-    Clipper->Scale = pow((f64)FLT_RADIX, ilogb(pow(10, Precision)) + 1);
-    Clipper->InvScale = 1.0 / Clipper->Scale;
-    InitHeap(&Clipper->ScanLineMaxHeap, 256, HeapType_S64);
-    Clipper->OutRecList = MallocArray(512, output_rectangle);
-    Clipper->HorzSegList = MallocArray(512, horz_segment);
-    Clipper->IntersectNodes = MallocArray(512, intersect_node);
 }
 
 inline paths_s64
@@ -212,9 +211,9 @@ BooleanOp(clip_type ClipType, fill_rule FillRule,
 
     clipper Clipper = {};
 
-//    InitClipper(&Clipper, Precision);
-//    AddSubjects(&Clipper, Subjects);
-//    AddClips(&Clipper, Clips);
+    InitClipper(&Clipper, Precision);
+    AddSubjects(&Clipper, Subjects);
+    AddClips(&Clipper, Clips);
 
 //    Execute(&Clipper, ClipType, FillRule, &Result, 0);
 
