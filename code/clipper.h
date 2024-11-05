@@ -11,8 +11,6 @@
 #include "clipper_heap.h"
 #include "clipper_core.h"
 
-#define MAX_PATH_COUNT 256
-
 enum clip_type
 {
     ClipType_NoClip,

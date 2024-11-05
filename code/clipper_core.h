@@ -145,16 +145,17 @@ ScalePath(path_f64 *Source, f64 ScaleX, f64 ScaleY)
 //        error_code |= scale_error_i;
 //        DoError(scale_error_i);
         // if no exception, treat as non-fatal error
-        if(ScaleX == 0) ScaleX = 1.0;
-        if(ScaleY == 0) ScaleY = 1.0;
+        if(ScaleX == 0)
+            ScaleX = 1.0;
+        if(ScaleY == 0)
+            ScaleY = 1.0;
     }
 
     for(s32 I = 0;
         I < Source->Count;
         ++I)
     {
-        Result.Points[I].x = ScaleX*Source->Points[I].x;
-        Result.Points[I].y = ScaleX*Source->Points[I].y;
+        Result.Points[I] = ScaleX*Source->Points[I];
     }
 
     return(Result);
@@ -320,8 +321,7 @@ ScalePath(path_s64 *Source, f64 ScaleX, f64 ScaleY)
         I < Source->Count;
         ++I)
     {
-        Result.Points[I] = V2S64(ScaleX*(f64)Source->Points[I].x,
-                                 ScaleY*(f64)Source->Points[I].y);
+        Result.Points[I] = V2S64(ScaleX*V2F64(Source->Points[I]));
     }
 
     return(Result);

@@ -117,8 +117,22 @@ inline v2_f64
 operator*(f64 A, v2_f64 B)
 {
     v2_f64 Result;
-    Result.x = A*B.x;
-    Result.y = A*B.y;
+
+    Result.W = _mm_mul_pd(B.W, _mm_set1_pd(A));
+//    Result.x = A*B.x;
+//    Result.y = A*B.y;
+
+    return(Result);
+}
+ 
+inline v2_f64
+operator*(v2_f64 A, v2_f64 B)
+{
+    v2_f64 Result;
+
+    Result.W = _mm_mul_pd(B.W, A.W);
+//    Result.x = A*B.x;
+//    Result.y = A*B.y;
 
     return(Result);
 }
@@ -143,8 +157,9 @@ operator-(v2_f64 A)
 {
     v2_f64 Result;
 
-    Result.x = -A.x;
-    Result.y = -A.y;
+    Result.W = _mm_xor_pd(A.W, _mm_set1_pd(-0.0));
+//    Result.x = -A.x;
+//    Result.y = -A.y;
 
     return(Result);
 }
@@ -154,8 +169,9 @@ operator+(v2_f64 A, v2_f64 B)
 {
     v2_f64 Result;
 
-    Result.x = A.x + B.x;
-    Result.y = A.y + B.y;
+    Result.W = _mm_add_pd(A.W, B.W);
+//    Result.x = A.x + B.x;
+//    Result.y = A.y + B.y;
 
     return(Result);
 }
@@ -173,8 +189,9 @@ operator-(v2_f64 A, v2_f64 B)
 {
     v2_f64 Result;
 
-    Result.x = A.x - B.x;
-    Result.y = A.y - B.y;
+    Result.W = _mm_sub_pd(A.W, B.W);
+//    Result.x = A.x - B.x;
+//    Result.y = A.y - B.y;
 
     return(Result);
 }
@@ -190,7 +207,9 @@ operator-=(v2_f64 &A, v2_f64 B)
 inline f64
 Inner(v2_f64 A, v2_f64 B)
 {
-    f64 Result = A.x*B.x + A.y*B.y;
+    v2_f64 Mul = A*B;
+    f64 Result = _mm_cvtsd_f64(_mm_hadd_pd(Mul.W, Mul.W));
+//    f64 Result = A.x*B.x + A.y*B.y;
 
     return(Result);
 }
@@ -208,7 +227,20 @@ Inner(v2_f64 A, v2_f64 B, v2_f64 C)
 inline f64
 Cross(v2_f64 A, v2_f64 B)
 {
-    f64 Result = A.x*B.y - A.y*B.x;
+//    f64 Result = A.x*B.y - A.y*B.x;
+
+    // Shuffle A and B to get {A.y, A.x} and {B.y, B.x}
+    __m128d AyAx = _mm_shuffle_pd(A.W, A.W, 1); // Swaps A.x and A.y
+    __m128d ByBx = _mm_shuffle_pd(B.W, B.W, 1); // Swaps B.x and B.y
+
+    // Compute A.x * B.y and A.y * B.x
+    __m128d prod1 = _mm_mul_pd(A.W, ByBx); // {A.x * B.y, A.y * B.x}
+    __m128d prod2 = _mm_mul_pd(AyAx, B.W); // {A.y * B.x, A.x * B.y}
+
+    // Subtract the results to get A.x * B.y - A.y * B.x in the lower lane
+    __m128d result = _mm_sub_sd(prod1, prod2);
+
+    f64 Result = _mm_cvtsd_f64(result);;
 
     return(Result);
 }
