@@ -1,2 +1,4 @@
 misc
 build
+profiler.cpp
+platform_metrics.cpp

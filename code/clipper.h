@@ -10,7 +10,6 @@
 #include "clipper_memory.h"
 #include "clipper_heap.h"
 #include "clipper_core.h"
-
 enum clip_type
 {
     ClipType_NoClip,
@@ -268,6 +267,15 @@ IntersectNode(active *edge1, active *edge2, v2_s64 pt)
     Result.edge2 = edge2;
 
     return(Result);
+}
+
+inline output_rectangle *
+NewOutRec(clipper *Clipper)
+{
+    output_rectangle *Result = Clipper->OutRecList + Clipper->OutputRectCount;
+    Result->Index = Clipper->OutputRectCount++;
+
+    return Result;
 }
 
 #define CLIPPER_H
