@@ -10,6 +10,7 @@
 #include "clipper_memory.h"
 #include "clipper_heap.h"
 #include "clipper_core.h"
+
 enum clip_type
 {
     ClipType_NoClip,
@@ -17,6 +18,18 @@ enum clip_type
     ClipType_Union,
     ClipType_Difference,
     ClipType_Xor,
+
+    ClipType_Count,
+};
+
+enum fill_rule
+{
+    FillRule_EvenOdd,
+    FillRule_NonZero,
+    FillRule_Positive,
+    FillRule_Negative,
+
+    FillRule_Count,
 };
 
 enum path_type
@@ -131,13 +144,6 @@ struct active
     join_with JoinWith;
 };
 
-struct poly_path
-{
-    poly_path *Parent;
-    poly_path *Children;
-    path_s64 Polygon;
-};
-
 struct output_rectangle
 {
     u32 Index;
@@ -145,7 +151,6 @@ struct output_rectangle
     active *FrontEdge;
     active *BackEdge;
     output_point *Points;
-    poly_path *PolyPath;
     u32 SplitCount;
     output_rectangle *Splits;
     output_rectangle *RecursiveSplit;
@@ -162,13 +167,19 @@ struct intersect_node
     active *edge2;
 };
 
+struct vertex_list
+{
+    u32 VertexCount;
+    vertex *Vertices;
+};
+
 struct clipper
 {
     f64 Scale;
     f64 InvScale;
 
     u32 VertexListCount;
-    vertex **VertexLists;//[MAX_PATH_COUNT];
+    vertex_list *VertexLists;
 
     u32 MinimaListCount;
     local_minima *MinimaList;       //pointers in case of memory reallocs
@@ -200,6 +211,66 @@ struct clipper
     b32 HasOpenPaths;
     b32 Succeeded;
 };
+
+inline void
+IncreaseOutRecList(clipper *Clipper)
+{
+    Clipper->OutRecList =
+        ReallocArray(Clipper->OutRecList, Clipper->OutputRectCount,
+                     Clipper->OutputRectCount + BASIC_ALLOCATE_COUNT, output_rectangle);
+
+    ArrayMaxSizes[ArrayType_OutRec] = Clipper->OutputRectCount + BASIC_ALLOCATE_COUNT;
+}
+
+inline void
+IncreaseHorzSegList(clipper *Clipper)
+{
+    Clipper->HorzSegList =
+        ReallocArray(Clipper->HorzSegList, Clipper->HorzCount,
+                     Clipper->HorzCount + BASIC_ALLOCATE_COUNT, horz_segment);
+
+    ArrayMaxSizes[ArrayType_HorzSegList] = Clipper->HorzCount + BASIC_ALLOCATE_COUNT;
+}
+
+inline void
+IncreaseHorzJoinList(clipper *Clipper)
+{
+    Clipper->HorzJoinList =
+        ReallocArray(Clipper->HorzJoinList, Clipper->JointCount,
+                     Clipper->JointCount + BASIC_ALLOCATE_COUNT, horz_join);
+
+    ArrayMaxSizes[ArrayType_HorzJoinList] = Clipper->JointCount + BASIC_ALLOCATE_COUNT;
+}
+
+inline void
+IncreaseIntersectNodes(clipper *Clipper)
+{
+    Clipper->IntersectNodes =
+        ReallocArray(Clipper->IntersectNodes, Clipper->IntersectNodeCount,
+                     Clipper->IntersectNodeCount + BASIC_ALLOCATE_COUNT, intersect_node);
+
+    ArrayMaxSizes[ArrayType_IntersectNode] = Clipper->IntersectNodeCount + BASIC_ALLOCATE_COUNT;
+}
+
+inline void
+IncreaseMinimaList(clipper *Clipper)
+{
+    Clipper->MinimaList =
+        ReallocArray(Clipper->MinimaList, Clipper->MinimaListCount,
+                     Clipper->MinimaListCount + BASIC_ALLOCATE_COUNT, local_minima);
+
+    ArrayMaxSizes[ArrayType_MinimaList] = Clipper->MinimaListCount + BASIC_ALLOCATE_COUNT;
+}
+
+inline void
+IncreaseVertexLists(clipper *Clipper)
+{
+    Clipper->VertexLists =
+        ReallocArray(Clipper->VertexLists, Clipper->VertexListCount,
+                     Clipper->VertexListCount + BASIC_ALLOCATE_COUNT, vertex_list);
+
+    ArrayMaxSizes[ArrayType_VertexLists] = Clipper->VertexListCount + BASIC_ALLOCATE_COUNT;
+}
 
 inline horz_join
 HorzJoin(output_point *op1, output_point *op2)
@@ -272,6 +343,11 @@ IntersectNode(active *edge1, active *edge2, v2_s64 pt)
 inline output_rectangle *
 NewOutRec(clipper *Clipper)
 {
+    if(NeedIncrease(Clipper->OutputRectCount))
+    {
+        IncreaseOutRecList(Clipper);
+    }
+    
     output_rectangle *Result = Clipper->OutRecList + Clipper->OutputRectCount;
     Result->Index = Clipper->OutputRectCount++;
 

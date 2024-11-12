@@ -35,20 +35,12 @@
 
 #define InvalidPointRectF64 InvertedInfinityRectangle2()
 
-enum fill_rule
-{
-    FillRule_EvenOdd,
-    FillRule_NonZero,
-    FillRule_Positive,
-    FillRule_Negative
-};
-
 inline path_f64
 GetPathF64(s32 Count)
 {
     path_f64 Result = {};
     Result.Points = MallocArray(Count, v2_f64);
-    Result.Free = Result.Points;
+    PathMemoryUsed += Count*sizeof(v2_f64);
     return(Result);
 }
 
@@ -57,7 +49,7 @@ GetPathsF64(s32 Count)
 {
     paths_f64 Result = {};
     Result.Paths = MallocArray(Count, path_f64);
-    Result.Free = Result.Paths;
+    PathMemoryUsed += Count*sizeof(path_f64);
     return(Result);
 }
 
@@ -66,7 +58,7 @@ GetPathS64(s32 Count)
 {
     path_s64 Result = {};
     Result.Points = MallocArray(Count, v2_s64);
-    Result.Free = Result.Points;
+    PathMemoryUsed += Count*sizeof(v2_s64);
     return(Result);
 }
 
@@ -75,8 +67,24 @@ GetPathsS64(s32 Count)
 {
     paths_s64 Result = {};
     Result.Paths = MallocArray(Count, path_s64);
-    Result.Free = Result.Paths;
+    PathMemoryUsed += Count*sizeof(path_s64);
     return(Result);
+}
+
+inline void
+IncreasePathF64(path_f64 *Path)
+{
+    Path->Points =
+        ReallocArray(Path->Points, Path->Count,
+                     Path->Count + BASIC_ALLOCATE_COUNT, v2_f64);
+}
+
+inline void
+IncreasePathS64(path_s64 *Path)
+{
+    Path->Points =
+        ReallocArray(Path->Points, Path->Count,
+                     Path->Count + BASIC_ALLOCATE_COUNT, v2_s64);
 }
 
 inline void

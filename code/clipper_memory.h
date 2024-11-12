@@ -7,6 +7,25 @@
    $Notice: $
    ======================================================================== */
 
+global_variable u64 MemoryAllocated = 0;
+global_variable u64 PathMemoryUsed = 0;
+
+enum array_type
+{
+    ArrayType_OutRec,
+    ArrayType_MinimaList,
+    ArrayType_HorzSegList,
+    ArrayType_HorzJoinList,
+    ArrayType_IntersectNode,
+    ArrayType_VertexLists,
+
+    ArrayType_Count,
+};
+
+global_variable u32 ArrayMaxSizes[ArrayType_Count] = {};
+
+#define BASIC_ALLOCATE_COUNT 2
+
 #define Kilobytes(Value) ((Value)*1024LL)
 #define Megabytes(Value) (Kilobytes(Value)*1024LL)
 #define Gigabytes(Value) (Megabytes(Value)*1024LL)
@@ -62,6 +81,7 @@ PushSize_(umm SizeInit)
     void *Result = malloc(SizeInit);
     ZeroSize(SizeInit, Result);
     
+    MemoryAllocated += SizeInit;
     return(Result);
 }
 
@@ -113,6 +133,8 @@ Realloc(void *Base, umm Size, umm NewSize)
         free(Base);
     }
 
+    MemoryAllocated -= Size;
+    
     return(Result);
 }
 
@@ -123,11 +145,28 @@ Malloc(umm Size)
 {
     void *Result = malloc(Size);
     ZeroSize(Size, Result);
+
+    MemoryAllocated += Size;
     return(Result);
 }
 
 #define MallocArray(Count, type) (type *)Malloc(sizeof(type)*(Count)) 
 #define MallocStruct(type) (type *)Malloc(sizeof(type)) 
+
+inline void
+Free(void *Ptr, umm Size)
+{
+    MemoryAllocated -= Size;
+    free(Ptr);
+}
+
+inline b32
+NeedIncrease(u32 Count)
+{
+    b32 Result = ((Count % BASIC_ALLOCATE_COUNT) == 0) && (Count != 0);
+    return(Result);
+}
+
 
 #define CLIPPER_MEMORY_H
 #endif

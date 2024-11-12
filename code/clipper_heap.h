@@ -180,8 +180,21 @@ MaxHeapifyUp(heap *Heap, u32 Index)
 }
 
 inline void
+IncreaseHeapSize(heap *Heap)
+{
+    Heap->Nodes = ReallocArray(Heap->Nodes, Heap->MaxSize,
+                               Heap->MaxSize + BASIC_ALLOCATE_COUNT, sort_entry);
+    Heap->MaxSize = Heap->MaxSize + BASIC_ALLOCATE_COUNT;
+}
+ 
+inline void
 MinHeapInsertNode(heap *Heap, sort_entry Key)
 {
+    if(Heap->Size == Heap->MaxSize)
+    {
+        IncreaseHeapSize(Heap);
+    }
+
     Assert(Heap->Size != Heap->MaxSize);
 
     Heap->Nodes[Heap->Size] = Key;
@@ -192,6 +205,11 @@ MinHeapInsertNode(heap *Heap, sort_entry Key)
 inline void
 MaxHeapInsertNode(heap *Heap, sort_entry Key)
 {
+    if(Heap->Size == Heap->MaxSize)
+    {
+        IncreaseHeapSize(Heap);
+    }
+
     Assert(Heap->Size != Heap->MaxSize);
 
     Heap->Nodes[Heap->Size] = Key;

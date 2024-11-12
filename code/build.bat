@@ -8,3 +8,4 @@ pushd ..\build
 
 REM 64-bit build
 cl %CommonCompilerFlags% ..\code\main.cpp -Fmmain.map /link %CommonLinkerFlags%
+cl %CommonCompilerFlags% ..\code\generate_polygon_file.cpp -Fmmain.map /link %CommonLinkerFlags%

@@ -22,14 +22,12 @@ struct path_s64
 {
     s32 Count;
     v2_s64 *Points;
-    void *Free;
 };
 
 struct paths_s64
 {
     s32 PathCount;
     path_s64 *Paths;
-    void *Free;
 };
 
 union v2_f64
@@ -47,14 +45,12 @@ struct path_f64
 {
     s32 Count;
     v2_f64 *Points;
-    void *Free;
 };
 
 struct paths_f64
 {
     s32 PathCount;
     path_f64 *Paths;
-    void *Free;
 };
 
 struct rectangle2
@@ -150,6 +146,26 @@ ProductsAreEqual(s64 a, s64 b, s64 c, s64 d)
     s32 Result = (AreMulsEqual(abs_ab, abs_cd) && (sign_ab == sign_cd));
     
     return(Result);
+}
+
+inline void
+FreePath(path_f64 *Path)
+{
+    free(Path->Points);
+}
+
+inline void
+FreePaths(paths_f64 *Paths)
+{
+    for(s32 I = 0;
+        I < Paths->PathCount;
+        ++I)
+    {
+        path_f64 *Path = Paths->Paths + I;
+        FreePath(Path);
+    }
+
+    free(Paths);
 }
 
 #define CLIPPER_MATH_H

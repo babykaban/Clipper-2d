@@ -2,3 +2,4 @@ misc
 build
 profiler.cpp
 platform_metrics.cpp
+repetition_tester.cpp

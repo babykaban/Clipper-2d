@@ -25,25 +25,40 @@ GetPathsVertexCount(paths_s64 *Paths)
 inline void
 InitClipper(clipper *Clipper, s32 Precision)
 {
-    TimeFunction;
-
     Clipper->Scale = pow((f64)FLT_RADIX, ilogb(pow(10, Precision)) + 1);
     Clipper->InvScale = 1.0 / Clipper->Scale;
-    InitHeap(&Clipper->ScanLineMaxHeap, 256, HeapType_S64);
-    Clipper->OutRecList = MallocArray(512, output_rectangle);
-    Clipper->HorzSegList = MallocArray(512, horz_segment);
-    Clipper->IntersectNodes = MallocArray(512, intersect_node);
+
+    InitHeap(&Clipper->ScanLineMaxHeap, BASIC_ALLOCATE_COUNT, HeapType_S64);
+    Clipper->OutRecList = MallocArray(BASIC_ALLOCATE_COUNT, output_rectangle);
+
+    Clipper->MinimaList = MallocArray(BASIC_ALLOCATE_COUNT, local_minima);
+
+    Clipper->HorzSegList = MallocArray(BASIC_ALLOCATE_COUNT, horz_segment);
+    Clipper->HorzJoinList = MallocArray(BASIC_ALLOCATE_COUNT, horz_join);
+    Clipper->IntersectNodes = MallocArray(BASIC_ALLOCATE_COUNT, intersect_node);
+
+    Clipper->VertexLists = MallocArray(BASIC_ALLOCATE_COUNT, vertex_list);
+
+    for(u32 I = 0;
+        I < ArrayType_Count;
+        ++I)
+    {
+        ArrayMaxSizes[I] = BASIC_ALLOCATE_COUNT;
+    }
 }
 
 internal void
 AddLocMin(clipper *Clipper, vertex *vert, path_type Type, b32 IsOpen)
 {
-    TimeFunction;
     //make sure the vertex is added only once ...
     if(!IsVertexFlagSet(vert->Flags, VertexFlag_LocalMin))
     {
         AddVertexFlag(&vert->Flags, VertexFlag_LocalMin);
-        Clipper->MinimaList = ReallocArray(Clipper->MinimaList, Clipper->MinimaListCount, (Clipper->MinimaListCount + 1), local_minima);
+        if(NeedIncrease(Clipper->MinimaListCount))
+        {
+            IncreaseMinimaList(Clipper);
+        }
+
         InitLocalMinima(Clipper->MinimaList + Clipper->MinimaListCount, vert, Type, IsOpen);
         Clipper->MinimaListCount++;
     }
@@ -52,19 +67,22 @@ AddLocMin(clipper *Clipper, vertex *vert, path_type Type, b32 IsOpen)
 internal void
 AddPathsInternal(clipper *Clipper, paths_s64 *Paths, path_type Type, b32 IsOpen)
 {
-    TimeFunction;
-
     u32 TotalVertexCout = GetPathsVertexCount(Paths);
-
+    
     if(TotalVertexCout == 0)
         return;
 
-    Clipper->VertexLists = ReallocArray(Clipper->VertexLists, Clipper->VertexListCount,
-                                        (Clipper->VertexListCount + 1), vertex *);
+    if(NeedIncrease(Clipper->VertexListCount))
+    {
+        IncreaseVertexLists(Clipper);
+    }
+
+    Clipper->VertexLists[Clipper->VertexListCount].Vertices = MallocArray(TotalVertexCout, vertex);
+    Clipper->VertexLists[Clipper->VertexListCount].VertexCount = TotalVertexCout;
     ++Clipper->VertexListCount;
 
-    Clipper->VertexLists[Clipper->VertexListCount - 1] = MallocArray(TotalVertexCout, vertex);
-    vertex *Vertices = Clipper->VertexLists[Clipper->VertexListCount - 1];
+
+    vertex *Vertices = Clipper->VertexLists[Clipper->VertexListCount - 1].Vertices;
     vertex *VIter = Vertices;
 
     for(s32 PathIndex = 0;
@@ -187,28 +205,31 @@ AddPathsInternal(clipper *Clipper, paths_s64 *Paths, path_type Type, b32 IsOpen)
 inline void
 AddPaths(clipper *Clipper, paths_s64 *Paths, path_type Type, b32 IsOpen)
 {
-    TimeFunction;
-
     if(IsOpen)
         Clipper->HasOpenPaths = true;
-    Clipper->MinimaListSorted = false;
 
+    Clipper->MinimaListSorted = false;
     AddPathsInternal(Clipper, Paths, Type, IsOpen);
 }
 
 inline void
 AddSubjects(clipper *Clipper, paths_f64 *Subjects)
 {
-    TimeFunction;
-
     paths_s64 Paths = ScalePathsF64(Subjects, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Subject, false);
 }
 
 inline void
+AddOpenSubjects(clipper *Clipper, paths_f64 *Subjects)
+{
+    paths_s64 Paths = ScalePathsF64(Subjects, Clipper->Scale);
+    AddPaths(Clipper, &Paths, PathType_Subject, true);
+}
+
+inline void
 AddClips(clipper *Clipper, paths_f64 *Clips)
 {
-    TimeFunction;
+     
 
     paths_s64 Paths = ScalePathsF64(Clips, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Clip, false);
@@ -217,12 +238,11 @@ AddClips(clipper *Clipper, paths_f64 *Clips)
 internal void
 ResetClipper(clipper *Clipper)
 {
-    TimeFunction;
+     
 
     if (!Clipper->MinimaListSorted)
     {
         MergeSort(Clipper->MinimaListCount, Clipper->MinimaList); //#594
-//        BubbleSort(Clipper->MinimaListCount, Clipper->MinimaList); //#594
         Clipper->MinimaListSorted = true;
     }
 
@@ -245,7 +265,7 @@ ResetClipper(clipper *Clipper)
 inline b32
 PopScanline(clipper *Clipper, s64 *y)
 {
-    TimeFunction;
+     
 
     if(Clipper->ScanLineMaxHeap.Size == 0)
         return false;
@@ -262,7 +282,7 @@ PopScanline(clipper *Clipper, s64 *y)
 inline b32
 PopLocalMinima(clipper *Clipper, s64 y, local_minima **Minima)
 {
-    TimeFunction;
+     
 
     if((Clipper->CurrentLocalMinima == (Clipper->MinimaList + Clipper->MinimaListCount)) ||
        (Clipper->CurrentLocalMinima->Vertex->P.y != y))
@@ -276,7 +296,7 @@ PopLocalMinima(clipper *Clipper, s64 y, local_minima **Minima)
 inline f64
 GetDx(v2_s64 pt1, v2_s64 pt2)
 {
-    TimeFunction;
+     
 
     f64 Result = DBL_MAX;
 
@@ -353,7 +373,7 @@ PrevPrevVertex(active *ae)
 internal b32
 IsValidAelOrder(active *resident, active *newcomer)
 {
-    TimeFunction;
+     
 
     b32 Result = false;
     if (newcomer->curr_x != resident->curr_x)
@@ -394,7 +414,7 @@ IsValidAelOrder(active *resident, active *newcomer)
 inline void
 InsertLeftEdge(clipper *Clipper, active *e)
 {
-    TimeFunction;
+     
 
     active *e2;
     if(!Clipper->ActiveEdgeList)
@@ -446,7 +466,7 @@ GetPolyType(active *e)
 internal void
 SetWindCountForOpenPathEdge(clipper *Clipper, active *e)
 {
-    TimeFunction;
+     
 
     active *e2 = Clipper->ActiveEdgeList;
     if (Clipper->FillRule == FillRule_EvenOdd)
@@ -479,7 +499,7 @@ SetWindCountForOpenPathEdge(clipper *Clipper, active *e)
 inline b32
 IsContributingOpen(clipper *Clipper, active *e)
 {
-    TimeFunction;
+     
 
     b32 is_in_clip, is_in_subj;
     switch(Clipper->FillRule)
@@ -511,7 +531,7 @@ IsContributingOpen(clipper *Clipper, active *e)
 internal void
 SetWindCountForClosedPathEdge(clipper *Clipper, active *e)
 {
-    TimeFunction;
+     
 
     //Wind counts refer to polygon regions not edges, so here an edge's WindCnt
     //indicates the higher of the wind counts for the two regions touching the
@@ -594,7 +614,7 @@ SetWindCountForClosedPathEdge(clipper *Clipper, active *e)
 internal b32
 IsContributingClosed(clipper *Clipper, active *e)
 {
-    TimeFunction;
+     
 
     switch(Clipper->FillRule)
     {
@@ -697,8 +717,6 @@ IsHotEdge(active *e)
 inline active *
 GetPrevHotEdge(active *e)
 {
-    TimeFunction;
-
     active *prev = e->prev_in_ael;
     while (prev && (IsOpen(prev) || !IsHotEdge(prev)))
         prev = prev->prev_in_ael;
@@ -714,7 +732,7 @@ OutrecIsAscending(active *hotEdge)
 internal output_point *
 AddLocalMinPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt, b32 is_new = false)
 {
-    TimeFunction;
+     
 
     output_rectangle *outrec = NewOutRec(Clipper);
     e1->outrec = outrec;
@@ -767,7 +785,7 @@ IsJoined(active *e)
 internal void
 Split(clipper *Clipper, active *e, v2_s64 pt)
 {
-    TimeFunction;
+     
 
     if (e->JoinWith == JoinWith_Right)
     {
@@ -815,7 +833,7 @@ SwapFrontBackSides(output_rectangle *outrec)
 inline output_point *
 AddOutPt(active *e, v2_s64 pt)
 {
-    TimeFunction;
+     
 
     output_point *new_op = 0;
 
@@ -859,7 +877,7 @@ UncoupleOutRec(active *ae)
 inline output_rectangle *
 GetRealOutRec(output_rectangle *outrec)
 {
-    TimeFunction;
+     
 
     while(outrec && !outrec->Points)
         outrec = outrec->Owner;
@@ -869,7 +887,7 @@ GetRealOutRec(output_rectangle *outrec)
 inline void
 SetOwner(output_rectangle *outrec, output_rectangle *new_owner)
 {
-    TimeFunction;
+     
 
     //precondition1: new_owner is never null
     while (new_owner->Owner && !new_owner->Owner->Points)
@@ -885,7 +903,7 @@ SetOwner(output_rectangle *outrec, output_rectangle *new_owner)
 internal void
 JoinOutrecPaths(active *e1, active *e2)
 {
-    TimeFunction;
+     
 
     //join e2 outrec path onto e1 outrec path and then delete e2 outrec path
     //pointers. (NB Only very rarely do the joining ends share the same coords.)
@@ -936,7 +954,7 @@ JoinOutrecPaths(active *e1, active *e2)
 internal output_point *
 AddLocalMaxPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
 {
-    TimeFunction;
+     
 
     if (IsJoined(e1))
         Split(Clipper, e1, pt);
@@ -985,7 +1003,7 @@ AddLocalMaxPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
 internal void
 CheckJoinLeft(clipper *Clipper, active *e, v2_s64 pt, b32 check_curr_x = false)
 {
-    TimeFunction;
+     
 
     active *prev = e->prev_in_ael;
     if (!prev ||
@@ -1023,7 +1041,7 @@ CheckJoinLeft(clipper *Clipper, active *e, v2_s64 pt, b32 check_curr_x = false)
 internal void
 CheckJoinRight(clipper *Clipper, active *e, v2_s64 pt, b32 check_curr_x = false)
 {
-    TimeFunction;
+     
 
     active *next = e->next_in_ael;
     if (!next ||
@@ -1060,7 +1078,7 @@ CheckJoinRight(clipper *Clipper, active *e, v2_s64 pt, b32 check_curr_x = false)
 inline active *
 FindEdgeWithMatchingLocMin(active *e)
 {
-    TimeFunction;
+     
 
     active *result = e->next_in_ael;
     while(result)
@@ -1085,7 +1103,7 @@ FindEdgeWithMatchingLocMin(active *e)
 inline output_point *
 StartOpenPath(clipper *Clipper, active *e, v2_s64 pt)
 {
-    TimeFunction;
+     
 
     output_rectangle *outrec = NewOutRec(Clipper);
     outrec->IsOpen = true;
@@ -1111,7 +1129,7 @@ StartOpenPath(clipper *Clipper, active *e, v2_s64 pt)
 inline void
 SwapOutrecs(active *e1, active *e2)
 {
-    TimeFunction;
+     
 
     output_rectangle *or1 = e1->outrec;
     output_rectangle *or2 = e2->outrec;
@@ -1150,7 +1168,7 @@ IsSamePolyType(active *e1, active *e2)
 internal void
 IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
 {
-    TimeFunction;
+     
 
     //MANAGE OPEN PATH INTERSECTIONS SEPARATELY ...
     if(Clipper->HasOpenPaths && (IsOpen(e1) || IsOpen(e2)))
@@ -1198,17 +1216,11 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
                     return; 
         }
 
-#ifdef USINGZ
-        output_point *resultOp;
-#endif
         //toggle contribution ...
         if(IsHotEdge(edge_o))
         {
-#ifdef USINGZ
-            resultOp = AddOutPt(edge_o, pt);
-#else
             AddOutPt(edge_o, pt);
-#endif
+
             if(IsFront(edge_o))
                 edge_o->outrec->FrontEdge = 0;
             else edge_o->outrec->BackEdge = 0;
@@ -1232,23 +1244,11 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
                 return;
             }
             else
-#ifdef USINGZ
-                resultOp = StartOpenPath(Clipper, edge_o, pt);
-#else
-            StartOpenPath(Clipper, edge_o, pt);
-#endif
+                StartOpenPath(Clipper, edge_o, pt);
         }
         else
-#ifdef USINGZ
-            resultOp = StartOpenPath(Clipper, edge_o, pt);
-#else
-        StartOpenPath(Clipper, edge_o, pt);
-#endif
+            StartOpenPath(Clipper, edge_o, pt);
 
-#ifdef USINGZ
-       if (zCallback_)
-            SetZ(*edge_o, *edge_c, resultOp->pt);
-#endif
         return;
     } // end of an open path intersection
 
@@ -1325,21 +1325,13 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
         return;
 
     //NOW PROCESS THE INTERSECTION ...
-#ifdef USINGZ
-    OutPt* resultOp = nullptr;
-#endif
     //if both edges are 'hot' ...
     if (IsHotEdge(e1) && IsHotEdge(e2))
     {
         if ((old_e1_windcnt != 0 && old_e1_windcnt != 1) || (old_e2_windcnt != 0 && old_e2_windcnt != 1) ||
             (e1->local_min->PolyType != e2->local_min->PolyType && Clipper->ClipType != ClipType_Xor))
         {
-#ifdef USINGZ
-            resultOp = AddLocalMaxPoly(e1, e2, pt);
-            if (zCallback_ && resultOp) SetZ(e1, e2, resultOp->pt);
-#else
             AddLocalMaxPoly(Clipper, e1, e2, pt);
-#endif
         }
         else if (IsFront(e1) || (e1->outrec == e2->outrec))
         {
@@ -1347,51 +1339,24 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
             //it's sensible to split polygons that ony touch at
             //a common vertex (not at common edges).
 
-#ifdef USINGZ
-            resultOp = AddLocalMaxPoly(e1, e2, pt);
-            OutPt* op2 = AddLocalMinPoly(e1, e2, pt);
-            if (zCallback_ && resultOp) SetZ(e1, e2, resultOp->pt);
-            if (zCallback_) SetZ(e1, e2, op2->pt);
-#else
             AddLocalMaxPoly(Clipper, e1, e2, pt);
             AddLocalMinPoly(Clipper, e1, e2, pt);
-#endif
         }
         else
         {
-#ifdef USINGZ
-            resultOp = AddOutPt(e1, pt);
-            OutPt* op2 = AddOutPt(e2, pt);
-            if (zCallback_)
-            {
-                SetZ(e1, e2, resultOp->pt);
-                SetZ(e1, e2, op2->pt);
-            }
-#else
             AddOutPt(e1, pt);
             AddOutPt(e2, pt);
-#endif
             SwapOutrecs(e1, e2);
         }
     }
     else if (IsHotEdge(e1))
     {
-#ifdef USINGZ
-        resultOp = AddOutPt(e1, pt);
-        if (zCallback_) SetZ(e1, e2, resultOp->pt);
-#else
         AddOutPt(e1, pt);
-#endif
         SwapOutrecs(e1, e2);
     }
     else if (IsHotEdge(e2))
     {
-#ifdef USINGZ
-        resultOp = AddOutPt(e2, pt);
-        if (zCallback_) SetZ(e1, e2, resultOp->pt);
-#else
         AddOutPt(e2, pt);
-#endif
         SwapOutrecs(e1, e2);
     }
     else
@@ -1420,58 +1385,31 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
 
         if(!IsSamePolyType(e1, e2))
         {
-#ifdef USINGZ
-            resultOp = AddLocalMinPoly(e1, e2, pt, false);
-            if (zCallback_) SetZ(e1, e2, resultOp->pt);
-#else
             AddLocalMinPoly(Clipper, e1, e2, pt, false);
-#endif
         }
         else if (old_e1_windcnt == 1 && old_e2_windcnt == 1)
         {
-#ifdef USINGZ
-            resultOp = nullptr;
-#endif
             switch(Clipper->ClipType)
             {
                 case ClipType_Union:
                     if (e1Wc2 <= 0 && e2Wc2 <= 0)
-#ifdef USINGZ
-                        resultOp = AddLocalMinPoly(e1, e2, pt, false);
-#else
-                    AddLocalMinPoly(Clipper, e1, e2, pt, false);
-#endif
+                        AddLocalMinPoly(Clipper, e1, e2, pt, false);
                     break;
                 case ClipType_Difference:
                     if (((GetPolyType(e1) == PathType_Clip) && (e1Wc2 > 0) && (e2Wc2 > 0)) ||
                         ((GetPolyType(e1) == PathType_Subject) && (e1Wc2 <= 0) && (e2Wc2 <= 0)))
                     {
-#ifdef USINGZ
-                        resultOp = AddLocalMinPoly(e1, e2, pt, false);
-#else
                         AddLocalMinPoly(Clipper, e1, e2, pt, false);
-#endif
                     }
                     break;
                 case ClipType_Xor:
-#ifdef USINGZ
-                    resultOp = AddLocalMinPoly(e1, e2, pt, false);
-#else
                     AddLocalMinPoly(Clipper, e1, e2, pt, false);
-#endif
                     break;
                 default:
                     if (e1Wc2 > 0 && e2Wc2 > 0)
-#ifdef USINGZ
-                        resultOp = AddLocalMinPoly(e1, e2, pt, false);
-#else
-                    AddLocalMinPoly(Clipper, e1, e2, pt, false);
-#endif
+                        AddLocalMinPoly(Clipper, e1, e2, pt, false);
                     break;
             }
-#ifdef USINGZ
-            if (resultOp && zCallback_) SetZ(e1, e2, resultOp->pt);
-#endif
         }
     }
 }
@@ -1479,7 +1417,7 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
 inline void
 SwapPositionsInAEL(clipper *Clipper, active *e1, active *e2)
 {
-    TimeFunction;
+     
 
     //preconditon: e1 must be immediately to the left of e2
     active *next = e2->next_in_ael;
@@ -1517,7 +1455,7 @@ InsertScanline(clipper *Clipper, s64 y)
 internal void
 InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
 {
-    TimeFunction;
+     
 
     local_minima *Minima = 0;
     active *left_bound;
@@ -1664,7 +1602,7 @@ IsMaxima(active *e)
 inline vertex *
 GetCurrYMaximaVertex_Open(active *e)
 {
-    TimeFunction;
+     
 
     vertex *result = e->vertex_top;
     if (e->wind_dx > 0)
@@ -1686,7 +1624,7 @@ GetCurrYMaximaVertex_Open(active *e)
 inline vertex *
 GetCurrYMaximaVertex(active *e)
 {
-    TimeFunction;
+     
 
     vertex *result = e->vertex_top;
     if (e->wind_dx > 0)
@@ -1705,7 +1643,7 @@ GetCurrYMaximaVertex(active *e)
 inline b32
 ResetHorzDirection(active *horz, vertex *max_vertex, s64 *horz_left, s64 *horz_right)
 {
-    TimeFunction;
+     
 
     if(horz->bot.x == horz->top.x)
     {
@@ -1735,11 +1673,14 @@ ResetHorzDirection(active *horz, vertex *max_vertex, s64 *horz_left, s64 *horz_r
 inline void
 AddTrialHorzJoin(clipper *Clipper, output_point *op)
 {
-    TimeFunction;
-
     if(op->OutRect->IsOpen)
         return;
 
+    if(NeedIncrease(Clipper->HorzCount))
+    {
+        IncreaseHorzSegList(Clipper);
+    }
+    
     Clipper->HorzSegList[Clipper->HorzCount].left_to_right = true;
     Clipper->HorzSegList[Clipper->HorzCount].left_op = op;
     Clipper->HorzCount++;    
@@ -1748,7 +1689,7 @@ AddTrialHorzJoin(clipper *Clipper, output_point *op)
 inline void
 TrimHorz(active *horzEdge, b32 preserveCollinear)
 {
-    TimeFunction;
+     
 
     b32 wasTrimmed = false;
     v2_s64 pt = NextVertex(horzEdge)->P;
@@ -1775,7 +1716,7 @@ TrimHorz(active *horzEdge, b32 preserveCollinear)
 inline void
 UpdateEdgeIntoAEL(clipper *Clipper, active *e)
 {
-    TimeFunction;
+     
 
     e->bot = e->top;
     e->vertex_top = NextVertex(e);
@@ -1801,8 +1742,6 @@ UpdateEdgeIntoAEL(clipper *Clipper, active *e)
 inline void
 DeleteFromAEL(clipper *Clipper, active *e)
 {
-    TimeFunction;
-
     active *prev = e->prev_in_ael;
     active *next = e->next_in_ael;
     if (!prev && !next && (e != Clipper->ActiveEdgeList))
@@ -1815,7 +1754,7 @@ DeleteFromAEL(clipper *Clipper, active *e)
     if (next)
         next->prev_in_ael = prev;
 
-    free(e);
+    Free(e, sizeof(active));
 }
 
 inline s64
@@ -1858,7 +1797,7 @@ DoHorizontal(clipper *Clipper, active *horz)
  *         /              |        /       |       /                            *
  *******************************************************************************/
 {
-    TimeFunction;
+     
 
     v2_s64 pt;
     b32 horzIsOpen = IsOpen(horz);
@@ -1880,11 +1819,7 @@ DoHorizontal(clipper *Clipper, active *horz)
 
     if(IsHotEdge(horz))
     {
-#ifdef USINGZ
-        OutPt* op = AddOutPt(horz, Point64(horz.curr_x, y, horz.bot.z));
-#else
         output_point *op = AddOutPt(horz, V2S64(horz->curr_x, y));
-#endif
         AddTrialHorzJoin(Clipper, op);
     }
 
@@ -2028,7 +1963,7 @@ DoHorizontal(clipper *Clipper, active *horz)
 inline b32
 SetHorzSegHeadingForward(horz_segment *hs, output_point *opP, output_point *opN)
 {
-    TimeFunction;
+     
 
     if (opP->P.x == opN->P.x)
         return false;
@@ -2051,7 +1986,7 @@ SetHorzSegHeadingForward(horz_segment *hs, output_point *opP, output_point *opN)
 inline b32
 UpdateHorzSegment(horz_segment *hs)
 {
-    TimeFunction;
+     
 
     output_point *op = hs->left_op;
     output_rectangle *outrec = GetRealOutRec(op->OutRect);
@@ -2094,7 +2029,7 @@ UpdateHorzSegment(horz_segment *hs)
 inline output_point *
 DuplicateOp(output_point *op, b32 insert_after)
 {
-    TimeFunction;
+     
 
     output_point *result = GetOutPt(op->P, op->OutRect);
 
@@ -2118,7 +2053,7 @@ DuplicateOp(output_point *op, b32 insert_after)
 internal void
 ConvertHorzSegsToJoins(clipper *Clipper)
 {
-    TimeFunction;
+     
 
     u32 J = 0;
     for(u32 I = 0;
@@ -2152,6 +2087,12 @@ ConvertHorzSegsToJoins(clipper *Clipper)
                 continue;
 
             s64 curr_y = hs1->left_op->P.y;
+
+            if(NeedIncrease(Clipper->JointCount))
+            {
+                IncreaseHorzJoinList(Clipper);
+            }
+            
             if (hs1->left_to_right)
             {
                 while (hs1->left_op->Next->P.y == curr_y &&
@@ -2189,7 +2130,7 @@ ConvertHorzSegsToJoins(clipper *Clipper)
 inline void
 AdjustCurrXAndCopyToSEL(clipper *Clipper, s64 top_y)
 {
-    TimeFunction;
+     
 
     active *e = Clipper->ActiveEdgeList;
     Clipper->StoredEdgeList = e;
@@ -2210,7 +2151,7 @@ AdjustCurrXAndCopyToSEL(clipper *Clipper, s64 top_y)
 internal void
 AddNewIntersectNode(clipper *Clipper, active *e1, active *e2, s64 top_y)
 {
-    TimeFunction;
+     
 
     v2_s64 ip;
     if(!GetSegmentIntersectPt(e1->bot, e1->top, e2->bot, e2->top, &ip))
@@ -2247,6 +2188,11 @@ AddNewIntersectNode(clipper *Clipper, active *e1, active *e2, s64 top_y)
         }
     }
 
+    if(NeedIncrease(Clipper->IntersectNodeCount))
+    {
+        IncreaseIntersectNodes(Clipper);
+    }
+    
     Clipper->IntersectNodes[Clipper->IntersectNodeCount++] = IntersectNode(e1, e2, ip);
 }
 
@@ -2277,7 +2223,7 @@ Insert1Before2InSEL(active *ae1, active *ae2)
 internal b32
 BuildIntersectList(clipper *Clipper, s64 top_y)
 {
-    TimeFunction;
+     
 
     if (!Clipper->ActiveEdgeList || !Clipper->ActiveEdgeList->next_in_ael)
         return false;
@@ -2358,7 +2304,7 @@ EdgesAdjacentInAEL(intersect_node *inode)
 internal void
 ProcessIntersectList(clipper *Clipper)
 {
-    TimeFunction;
+     
 
     //We now have a list of intersections required so that edges will be
     //correctly positioned at the top of the scanbeam. However, it's important
@@ -2403,7 +2349,7 @@ ProcessIntersectList(clipper *Clipper)
 internal void
 DoIntersections(clipper *Clipper, s64 top_y)
 {
-    TimeFunction;
+     
 
     if(BuildIntersectList(Clipper, top_y))
     {
@@ -2431,7 +2377,7 @@ GetMaximaPair(active *e)
 internal active *
 DoMaxima(clipper *Clipper, active *e)
 {
-    TimeFunction;
+     
 
     active *next_e;
     active *prev_e;
@@ -2498,7 +2444,7 @@ DoMaxima(clipper *Clipper, active *e)
 internal void
 DoTopOfScanbeam(clipper *Clipper, s64 y)
 {
-    TimeFunction;
+     
 
     Clipper->StoredEdgeList = 0;  // StoredEdgeList is reused to flag horizontals (see PushHorz below)
     active *e = Clipper->ActiveEdgeList;
@@ -2533,7 +2479,7 @@ DoTopOfScanbeam(clipper *Clipper, s64 y)
 inline void
 FixOutRecPts(output_rectangle *outrec)
 {
-    TimeFunction;
+     
 
     output_point *op = outrec->Points;
     do {
@@ -2545,7 +2491,7 @@ FixOutRecPts(output_rectangle *outrec)
 internal void
 ProcessHorzJoins(clipper *Clipper)
 {
-    TimeFunction;
+     
 
     for(u32 I = 0;
         I < Clipper->JointCount;
@@ -2588,7 +2534,7 @@ ProcessHorzJoins(clipper *Clipper)
 internal b32
 ExecuteInternal(clipper *Clipper, clip_type ClipType, fill_rule FillRule)
 {
-    TimeFunction;
+     
 
     Clipper->ClipType = ClipType;
     Clipper->FillRule = FillRule;
@@ -2640,7 +2586,7 @@ PtsReallyClose(v2_s64 pt1, v2_s64 pt2)
 inline b32
 IsVerySmallTriangle(output_point *op)
 {
-    TimeFunction;
+     
 
     return op->Next->Next == op->Prev &&
         (PtsReallyClose(op->Prev->P, op->Next->P) ||
@@ -2651,9 +2597,7 @@ IsVerySmallTriangle(output_point *op)
 internal b32
 BuildPathD(output_point *op, b32 reverse, b32 isOpen, path_f64 *path, f64 inv_scale)
 {
-    TimeFunction;
-
-    *path = GetPathF64(128);
+    *path = GetPathF64(BASIC_ALLOCATE_COUNT);
 
     if (!op || op->Next == op || (!isOpen && op->Next == op->Prev))
         return false;
@@ -2671,23 +2615,21 @@ BuildPathD(output_point *op, b32 reverse, b32 isOpen, path_f64 *path, f64 inv_sc
         lastPt = op->P;
         op2 = op->Next;
     }
-#ifdef USINGZ
-    path.push_back(PointD(lastPt.x * inv_scale, lastPt.y * inv_scale, lastPt.z));
-#else
+
     path->Points[path->Count++] = V2F64(lastPt.x * inv_scale, lastPt.y * inv_scale);
-#endif
 
     while (op2 != op)
     {
         if(!PointsAreEqual(op2->P, lastPt))
         {
             lastPt = op2->P;
-#ifdef USINGZ
-            path.push_back(PointD(lastPt.x * inv_scale, lastPt.y * inv_scale, lastPt.z));
-#else
-            path->Points[path->Count++] = V2F64(lastPt.x * inv_scale, lastPt.y * inv_scale);
-#endif
 
+            if(NeedIncrease(path->Count))
+            {
+                IncreasePathF64(path);
+            }
+
+            path->Points[path->Count++] = V2F64(lastPt.x * inv_scale, lastPt.y * inv_scale);
         }
 
         if (reverse)
@@ -2696,8 +2638,9 @@ BuildPathD(output_point *op, b32 reverse, b32 isOpen, path_f64 *path, f64 inv_sc
             op2 = op2->Next;
     }
 
-    if (path->Count == 3 && IsVerySmallTriangle(op2))
+    if ((path->Count == 3) && IsVerySmallTriangle(op2))
         return false;
+
     return true;
 }
 
@@ -2711,7 +2654,7 @@ IsValidClosedPath(output_point *op)
 inline void
 DisposeOutPts(output_rectangle *outrec)
 {
-    TimeFunction;
+     
 
     output_point *op = outrec->Points;
     op->Prev->Next = 0;
@@ -2720,7 +2663,7 @@ DisposeOutPts(output_rectangle *outrec)
         output_point *tmp = op;
         op = op->Next;
 
-        free(tmp);
+        Free(tmp, sizeof(output_point));
     };
 
     outrec->Points = 0;
@@ -2732,7 +2675,8 @@ DisposeOutPt(output_point *op)
     output_point *result = op->Next;
     op->Prev->Next = op->Next;
     op->Next->Prev = op->Prev;
-    free(op);
+
+    Free(op, sizeof(output_point));
 
     return result;
 }
@@ -2740,7 +2684,7 @@ DisposeOutPt(output_point *op)
 inline f64
 Area(output_point *op)
 {
-    TimeFunction;
+     
 
     //https://en.wikipedia.org/wiki/Shoelace_formula
     f64 result = 0.0;
@@ -2759,7 +2703,7 @@ Area(output_point *op)
 inline f64
 AreaTriangle(v2_s64 pt1, v2_s64 pt2, v2_s64 pt3)
 {
-    TimeFunction;
+     
 
     return ((f64)(pt3.y + pt1.y) * (f64)(pt3.x - pt1.x) +
             (f64)(pt1.y + pt2.y) * (f64)(pt1.x - pt2.x) +
@@ -2769,8 +2713,6 @@ AreaTriangle(v2_s64 pt1, v2_s64 pt2, v2_s64 pt3)
 internal void
 DoSplitOp(clipper *Clipper, output_rectangle *outrec, output_point *splitOp)
 {
-    TimeFunction;
-
     // splitOp.prev -> splitOp &&
     // splitOp.next -> splitOp.next.next are intersecting
     output_point *prevOp = splitOp->Prev;
@@ -2781,10 +2723,6 @@ DoSplitOp(clipper *Clipper, output_rectangle *outrec, output_point *splitOp)
     GetSegmentIntersectPt(prevOp->P, splitOp->P,
                           splitOp->Next->P, nextNextOp->P, &ip);
 
-#ifdef USINGZ
-    if (zCallback_) zCallback_(prevOp->P, splitOp->P,
-                               splitOp->next->P, nextNextOp->P, ip);
-#endif
     f64 area1 = Area(outrec->Points);
     f64 absArea1 = fabs(area1);
     if (absArea1 < 2)
@@ -2835,15 +2773,15 @@ DoSplitOp(clipper *Clipper, output_rectangle *outrec, output_point *splitOp)
     }
     else
     {
-        free(splitOp->Next);
-        free(splitOp);
+        Free(splitOp->Next, sizeof(output_point));
+        Free(splitOp, sizeof(output_point));
     }
 }
 
 internal void
 FixSelfIntersects(clipper *Clipper, output_rectangle *outrec)
 {
-    TimeFunction;
+     
 
     output_point *op2 = outrec->Points;
     for (; ; )
@@ -2875,7 +2813,7 @@ FixSelfIntersects(clipper *Clipper, output_rectangle *outrec)
 internal void
 CleanCollinear(clipper *Clipper, output_rectangle *outrec)
 {
-    TimeFunction;
+     
 
     outrec = GetRealOutRec(outrec);
     if (!outrec || outrec->IsOpen)
@@ -2922,8 +2860,6 @@ CleanCollinear(clipper *Clipper, output_rectangle *outrec)
 internal void
 BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen)
 {
-    TimeFunction;
-
     *solutionClosed = GetPathsF64(Clipper->OutputRectCount);
     if(solutionOpen)
     {
@@ -2958,16 +2894,65 @@ BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen
     }
 }
 
+void
+DeleteEdges(active *e)
+{
+    while (e)
+    {
+        active *e2 = e;
+        e = e->next_in_ael;
+        Free(e, sizeof(active));
+    }
+}
+
+void
+DisposeAllOutRecs(clipper *Clipper)
+{
+    for(u32 I = 0;
+        I < Clipper->OutputRectCount;
+        ++I)
+    {
+        output_rectangle *O = Clipper->OutRecList + I;
+        if(O->Points)
+            DisposeOutPts(O);
+    }
+
+    Free(Clipper->OutRecList, ArrayMaxSizes[ArrayType_OutRec]*sizeof(output_rectangle));
+}
+
+void
+CleanUp(clipper *Clipper)
+{
+    DeleteEdges(Clipper->ActiveEdgeList);
+    Free(Clipper->ScanLineMaxHeap.Nodes, Clipper->ScanLineMaxHeap.MaxSize*sizeof(sort_entry));
+    Free(Clipper->IntersectNodes, ArrayMaxSizes[ArrayType_IntersectNode]*sizeof(intersect_node));
+
+    DisposeAllOutRecs(Clipper);
+
+    Free(Clipper->HorzJoinList, ArrayMaxSizes[ArrayType_HorzJoinList]*sizeof(horz_join));
+    Free(Clipper->HorzSegList, ArrayMaxSizes[ArrayType_HorzSegList]*sizeof(horz_segment));
+
+    Free(Clipper->MinimaList, ArrayMaxSizes[ArrayType_MinimaList]*sizeof(local_minima));
+    for(u32 I = 0;
+        I < Clipper->VertexListCount;
+        ++I)
+    {
+        vertex *List = Clipper->VertexLists[I].Vertices;
+        Free(List, Clipper->VertexLists[I].VertexCount*sizeof(vertex));
+    }
+
+    Free(Clipper->VertexLists, ArrayMaxSizes[ArrayType_VertexLists]*sizeof(vertex_list));
+}
+
 inline b32
 Execute(clipper *Clipper, clip_type ClipType, fill_rule FillRule, paths_f64 *ClosedPaths, paths_f64 *OpenPaths)
 {
-    TimeFunction;
-
     if(ExecuteInternal(Clipper, ClipType, FillRule))
     {
         BuildPathsD(Clipper, ClosedPaths, OpenPaths);
     }
-//    CleanUp();
+
+    CleanUp(Clipper);
 
     b32 Result = Clipper->Succeeded;
     return(Result);
@@ -2977,7 +2962,7 @@ inline paths_f64
 BooleanOp(clip_type ClipType, fill_rule FillRule,
           paths_f64 *Subjects, paths_f64 *Clips, s32 Precision = 2)
 {
-    TimeFunction;
+     
 
     CheckPrecisionRange(&Precision);
     
