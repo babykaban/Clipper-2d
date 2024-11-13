@@ -129,7 +129,28 @@ TestBooleanOp(repetition_tester *Tester, paths_f64 *subjects, paths_f64 *subject
 int main()
 {
     BeginProfile();
-    
+
+    if(check_avx2_support())
+    {
+        printf("Support wide registers from AVX2 and lower");
+    }
+    else if(check_sse3_support())
+    {
+        printf("Support wide registers from SSE3 and lower");
+    }
+    else if(check_sse2_support())
+    {
+        printf("Support wide registers from SSE2 and lower");
+    }
+    else if(check_sse_support())
+    {
+        printf("Support wide registers SSE only");
+    }
+    else
+    {
+        printf("No wide registers support");
+    }
+
     paths_f64 Subject = GetPathsF64(2);
     Subject.PathCount = 2;
 
@@ -163,6 +184,11 @@ int main()
     paths_f64 Solution = {};
     paths_f64 Dummy = {};
     BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+
+    FreePaths(&Solution);
+    FreePaths(&Subject);
+    FreePaths(&Clip);
+    
 #if PRINT_OUT_RESULT
     printf("\nTest: %s, %s", ClipTypes[ClipType_Intersection], FillRules[FillRule_EvenOdd]);
 

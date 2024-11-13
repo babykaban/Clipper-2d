@@ -39,12 +39,14 @@ InitClipper(clipper *Clipper, s32 Precision)
 
     Clipper->VertexLists = MallocArray(BASIC_ALLOCATE_COUNT, vertex_list);
 
+#if RECORD_MEMORY_USEAGE
     for(u32 I = 0;
         I < ArrayType_Count;
         ++I)
     {
         ArrayMaxSizes[I] = BASIC_ALLOCATE_COUNT;
     }
+#endif
 }
 
 internal void
@@ -217,6 +219,7 @@ AddSubjects(clipper *Clipper, paths_f64 *Subjects)
 {
     paths_s64 Paths = ScalePathsF64(Subjects, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Subject, false);
+    FreePaths(&Paths);
 }
 
 inline void
@@ -224,15 +227,15 @@ AddOpenSubjects(clipper *Clipper, paths_f64 *Subjects)
 {
     paths_s64 Paths = ScalePathsF64(Subjects, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Subject, true);
+    FreePaths(&Paths);
 }
 
 inline void
 AddClips(clipper *Clipper, paths_f64 *Clips)
 {
-     
-
     paths_s64 Paths = ScalePathsF64(Clips, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Clip, false);
+    FreePaths(&Paths);
 }
 
 internal void
@@ -2857,10 +2860,24 @@ CleanCollinear(clipper *Clipper, output_rectangle *outrec)
     FixSelfIntersects(Clipper, outrec);
 }
 
+inline u32
+CountPathCount(clipper *Clipper)
+{
+    u32 Result = 0;
+    for(u32 i = 0; i < Clipper->OutputRectCount; ++i)
+    {
+        output_rectangle *outrec = Clipper->OutRecList + i;
+        if(outrec->Points)
+            ++Result;
+    }
+
+    return(Result);
+}
+
 internal void
 BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen)
 {
-    *solutionClosed = GetPathsF64(Clipper->OutputRectCount);
+    *solutionClosed = GetPathsF64(CountPathCount(Clipper));
     if(solutionOpen)
     {
         *solutionOpen = GetPathsF64(Clipper->OutputRectCount);
@@ -2870,7 +2887,7 @@ BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen
     // OutRecList.size() is not static here because
     // CleanCollinear below can indirectly add additional
     // OutRec (via FixOutRecPts)
-    for(u32  i = 0; i < Clipper->OutputRectCount; ++i)
+    for(u32 i = 0; i < Clipper->OutputRectCount; ++i)
     {
         output_rectangle *outrec = Clipper->OutRecList + i;
         if (outrec->Points == nullptr)
@@ -2917,13 +2934,18 @@ DisposeAllOutRecs(clipper *Clipper)
             DisposeOutPts(O);
     }
 
+#if RECORD_MEMORY_USEAGE
     Free(Clipper->OutRecList, ArrayMaxSizes[ArrayType_OutRec]*sizeof(output_rectangle));
+#else
+    Free(Clipper->OutRecList, 0);
+#endif
 }
 
 void
 CleanUp(clipper *Clipper)
 {
     DeleteEdges(Clipper->ActiveEdgeList);
+#if RECORD_MEMORY_USEAGE
     Free(Clipper->ScanLineMaxHeap.Nodes, Clipper->ScanLineMaxHeap.MaxSize*sizeof(sort_entry));
     Free(Clipper->IntersectNodes, ArrayMaxSizes[ArrayType_IntersectNode]*sizeof(intersect_node));
 
@@ -2942,6 +2964,24 @@ CleanUp(clipper *Clipper)
     }
 
     Free(Clipper->VertexLists, ArrayMaxSizes[ArrayType_VertexLists]*sizeof(vertex_list));
+#else
+    Free(Clipper->ScanLineMaxHeap.Nodes, 0);
+    Free(Clipper->IntersectNodes, 0);
+
+    Free(Clipper->HorzJoinList, 0);
+    Free(Clipper->HorzSegList, 0);
+
+    Free(Clipper->MinimaList, 0);
+    for(u32 I = 0;
+        I < Clipper->VertexListCount;
+        ++I)
+    {
+        vertex *List = Clipper->VertexLists[I].Vertices;
+        Free(List, Clipper->VertexLists[I].VertexCount*sizeof(vertex));
+    }
+
+    Free(Clipper->VertexLists, 0);
+#endif
 }
 
 inline b32

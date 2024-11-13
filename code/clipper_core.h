@@ -40,7 +40,11 @@ GetPathF64(s32 Count)
 {
     path_f64 Result = {};
     Result.Points = MallocArray(Count, v2_f64);
+
+#if RECORD_MEMORY_USEAGE
     PathMemoryUsed += Count*sizeof(v2_f64);
+#endif
+    
     return(Result);
 }
 
@@ -49,7 +53,11 @@ GetPathsF64(s32 Count)
 {
     paths_f64 Result = {};
     Result.Paths = MallocArray(Count, path_f64);
+
+#if RECORD_MEMORY_USEAGE
     PathMemoryUsed += Count*sizeof(path_f64);
+#endif
+
     return(Result);
 }
 
@@ -58,7 +66,11 @@ GetPathS64(s32 Count)
 {
     path_s64 Result = {};
     Result.Points = MallocArray(Count, v2_s64);
+
+#if RECORD_MEMORY_USEAGE
     PathMemoryUsed += Count*sizeof(v2_s64);
+#endif
+    
     return(Result);
 }
 
@@ -67,7 +79,11 @@ GetPathsS64(s32 Count)
 {
     paths_s64 Result = {};
     Result.Paths = MallocArray(Count, path_s64);
+
+#if RECORD_MEMORY_USEAGE
     PathMemoryUsed += Count*sizeof(path_s64);
+#endif
+    
     return(Result);
 }
 
@@ -77,6 +93,7 @@ IncreasePathF64(path_f64 *Path)
     Path->Points =
         ReallocArray(Path->Points, Path->Count,
                      Path->Count + BASIC_ALLOCATE_COUNT, v2_f64);
+    PathMemoryUsed += BASIC_ALLOCATE_COUNT*sizeof(v2_f64);
 }
 
 inline void
@@ -85,6 +102,7 @@ IncreasePathS64(path_s64 *Path)
     Path->Points =
         ReallocArray(Path->Points, Path->Count,
                      Path->Count + BASIC_ALLOCATE_COUNT, v2_s64);
+    PathMemoryUsed += BASIC_ALLOCATE_COUNT*sizeof(v2_f64);
 }
 
 inline void

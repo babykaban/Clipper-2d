@@ -7,6 +7,7 @@
    $Notice: $
    ======================================================================== */
 
+#include "clipper_platform.h"
 #include "clipper_memory.h"
 #include "clipper_heap.h"
 #include "clipper_core.h"
@@ -219,7 +220,9 @@ IncreaseOutRecList(clipper *Clipper)
         ReallocArray(Clipper->OutRecList, Clipper->OutputRectCount,
                      Clipper->OutputRectCount + BASIC_ALLOCATE_COUNT, output_rectangle);
 
+#if RECORD_MEMORY_USEAGE
     ArrayMaxSizes[ArrayType_OutRec] = Clipper->OutputRectCount + BASIC_ALLOCATE_COUNT;
+#endif
 }
 
 inline void
@@ -229,7 +232,9 @@ IncreaseHorzSegList(clipper *Clipper)
         ReallocArray(Clipper->HorzSegList, Clipper->HorzCount,
                      Clipper->HorzCount + BASIC_ALLOCATE_COUNT, horz_segment);
 
+#if RECORD_MEMORY_USEAGE
     ArrayMaxSizes[ArrayType_HorzSegList] = Clipper->HorzCount + BASIC_ALLOCATE_COUNT;
+#endif
 }
 
 inline void
@@ -239,7 +244,9 @@ IncreaseHorzJoinList(clipper *Clipper)
         ReallocArray(Clipper->HorzJoinList, Clipper->JointCount,
                      Clipper->JointCount + BASIC_ALLOCATE_COUNT, horz_join);
 
+#if RECORD_MEMORY_USEAGE
     ArrayMaxSizes[ArrayType_HorzJoinList] = Clipper->JointCount + BASIC_ALLOCATE_COUNT;
+#endif
 }
 
 inline void
@@ -249,7 +256,9 @@ IncreaseIntersectNodes(clipper *Clipper)
         ReallocArray(Clipper->IntersectNodes, Clipper->IntersectNodeCount,
                      Clipper->IntersectNodeCount + BASIC_ALLOCATE_COUNT, intersect_node);
 
+#if RECORD_MEMORY_USEAGE
     ArrayMaxSizes[ArrayType_IntersectNode] = Clipper->IntersectNodeCount + BASIC_ALLOCATE_COUNT;
+#endif
 }
 
 inline void
@@ -259,7 +268,9 @@ IncreaseMinimaList(clipper *Clipper)
         ReallocArray(Clipper->MinimaList, Clipper->MinimaListCount,
                      Clipper->MinimaListCount + BASIC_ALLOCATE_COUNT, local_minima);
 
+#if RECORD_MEMORY_USEAGE
     ArrayMaxSizes[ArrayType_MinimaList] = Clipper->MinimaListCount + BASIC_ALLOCATE_COUNT;
+#endif
 }
 
 inline void
@@ -269,7 +280,9 @@ IncreaseVertexLists(clipper *Clipper)
         ReallocArray(Clipper->VertexLists, Clipper->VertexListCount,
                      Clipper->VertexListCount + BASIC_ALLOCATE_COUNT, vertex_list);
 
+#if RECORD_MEMORY_USEAGE
     ArrayMaxSizes[ArrayType_VertexLists] = Clipper->VertexListCount + BASIC_ALLOCATE_COUNT;
+#endif
 }
 
 inline horz_join
@@ -353,6 +366,55 @@ NewOutRec(clipper *Clipper)
 
     return Result;
 }
+
+inline void
+FreePaths(paths_f64 *Paths)
+{
+    for(s32 I = 0;
+        I < Paths->PathCount;
+        ++I)
+    {
+        path_f64 *Path = Paths->Paths + I;
+#if RECORD_MEMORY_USEAGE
+        Free(Path->Points, sizeof(v2_f64)*Path->Count);
+        PathMemoryUsed -= sizeof(v2_f64)*Path->Count;
+#else
+        Free(Path->Points, sizeof(v2_f64)*Path->Count);
+#endif
+    }
+
+#if RECORD_MEMORY_USEAGE
+    Free(Paths->Paths, Paths->PathCount*sizeof(path_f64));
+    PathMemoryUsed -= Paths->PathCount*sizeof(path_f64);
+#else
+    Free(Paths->Paths, Paths->PathCount*sizeof(path_s64));
+#endif
+}
+
+inline void
+FreePaths(paths_s64 *Paths)
+{
+    for(s32 I = 0;
+        I < Paths->PathCount;
+        ++I)
+    {
+        path_s64 *Path = Paths->Paths + I;
+#if RECORD_MEMORY_USEAGE
+        Free(Path->Points, sizeof(v2_s64)*Path->Count);
+        PathMemoryUsed -= sizeof(v2_s64)*Path->Count;
+#else
+        Free(Path->Points, sizeof(v2_s64)*Path->Count);
+#endif
+    }
+
+#if RECORD_MEMORY_USEAGE
+    Free(Paths->Paths, Paths->PathCount*sizeof(path_s64));
+    PathMemoryUsed -= Paths->PathCount*sizeof(path_s64);
+#else
+    Free(Paths->Paths, Paths->PathCount*sizeof(path_s64));
+#endif
+}
+
 
 #define CLIPPER_H
 #endif

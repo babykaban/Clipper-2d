@@ -7,6 +7,9 @@
    $Notice: $
    ======================================================================== */
 
+#define RECORD_MEMORY_USEAGE 1
+
+#if RECORD_MEMORY_USEAGE
 global_variable u64 MemoryAllocated = 0;
 global_variable u64 PathMemoryUsed = 0;
 
@@ -23,6 +26,7 @@ enum array_type
 };
 
 global_variable u32 ArrayMaxSizes[ArrayType_Count] = {};
+#endif
 
 #define BASIC_ALLOCATE_COUNT 2
 
@@ -81,7 +85,10 @@ PushSize_(umm SizeInit)
     void *Result = malloc(SizeInit);
     ZeroSize(SizeInit, Result);
     
+#if RECORD_MEMORY_USEAGE
     MemoryAllocated += SizeInit;
+#endif
+    
     return(Result);
 }
 
@@ -133,8 +140,9 @@ Realloc(void *Base, umm Size, umm NewSize)
         free(Base);
     }
 
+#if RECORD_MEMORY_USEAGE
     MemoryAllocated -= Size;
-    
+#endif    
     return(Result);
 }
 
@@ -146,19 +154,34 @@ Malloc(umm Size)
     void *Result = malloc(Size);
     ZeroSize(Size, Result);
 
+#if RECORD_MEMORY_USEAGE
     MemoryAllocated += Size;
+#endif
+    
     return(Result);
 }
 
 #define MallocArray(Count, type) (type *)Malloc(sizeof(type)*(Count)) 
 #define MallocStruct(type) (type *)Malloc(sizeof(type)) 
 
+#if RECORD_MEMORY_USEAGE
 inline void
 Free(void *Ptr, umm Size)
 {
     MemoryAllocated -= Size;
+
     free(Ptr);
 }
+
+#else
+
+inline void
+Free(void *Ptr, umm Size)
+{
+    free(Ptr);
+}
+
+#endif
 
 inline b32
 NeedIncrease(u32 Count)

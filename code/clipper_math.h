@@ -154,19 +154,5 @@ FreePath(path_f64 *Path)
     free(Path->Points);
 }
 
-inline void
-FreePaths(paths_f64 *Paths)
-{
-    for(s32 I = 0;
-        I < Paths->PathCount;
-        ++I)
-    {
-        path_f64 *Path = Paths->Paths + I;
-        FreePath(Path);
-    }
-
-    free(Paths);
-}
-
 #define CLIPPER_MATH_H
 #endif
