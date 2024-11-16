@@ -13,7 +13,9 @@
 
 #define PROFILER 1
 #include "profiler.cpp"
+#include "pcg_random.cpp"
 
+#if 0 
 union triangle
 {
     struct
@@ -44,7 +46,6 @@ internal triangle
 GenerateRandomTriangle(f64 minX, f64 maxX, f64 minY, f64 maxY, f64 Epsilon)
 {
     triangle Result = {};
-
 
     do
     {
@@ -155,7 +156,160 @@ PrintTriangle(triangle T)
 
     printf("\n");
 }
+#endif
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
 
+// Define a struct for a 2D point
+typedef struct {
+  double x;
+  double y;
+} Point;
+
+// Function to generate a random point within a given bounding box
+Point randomPoint(double minX, double maxX, double minY, double maxY) {
+  Point p;
+  p.x = minX + (rand() / (double)RAND_MAX) * (maxX - minX);
+  p.y = minY + (rand() / (double)RAND_MAX) * (maxY - minY);
+  return p;
+}
+
+// Function to calculate the orientation of three points (p, q, r)
+// Returns 0 if collinear, 1 if clockwise, 2 if counterclockwise
+int orientation(Point p, Point q, Point r) {
+  double val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+  if (val == 0) return 0;
+  return (val > 0) ? 1 : 2;
+}
+
+// Function to check if point r lies on line segment pq
+int onSegment(Point p, Point r, Point q) {
+  if (r.x <= fmax(p.x, q.x) && r.x >= fmin(p.x, q.x) &&
+      r.y <= fmax(p.y, q.y) && r.y >= fmin(p.y, q.y))
+    return 1;
+  return 0;
+}
+
+// Function to check if line segments p1q1 and p2q2 intersect
+int doIntersect(Point p1, Point q1, Point p2, Point q2) {
+  int o1 = orientation(p1, q1, p2);
+  int o2 = orientation(p1, q1, q2);
+  int o3 = orientation(p2, q2, p1);
+  int o4 = orientation(p2, q2, q1);
+
+  if (o1 != o2 && o3 != o4) return 1;
+
+  // Special Cases (collinear)
+  if (o1 == 0 && onSegment(p1, p2, q1)) return 1;
+  if (o2 == 0 && onSegment(p1, q2, q1)) return 1;
+  if (o3 == 0 && onSegment(p2, p1, q2)) return 1;
+  if (o4 == 0 && onSegment(p2, q1, q2)) return 1;
+
+  return 0;
+}
+
+// Comparison function for qsort to sort points by angle
+int comparePoints(const void* a, const void* b) {
+  Point *p1 = (Point *)a;
+  Point *p2 = (Point *)b;
+
+  if (p1->x < p2->x) return -1;
+  if (p1->x > p2->x) return 1;
+  return 0; 
+}
+// Function to generate a random simple polygon with a given number of vertices
+// within a bounding box
+Point* generateRandomPolygon(int numVertices, double minX, double maxX, double minY, double maxY) {
+  // Allocate memory for the polygon vertices
+  Point* polygon = (Point*)malloc(numVertices * sizeof(Point));
+  if (polygon == NULL) {
+    return NULL; // Memory allocation failed
+  }
+
+  // Generate random points
+  for (int i = 0; i < numVertices; i++) {
+    polygon[i] = randomPoint(minX, maxX, minY, maxY);
+  }
+
+  // Sort points in counter-clockwise order using a simple wrapping algorithm
+  // This helps avoid self-intersections
+  Point center = {0, 0};
+  for (int i = 0; i < numVertices; i++) {
+    center.x += polygon[i].x;
+    center.y += polygon[i].y;
+  }
+  center.x /= numVertices;
+  center.y /= numVertices;
+
+  // Calculate angle for each point relative to the center
+  for (int i = 0; i < numVertices; i++) {
+    double angle = atan2(polygon[i].y - center.y, polygon[i].x - center.x);
+    polygon[i].x = angle; // Temporarily store angle in x for sorting
+  }
+
+  // Sort points by angle
+  qsort(polygon, numVertices, sizeof(Point), comparePoints);
+
+  // Restore original x values
+  for (int i = 0; i < numVertices; i++) {
+    double angle = polygon[i].x;
+    polygon[i].x = center.x + cos(angle) * (rand() / (double)RAND_MAX) * (maxX - minX) / 2;
+  }
+
+  // Check for self-intersections and regenerate if found
+  int hasIntersection = 0;
+  for (int i = 0; i < numVertices - 1; i++) {
+    for (int j = i + 2; j < numVertices; j++) {
+      // Don't check adjacent edges
+      if (i == 0 && j == numVertices - 1) continue;
+
+      if (doIntersect(polygon[i], polygon[i + 1], polygon[j], polygon[(j + 1) % numVertices])) {
+        hasIntersection = 1;
+        break;
+      }
+    }
+    if (hasIntersection) break;
+  }
+
+  if (hasIntersection) {
+    // Free the current polygon and try generating a new one
+    free(polygon);
+    return generateRandomPolygon(numVertices, minX, maxX, minY, maxY);
+  }
+
+  return polygon;
+}
+
+int main() {
+  // Seed the random number generator
+    srand((u32)time(0));
+
+    // Generate a random polygon with 10 vertices
+    for(int k = 0;
+        k < 5;
+        ++k)
+    {
+        int numVertices = 20;
+        Point* polygon = generateRandomPolygon(numVertices, -100, 100, -100, 100);
+ 
+        if (polygon != NULL) {
+            // Print the polygon vertices
+            for (int i = 0; i < numVertices; i++) {
+//      printf("Vertex %d: (%f, %f)\n", i, polygon[i].x, polygon[i].y);
+                printf("(%f, %f), ", polygon[i].x, polygon[i].y);
+            }
+
+            printf("\n\n");
+
+            // Free the allocated memory
+            free(polygon);
+        }
+    }
+    
+  return 0;
+}
+#if 0
 int
 main()
 {
@@ -185,3 +339,5 @@ main()
     
     return(0);
 }
+
+#endif
