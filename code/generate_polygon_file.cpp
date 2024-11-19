@@ -15,31 +15,13 @@
 #include "profiler.cpp"
 #include "pcg_random.cpp"
 
-#if 0 
-union triangle
-{
-    struct
-    {
-        v2_f64 p1;
-        v2_f64 p2;
-        v2_f64 p3;
-    };
-
-    v2_f64 Verts[3];
-};
+#include "generate_polygon_file.h"
 
 inline b32
 IsCollinear(v2_f64 a, v2_f64 b, v2_f64 c, f64 Epsilon)
 {
     f64 Area = fabs((b.y - a.y) * (c.x - b.x) - (c.y - b.y) * (b.x - a.x));
     return(Area < Epsilon);
-}
-
-// Function to generate a random float between min and max
-inline f64
-RandFloat(f64 min, f64 max)
-{
-    return(min + (f64)rand() / (f64)(RAND_MAX / (max - min)));
 }
 
 internal triangle
@@ -50,14 +32,14 @@ GenerateRandomTriangle(f64 minX, f64 maxX, f64 minY, f64 maxY, f64 Epsilon)
     do
     {
         // Generate random points within the specified range
-        Result.p1.x = RandFloat(minX, maxX);
-        Result.p1.y = RandFloat(minY, maxY);
+        Result.p1.x = RandDouble(minX, maxX);
+        Result.p1.y = RandDouble(minY, maxY);
 
-        Result.p2.x = RandFloat(minX, maxX);
-        Result.p2.y = RandFloat(minY, maxY);
+        Result.p2.x = RandDouble(minX, maxX);
+        Result.p2.y = RandDouble(minY, maxY);
 
-        Result.p3.x = RandFloat(minX, maxX);
-        Result.p3.y = RandFloat(minY, maxY);
+        Result.p3.x = RandDouble(minX, maxX);
+        Result.p3.y = RandDouble(minY, maxY);
 
     } while (IsCollinear(Result.p1, Result.p2, Result.p3, Epsilon)); // Repeat if points are nearly collinear
 
@@ -95,7 +77,7 @@ ProjectionsOverlap(f64 minA, f64 maxA, f64 minB, f64 maxB)
 }
 
 // Check if two triangles overlap using the Separating Axis Theorem
-b32
+internal b32
 TrianglesOverlap(triangle T0, triangle T1)
 {
     // Get the edges of each triangle
@@ -156,168 +138,394 @@ PrintTriangle(triangle T)
 
     printf("\n");
 }
-#endif
-#include <stdlib.h>
-#include <time.h>
-#include <math.h>
-
-// Define a struct for a 2D point
-typedef struct {
-  double x;
-  double y;
-} Point;
-
-// Function to generate a random point within a given bounding box
-Point randomPoint(double minX, double maxX, double minY, double maxY) {
-  Point p;
-  p.x = minX + (rand() / (double)RAND_MAX) * (maxX - minX);
-  p.y = minY + (rand() / (double)RAND_MAX) * (maxY - minY);
-  return p;
-}
 
 // Function to calculate the orientation of three points (p, q, r)
 // Returns 0 if collinear, 1 if clockwise, 2 if counterclockwise
-int orientation(Point p, Point q, Point r) {
-  double val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
-  if (val == 0) return 0;
-  return (val > 0) ? 1 : 2;
+inline s32
+Orientation(v2_f64 p, v2_f64 q, v2_f64 r)
+{
+    f64 val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+
+    if (val == 0)
+        return 0;
+
+    return((val > 0) ? 1 : 2);
 }
 
 // Function to check if point r lies on line segment pq
-int onSegment(Point p, Point r, Point q) {
-  if (r.x <= fmax(p.x, q.x) && r.x >= fmin(p.x, q.x) &&
-      r.y <= fmax(p.y, q.y) && r.y >= fmin(p.y, q.y))
-    return 1;
-  return 0;
+inline s32
+OnSegment(v2_f64 p, v2_f64 r, v2_f64 q)
+{
+    if(r.x <= Maximum(p.x, q.x) && r.x >= Minimum(p.x, q.x) &&
+       r.y <= Maximum(p.y, q.y) && r.y >= Minimum(p.y, q.y))
+        return 1;
+
+    return 0;
 }
 
 // Function to check if line segments p1q1 and p2q2 intersect
-int doIntersect(Point p1, Point q1, Point p2, Point q2) {
-  int o1 = orientation(p1, q1, p2);
-  int o2 = orientation(p1, q1, q2);
-  int o3 = orientation(p2, q2, p1);
-  int o4 = orientation(p2, q2, q1);
+inline s32
+DoIntersect(v2_f64 p1, v2_f64 q1, v2_f64 p2, v2_f64 q2)
+{
+    s32 o1 = Orientation(p1, q1, p2);
+    s32 o2 = Orientation(p1, q1, q2);
+    s32 o3 = Orientation(p2, q2, p1);
+    s32 o4 = Orientation(p2, q2, q1);
 
-  if (o1 != o2 && o3 != o4) return 1;
+    if((o1 != o2) && (o3 != o4))
+        return 1;
 
-  // Special Cases (collinear)
-  if (o1 == 0 && onSegment(p1, p2, q1)) return 1;
-  if (o2 == 0 && onSegment(p1, q2, q1)) return 1;
-  if (o3 == 0 && onSegment(p2, p1, q2)) return 1;
-  if (o4 == 0 && onSegment(p2, q1, q2)) return 1;
+    // Special Cases (collinear)
+    if(o1 == 0 && OnSegment(p1, p2, q1)) return 1;
+    if(o2 == 0 && OnSegment(p1, q2, q1)) return 1;
+    if(o3 == 0 && OnSegment(p2, p1, q2)) return 1;
+    if(o4 == 0 && OnSegment(p2, q1, q2)) return 1;
 
-  return 0;
+    return 0;
 }
 
 // Comparison function for qsort to sort points by angle
-int comparePoints(const void* a, const void* b) {
-  Point *p1 = (Point *)a;
-  Point *p2 = (Point *)b;
+inline s32
+ComparePoints(const void* a, const void* b)
+{
+    v2_f64 *p1 = (v2_f64 *)a;
+    v2_f64 *p2 = (v2_f64 *)b;
 
-  if (p1->x < p2->x) return -1;
-  if (p1->x > p2->x) return 1;
-  return 0; 
+    if (p1->x < p2->x) return -1;
+    if (p1->x > p2->x) return 1;
+    return 0; 
 }
+
 // Function to generate a random simple polygon with a given number of vertices
 // within a bounding box
-Point* generateRandomPolygon(int numVertices, double minX, double maxX, double minY, double maxY) {
-  // Allocate memory for the polygon vertices
-  Point* polygon = (Point*)malloc(numVertices * sizeof(Point));
-  if (polygon == NULL) {
-    return NULL; // Memory allocation failed
-  }
+internal v2_f64 *
+GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
+{
+    TimeFunction;
 
-  // Generate random points
-  for (int i = 0; i < numVertices; i++) {
-    polygon[i] = randomPoint(minX, maxX, minY, maxY);
-  }
+    // Allocate memory for the polygon vertices
+    f64 VertexCountInv = 1.0 / (f64)VertexCount;
 
-  // Sort points in counter-clockwise order using a simple wrapping algorithm
-  // This helps avoid self-intersections
-  Point center = {0, 0};
-  for (int i = 0; i < numVertices; i++) {
-    center.x += polygon[i].x;
-    center.y += polygon[i].y;
-  }
-  center.x /= numVertices;
-  center.y /= numVertices;
-
-  // Calculate angle for each point relative to the center
-  for (int i = 0; i < numVertices; i++) {
-    double angle = atan2(polygon[i].y - center.y, polygon[i].x - center.x);
-    polygon[i].x = angle; // Temporarily store angle in x for sorting
-  }
-
-  // Sort points by angle
-  qsort(polygon, numVertices, sizeof(Point), comparePoints);
-
-  // Restore original x values
-  for (int i = 0; i < numVertices; i++) {
-    double angle = polygon[i].x;
-    polygon[i].x = center.x + cos(angle) * (rand() / (double)RAND_MAX) * (maxX - minX) / 2;
-  }
-
-  // Check for self-intersections and regenerate if found
-  int hasIntersection = 0;
-  for (int i = 0; i < numVertices - 1; i++) {
-    for (int j = i + 2; j < numVertices; j++) {
-      // Don't check adjacent edges
-      if (i == 0 && j == numVertices - 1) continue;
-
-      if (doIntersect(polygon[i], polygon[i + 1], polygon[j], polygon[(j + 1) % numVertices])) {
-        hasIntersection = 1;
-        break;
-      }
+    v2_f64* polygon = (v2_f64*)malloc(VertexCount * sizeof(v2_f64));
+    if(polygon == 0)
+    {
+        return 0; // Memory allocation failed
     }
-    if (hasIntersection) break;
-  }
 
-  if (hasIntersection) {
-    // Free the current polygon and try generating a new one
-    free(polygon);
-    return generateRandomPolygon(numVertices, minX, maxX, minY, maxY);
-  }
+    // Generate random points
+    for(s32 i = 0; i < VertexCount; i++)
+    {
+        polygon[i] = RandomPoint(MinX, MaxX, MinY, MaxY);
+    }
 
-  return polygon;
+    // Sort points in counter-clockwise order using a simple wrapping algorithm
+    // This helps avoid self-intersections
+    v2_f64 center = {};
+    for(s32 i = 0; i < VertexCount; i++)
+    {
+        center += polygon[i];
+    }
+
+    center *= VertexCountInv;
+
+    // Calculate angle for each point relative to the center
+    for(s32 i = 0; i < VertexCount; i++)
+    {
+        v2_f64 CP = polygon[i] - center;
+        f64 angle = atan2(CP.y, CP.x);
+        polygon[i].x = angle; // Temporarily store angle in x for sorting
+    }
+
+    // Sort points by angle
+    qsort(polygon, VertexCount, sizeof(v2_f64), ComparePoints);
+
+    // Restore original x values
+    for(s32 i = 0; i < VertexCount; i++)
+    {
+        f64 angle = polygon[i].x;
+        polygon[i].x = center.x + cos(angle) * (rand() / (double)RAND_MAX) * (MaxX - MinX) / 2;
+    }
+
+    // Check for self-intersections and regenerate if found
+    b32 hasIntersection = 0;
+    for(int i = 0; i < VertexCount - 1; i++)
+    {
+        for(int j = i + 2; j < VertexCount; j++)
+        {
+            // Don't check adjacent edges
+            if((i == 0) && (j == VertexCount - 1))
+                continue;
+
+            if(DoIntersect(polygon[i], polygon[i + 1], polygon[j], polygon[(j + 1) % VertexCount]))
+            {
+                hasIntersection = 1;
+                break;
+            }
+        }
+
+        if(hasIntersection)
+            break;
+    }
+
+    if(hasIntersection)
+    {
+        // Free the current polygon and try generating a new one
+        free(polygon);
+
+        return GenerateRandomPolygon(VertexCount, MinX, MaxX, MinY, MaxY);
+    }
+
+    return polygon;
 }
 
-int main() {
-  // Seed the random number generator
-    srand((u32)time(0));
+#if 0
+internal v2_f64 *
+GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
+{
+    TimeFunction;
 
-    // Generate a random polygon with 10 vertices
-    for(int k = 0;
-        k < 5;
-        ++k)
+    // Allocate memory for the polygon vertices
+    f64 VertexCountInv = 1.0 / (f64)VertexCount;
+
+    f64 *polygon_x = (f64 *)malloc(VertexCount * sizeof(f64));
+    f64 *polygon_y = (f64 *)malloc(VertexCount * sizeof(f64));
+
+    if((polygon_x == 0) || (polygon_y == 0))
     {
-        int numVertices = 20;
-        Point* polygon = generateRandomPolygon(numVertices, -100, 100, -100, 100);
- 
-        if (polygon != NULL) {
-            // Print the polygon vertices
-            for (int i = 0; i < numVertices; i++) {
-//      printf("Vertex %d: (%f, %f)\n", i, polygon[i].x, polygon[i].y);
-                printf("(%f, %f), ", polygon[i].x, polygon[i].y);
-            }
+        return 0; // Memory allocation failed
+    }
 
-            printf("\n\n");
+    u32 ItterCount = VertexCount;
+    f64 *p_x = polygon_x + 0;
+    f64 *p_y = polygon_y + 0;
 
-            // Free the allocated memory
-            free(polygon);
+    if(ItterCount >= 4)
+    {
+        u32 Count4x = ItterCount / 4;
+        for(u32 I = 0;
+            I < Count4x;
+            I++)
+        {
+            __m256d Rand4_x0 = RandDouble_4x(MinX, MaxX);
+            __m256d Rand4_x1 = RandDouble_4x(MinY, MaxY);
+            _mm256_store_pd(p_x, Rand4_x0);
+            _mm256_store_pd(p_y, Rand4_x1);
+            p_x += 4;
+            p_y += 4;
         }
+
+        ItterCount %= 4;
+    }
+
+    if(ItterCount >= 2)
+    {
+        u32 Count2x = ItterCount / 2;
+        for(u32 I = 0;
+            I < Count2x;
+            I++)
+        {
+            __m128d Rand2_x0 = RandDouble_2x(MinX, MaxX);
+            __m128d Rand2_x1 = RandDouble_2x(MinY, MaxY);
+            _mm_store_pd(polygon_x, Rand2_x0);
+            _mm_store_pd(polygon_y, Rand2_x1);
+
+            p_x += 2;
+            p_y += 2;
+        }
+
+        ItterCount %= 2;
+    }
+
+    if(ItterCount > 0)
+    {
+        v2_f64 P = RandomPoint(MinX, MaxX, MinY, MaxY);
+        
     }
     
-  return 0;
+    // Generate random points
+    for(s32 i = 0; i < VertexCount; i++)
+    {
+        polygon[i] = RandomPoint(MinX, MaxX, MinY, MaxY);
+    }
+
+    // Sort points in counter-clockwise order using a simple wrapping algorithm
+    // This helps avoid self-intersections
+    v2_f64 center = {};
+    for(s32 i = 0; i < VertexCount; i++)
+    {
+        center += polygon[i];
+    }
+
+    center *= VertexCountInv;
+
+    // Calculate angle for each point relative to the center
+    for(s32 i = 0; i < VertexCount; i++)
+    {
+        v2_f64 CP = polygon[i] - center;
+        f64 angle = atan2(CP.y, CP.x);
+        polygon[i].x = angle; // Temporarily store angle in x for sorting
+    }
+
+    // Sort points by angle
+    qsort(polygon, VertexCount, sizeof(v2_f64), ComparePoints);
+
+    // Restore original x values
+    for(s32 i = 0; i < VertexCount; i++)
+    {
+        f64 angle = polygon[i].x;
+        polygon[i].x = center.x + cos(angle) * (rand() / (double)RAND_MAX) * (MaxX - MinX) / 2;
+    }
+
+    // Check for self-intersections and regenerate if found
+    b32 hasIntersection = 0;
+    for(int i = 0; i < VertexCount - 1; i++)
+    {
+        for(int j = i + 2; j < VertexCount; j++)
+        {
+            // Don't check adjacent edges
+            if((i == 0) && (j == VertexCount - 1))
+                continue;
+
+            if(DoIntersect(polygon[i], polygon[i + 1], polygon[j], polygon[(j + 1) % VertexCount]))
+            {
+                hasIntersection = 1;
+                break;
+            }
+        }
+
+        if(hasIntersection)
+            break;
+    }
+
+    if(hasIntersection)
+    {
+        // Free the current polygon and try generating a new one
+        free(polygon);
+
+        return GenerateRandomPolygon(VertexCount, MinX, MaxX, MinY, MaxY);
+    }
+
+    return polygon;
 }
-#if 0
+#endif
+
+inline v2_f64
+GetPolygonCenter(v2_f64 *polygon, s32 VertexCount)
+{
+    v2_f64 center = {0, 0};
+    for(s32 i = 0; i < VertexCount; i++)
+    {
+        center.x += polygon[i].x;
+        center.y += polygon[i].y;
+    }
+
+    center.x /= VertexCount;
+    center.y /= VertexCount;
+
+    return(center);
+}
+
+inline void
+JSONWritePoly(FILE *Out, polygon *Poly, b32 Last)
+{
+    fprintf(Out, "     {\n");
+    fprintf(Out, "       \"name\": \"polygon1\",\n");
+    fprintf(Out, "       \"points\": [");
+
+    for(u32 i = 0; i < (Poly->Count - 1); ++i)
+    {
+        fprintf(Out, "[%f, %f], ", Poly->Points[i].x, Poly->Points[i].y);
+    }
+
+    fprintf(Out, "[%f, %f]]\n", Poly->Points[Poly->Count - 1].x, Poly->Points[Poly->Count - 1].y);
+
+    if(Last)
+    {
+        fprintf(Out, "     }\n");
+    }
+    else
+    {
+        fprintf(Out, "     },\n");
+    }
+}
+
+inline void
+JSONWritePolyPair(FILE *Out, polygon *S, polygon *C, u32 Index, b32 Last)
+{
+    fprintf(Out, "     {\n");
+    fprintf(Out, "       \"case\": \"Case%d\",\n", Index);
+    fprintf(Out, "       \"points\": {\n");
+    fprintf(Out, "           \"subject\": [");
+
+    for(u32 i = 0; i < (S->Count - 1); ++i)
+    {
+        fprintf(Out, "[%f, %f], ", S->Points[i].x, S->Points[i].y);
+    }
+
+    fprintf(Out, "[%f, %f]],\n", S->Points[S->Count - 1].x, S->Points[S->Count - 1].y);
+
+    fprintf(Out, "           \"clip\": [");
+
+    for(u32 i = 0; i < (C->Count - 1); ++i)
+    {
+        fprintf(Out, "[%f, %f], ", C->Points[i].x, C->Points[i].y);
+    }
+
+    fprintf(Out, "[%f, %f]]\n", C->Points[C->Count - 1].x, C->Points[C->Count - 1].y);
+
+    fprintf(Out, "       }\n");
+    if(Last)
+    {
+        fprintf(Out, "     }\n");
+    }
+    else
+    {
+        fprintf(Out, "     },\n");
+    }
+}
+
+internal void
+WritePolygonsToJSON(polygon_set *Ss, polygon_set *Cs, char *FileName)
+{
+    TimeFunction;
+    
+    FILE *Out;
+
+    fopen_s(&Out, FileName, "w");
+    if(Out)
+    {
+        fprintf(Out, "{\n");
+        fprintf(Out, "    \"polygons\": [\n");
+
+        for(u32 I = 0;
+            I < (Ss->PolyCount - 1);
+            ++I)
+        {
+            polygon *S = Ss->Polygons + I;
+            polygon *C = Cs->Polygons + I;
+
+            JSONWritePolyPair(Out, S, C, I, false);
+        }
+
+        JSONWritePolyPair(Out, Ss->Polygons + (Ss->PolyCount - 1),
+                          Cs->Polygons + (Cs->PolyCount - 1), Ss->PolyCount - 1, true);
+        
+        fprintf(Out, "    ]\n");
+        fprintf(Out, "}\n");
+    }
+
+    fclose(Out);
+}
+
 int
 main()
 {
     BeginProfile();
 
     srand((u32)time(0)); // Seed for randomness
-    
-    u32 Count = 48000000;
+
+#if 0    
+    u32 Count = 20;
     triangle *Tris = (triangle *)malloc(sizeof(triangle)*Count);
     for(u32 I = 0;
         I < Count;
@@ -328,16 +536,86 @@ main()
         PrintTriangle(Tris[I]);
         PrintTriangle(Tris[I + 1]);
     }
+#endif
 
-//    triangle T = GenerateRandomTriangle(-100.0, 100.0, -100.0, 100.0, 3.0);
-//    PrintTriangle(T);
+    f64 MaxY = 1000;
+    f64 MaxX = 1000;
 
-//    triangle T0 = GenerateOverlapTriangleFor(T, -100.0, 100.0, -100.0, 100.0, 3.0);
-//    PrintTriangle(T0);
+//    s32 PolygonCount = 1000000;
+    s32 PolygonCount = 1;
+    s32 numVertices = 10;
 
+    polygon_set SubjectSet = {};
+    SubjectSet.PolyCount = PolygonCount;
+    SubjectSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
+
+    f64 X = RandDouble(-MaxX, MaxX);
+    __m128d V = RandDouble_2x(-MaxX, MaxX);
+    __m256d V_2x = RandDouble_4x(-MaxX, MaxX);
+    
+#if 0
+    for(s32 I = 0;
+        I < PolygonCount;
+        ++I)
+    {
+        polygon *Poly = SubjectSet.Polygons + I;
+        Poly->Count = numVertices;
+        Poly->Points = GenerateRandomPolygon(numVertices, -MaxX, MaxX, -MaxY, MaxY);
+    }
+
+    polygon_set ClipSet = {};
+    ClipSet.PolyCount = PolygonCount;
+    ClipSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
+
+    for(s32 I = 0;
+        I < PolygonCount;
+        ++I)
+    {
+        polygon *Poly = ClipSet.Polygons + I;
+        Poly->Count = numVertices;
+        Poly->Points = GenerateRandomPolygon(numVertices, -MaxX, MaxX, -MaxY, MaxY);
+    }
+    
+    WritePolygonsToJSON(&SubjectSet, &ClipSet, "d:/Clipper-2d/output/polygons.json");
+
+    for(s32 I = 0;
+        I < PolygonCount;
+        ++I)
+    {
+        polygon *S = SubjectSet.Polygons + I;
+        polygon *C = ClipSet.Polygons + I;
+        // Print the polygon vertices
+
+        printf("==============================\n");
+        printf("Polygon Pair[%d] Is: \n", I);
+
+        printf("Subject[%d]: ", S->Count);
+        for(int i = 0; i < numVertices; i++)
+        {
+            printf("(%f, %f), ", S->Points[i].x, S->Points[i].y);
+        }
+
+        printf("\n\n");
+
+        printf("Clip[%d]: ", C->Count);
+        for(int i = 0; i < numVertices; i++)
+        {
+            printf("(%f, %f), ", C->Points[i].x, C->Points[i].y);
+        }
+
+        free(S->Points);
+        free(C->Points);
+        printf("\n==============================\n");
+
+        printf("\n\n");
+    }
+    
+    // Free the allocated memory
+    free(SubjectSet.Polygons);
+    free(ClipSet.Polygons);
+#endif
+    
     EndAndPrintProfile();
     
     return(0);
 }
-
-#endif
