@@ -74,6 +74,19 @@ RandDouble_4x(f64 min, f64 max)
     return(Result);
 }
 
+inline __m256d
+RandDouble1_4x(void)
+{
+    TimeFunction;
+
+    f64 DInv = 1.0 / RAND_MAX;
+    __m256d Rand_4x = _mm256_set_pd((f64)rand(), (f64)rand(), (f64)rand(), (f64)rand());
+
+    __m256d Result = _mm256_mul_pd(Rand_4x, _mm256_set1_pd(DInv));
+
+    return(Result);
+}
+
 // Function to generate a random point within a given bounding box
 inline v2_f64
 RandomPoint(f64 minX, f64 maxX, f64 minY, f64 maxY)
