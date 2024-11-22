@@ -195,6 +195,17 @@ ComparePoints(const void* a, const void* b)
     if (p1->x > p2->x) return 1;
     return 0; 
 }
+// Comparison function for qsort to sort points by angle
+inline s32
+CompareValues(const void* a, const void* b)
+{
+    f64 *p1 = (f64 *)a;
+    f64 *p2 = (f64 *)b;
+
+    if (*p1 < *p2) return -1;
+    if (*p1 > *p2) return 1;
+    return 0; 
+}
 
 // Function to generate a random simple polygon with a given number of vertices
 // within a bounding box
@@ -213,7 +224,7 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
     }
 
     {
-        TimeBlock("Generating points");
+//        TimeBlock("Generating points");
         // Generate random points
         for(s32 i = 0; i < VertexCount; i++)
         {
@@ -223,7 +234,7 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
 
     v2_f64 center = {};
     {
-        TimeBlock("Calculate Centers");
+//        TimeBlock("Calculate Centers");
 
         // Sort points in counter-clockwise order using a simple wrapping algorithm
         // This helps avoid self-intersections
@@ -236,7 +247,7 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
     }
 
     {
-        TimeBlock("Compute angles");
+//        TimeBlock("Compute angles");
     
         // Calculate angle for each point relative to the center
         for(s32 i = 0; i < VertexCount; i++)
@@ -247,17 +258,23 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
         }
     }
 
-#if 0
-    // Sort points by angle
-    qsort(polygon, VertexCount, sizeof(v2_f64), ComparePoints);
-
-    // Restore original x values
-    for(s32 i = 0; i < VertexCount; i++)
     {
-        f64 angle = polygon[i].x;
-        polygon[i].x = center.x + cos(angle) * (rand() / (double)RAND_MAX) *
-            (MaxX - MinX) / 2;
+//        TimeBlock("Sort");
+        qsort(polygon, VertexCount, sizeof(v2_f64), ComparePoints);
     }
+
+    {
+//        TimeBlock("Restore original x values");
+        // Restore original x values
+        for(s32 i = 0; i < VertexCount; i++)
+        {
+            f64 angle = polygon[i].x;
+            polygon[i].x = center.x + cos(angle) * (rand() / (double)RAND_MAX) *
+                (MaxX - MinX) / 2;
+        }
+    }
+    
+#if 0
 
     // Check for self-intersections and regenerate if found
     b32 hasIntersection = 0;
@@ -310,9 +327,9 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
     }
 
     {
-        TimeBlock("Generating points");
+//        TimeBlock("Generating points");
 
-        u32 ItterCount = VertexCount;
+        u32 ItterCount = VertexCount*4;
         f64 *p_x = polygon_x + 0;
         f64 *p_y = polygon_y + 0;
 
@@ -370,7 +387,7 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
     __m256d CenterABCD_x = _mm256_set1_pd(0);
     __m256d CenterABCD_y = _mm256_set1_pd(0);
     {
-        TimeBlock("Calculate Centers");
+//        TimeBlock("Calculate Centers");
 
         u32 ItterCount = VertexCount;
         f64 *p_x = polygon_x + 0;
@@ -393,8 +410,9 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
         CenterABCD_y = _mm256_mul_pd(CenterABCD_y, CountInv_4x);
     }
 
+    
     {
-        TimeBlock("Compute angles");
+//        TimeBlock("Compute angles");
 
         u32 ItterCount = VertexCount;
         f64 *p_x = polygon_x + 0;
@@ -409,38 +427,110 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
             __m256d CPY_4x = _mm256_sub_pd(Y_ABCD, CenterABCD_y);
 
             __m256d angle_4x = _mm256_atan2_pd(CPY_4x, CPX_4x);
+            _mm256_store_pd(p_x, angle_4x);
+
+            p_x += 4;
+            p_y += 4;
+        }
+    }
+
+    {
+//        TimeBlock("Sort");
+        qsort(polygon_x, VertexCount*4, sizeof(f64), CompareValues);
+    }
+
+    {
+//        TimeBlock("Restore original x values");
+
+        u32 ItterCount = VertexCount;
+        f64 *p_x = polygon_x + 0;
+
+        for(u32 I = 0; I < ItterCount; ++I)
+        {
+            __m256d angle_4x = _mm256_load_pd(p_x);
             __m256d cos_4x = _mm256_cos_pd(angle_4x);
             __m256d rand_4x = RandDouble1_4x();
+
             __m256d HalfD = _mm256_mul_pd(_mm256_set1_pd(0.5), _mm256_set1_pd(MaxX - MinX));
 
             __m256d Result = _mm256_add_pd(CenterABCD_x,
                                            _mm256_mul_pd(_mm256_mul_pd(
                                                              cos_4x, rand_4x),
                                                          HalfD));
+            _mm256_store_pd(p_x, Result);
             
             p_x += 4;
-            p_y += 4;
         }
     }
+
+    f64 *poly0_x = (f64 *)malloc(VertexCount * sizeof(f64));
+    f64 *poly0_y = (f64 *)malloc(VertexCount * sizeof(f64));
+
+    f64 *poly1_x = (f64 *)malloc(VertexCount * sizeof(f64));
+    f64 *poly1_y = (f64 *)malloc(VertexCount * sizeof(f64));
+
+    f64 *poly2_x = (f64 *)malloc(VertexCount * sizeof(f64));
+    f64 *poly2_y = (f64 *)malloc(VertexCount * sizeof(f64));
+
+    f64 *poly3_x = (f64 *)malloc(VertexCount * sizeof(f64));
+    f64 *poly3_y = (f64 *)malloc(VertexCount * sizeof(f64));
+
+
+    f64 *p0_x = poly0_x + 0;
+    f64 *p0_y = poly0_y + 0;
+    f64 *p1_x = poly1_x + 0;
+    f64 *p1_y = poly1_y + 0;
+    f64 *p2_x = poly2_x + 0;
+    f64 *p2_y = poly2_y + 0;
+    f64 *p3_x = poly3_x + 0;
+    f64 *p3_y = poly3_y + 0;
+    
+    f64 *p_x = polygon_x + 0;
+    f64 *p_y = polygon_y + 0;
+    for(s32 I = 0;
+        I < VertexCount;
+        ++I)
+    {
+        *p0_x++ = *p_x++;
+        *p1_x++ = *p_x++;
+        *p2_x++ = *p_x++;
+        *p3_x++ = *p_x++;
+
+        *p0_y++ = *p_y++;
+        *p1_y++ = *p_y++;
+        *p2_y++ = *p_y++;
+        *p3_y++ = *p_y++;
+    }
+    
+    printf("poly0: ");
+    for(s32 I = 0; I < VertexCount; ++I)
+    {
+        printf("(%.2f, %.2f), ", poly0_x[I], poly0_y[I]);
+    }
+    printf("\n\n");
+
+    printf("poly1: ");
+    for(s32 I = 0; I < VertexCount; ++I)
+    {
+        printf("(%.2f, %.2f), ", poly1_x[I], poly1_y[I]);
+    }
+    printf("\n\n");
+
+    printf("poly2: ");
+    for(s32 I = 0; I < VertexCount; ++I)
+    {
+        printf("(%.2f, %.2f), ", poly2_x[I], poly2_y[I]);
+    }
+    printf("\n\n");
+
+    printf("poly3: ");
+    for(s32 I = 0; I < VertexCount; ++I)
+    {
+        printf("(%.2f, %.2f), ", poly3_x[I], poly3_y[I]);
+    }
+    printf("\n\n");
     
 #if 0    
-    // Sort points in counter-clockwise order using a simple wrapping algorithm
-    // This helps avoid self-intersections
-    v2_f64 center = {};
-    for(s32 i = 0; i < VertexCount; i++)
-    {
-        center += polygon[i];
-    }
-
-    center *= VertexCountInv;
-
-    // Calculate angle for each point relative to the center
-    for(s32 i = 0; i < VertexCount; i++)
-    {
-        v2_f64 CP = polygon[i] - center;
-        f64 angle = atan2(CP.y, CP.x);
-        polygon[i].x = angle; // Temporarily store angle in x for sorting
-    }
 
     // Sort points by angle
     qsort(polygon, VertexCount, sizeof(v2_f64), ComparePoints);
@@ -625,7 +715,7 @@ main()
 
 //    s32 PolygonCount = 1000000;
     s32 PolygonCount = 1;
-    s32 numVertices = 100;
+    s32 numVertices = 10;
 
     polygon_set SubjectSet = {};
     SubjectSet.PolyCount = PolygonCount;
