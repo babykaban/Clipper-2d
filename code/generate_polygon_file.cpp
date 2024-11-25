@@ -224,7 +224,7 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
     }
 
     {
-//        TimeBlock("Generating points");
+        TimeBlock("Generating points");
         // Generate random points
         for(s32 i = 0; i < VertexCount; i++)
         {
@@ -234,7 +234,7 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
 
     v2_f64 center = {};
     {
-//        TimeBlock("Calculate Centers");
+        TimeBlock("Calculate Centers");
 
         // Sort points in counter-clockwise order using a simple wrapping algorithm
         // This helps avoid self-intersections
@@ -246,6 +246,7 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
         center *= VertexCountInv;
     }
 
+#if 0
     {
 //        TimeBlock("Compute angles");
     
@@ -273,6 +274,7 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
                 (MaxX - MinX) / 2;
         }
     }
+#endif
     
 #if 0
 
@@ -318,26 +320,29 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
     // Allocate memory for the polygon vertices
     f64 VertexCountInv = 1.0 / (f64)VertexCount;
 
-    f64 *polygon_x = (f64 *)malloc(VertexCount*4 * sizeof(f64));
-    f64 *polygon_y = (f64 *)malloc(VertexCount*4 * sizeof(f64));
+    f64 *polygon_x = (f64 *)malloc(VertexCount * sizeof(f64));
+    f64 *polygon_y = (f64 *)malloc(VertexCount * sizeof(f64));
 
     if((polygon_x == 0) || (polygon_y == 0))
     {
         return 0; // Memory allocation failed
     }
 
+    u32 Left = VertexCount % 4;
+    u32 CountByFour = (VertexCount - Left) / 4;
+    u32 CountByTwo = (Left > 1) ? 1 : 0;
+    u32 CountLeft = Left % 2;
+    
     {
-//        TimeBlock("Generating points");
+        TimeBlock("Generating points");
 
-        u32 ItterCount = VertexCount*4;
         f64 *p_x = polygon_x + 0;
         f64 *p_y = polygon_y + 0;
 
-        if(ItterCount >= 4)
+        if(CountByFour)
         {
-            u32 Count4x = ItterCount / 4;
             for(u32 I = 0;
-                I < Count4x;
+                I < CountByFour;
                 I++)
             {
                 __m256d Rand4_x0 = RandDouble_4x(MinX, MaxX);
@@ -347,69 +352,124 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
                 p_x += 4;
                 p_y += 4;
             }
-
-            ItterCount %= 4;
         }
 
-        if(ItterCount >= 2)
+        if(CountByTwo)
         {
-            u32 Count2x = ItterCount / 2;
-            for(u32 I = 0;
-                I < Count2x;
-                I++)
+            __m128d Rand2_x0 = RandDouble_2x(MinX, MaxX);
+            __m128d Rand2_x1 = RandDouble_2x(MinY, MaxY);
+            _mm_store_pd(p_x, Rand2_x0);
+            _mm_store_pd(p_y, Rand2_x1);
+
+            p_x += 2;
+            p_y += 2;
+
+            if(CountLeft)
             {
-                __m128d Rand2_x0 = RandDouble_2x(MinX, MaxX);
-                __m128d Rand2_x1 = RandDouble_2x(MinY, MaxY);
-                _mm_store_pd(polygon_x, Rand2_x0);
-                _mm_store_pd(polygon_y, Rand2_x1);
+                v2_f64 P = RandomPoint(MinX, MaxX, MinY, MaxY);
+                *p_x = P.x;
+                *p_y = P.y;
+            }
+        }
+    }
+
+#if 1
+    f64 *p_x = polygon_x + 0;
+    f64 *p_y = polygon_y + 0;
+
+    f64 SumX = 0.0;
+    f64 SumY = 0.0;
+    for(s32 I = 0; I < VertexCount; ++I)
+    {
+        SumX += *p_x;
+        SumY += *p_y;
+
+        ++p_x;
+        ++p_y;
+    }
+
+    SumX /= VertexCount;
+    SumY /= VertexCount;
+#endif
+    
+    v2_f64 Center = {};
+    {
+        TimeBlock("Calculate Centers");
+
+        f64 *p_x = polygon_x + 0;
+        f64 *p_y = polygon_y + 0;
+
+        f64 X[4] = {};
+        f64 Y[4] = {};
+
+        if(CountByFour)
+        {
+            __m256d TmpCenter_x = _mm256_set1_pd(0);
+            __m256d TmpCenter_y = _mm256_set1_pd(0);
+            for(u32 I = 0; I < CountByFour; ++I)
+            {
+                __m256d X_4x = _mm256_load_pd(p_x);
+
+                __m256d Y_4x = _mm256_load_pd(p_y);
+
+                TmpCenter_x = _mm256_add_pd(TmpCenter_x, X_4x);
+                TmpCenter_y = _mm256_add_pd(TmpCenter_y, Y_4x);
+
+                p_x += 4;
+                p_y += 4;
+            }
+        
+            _mm256_store_pd(X, TmpCenter_x);
+            _mm256_store_pd(Y, TmpCenter_y);
+        }
+
+        __m128d TmpCenter_x = _mm_set1_pd(0);
+        __m128d TmpCenter_y = _mm_set1_pd(0);
+        __m128d X_2x = _mm_set1_pd(0);
+        __m128d Y_2x = _mm_set1_pd(0);
+        f64 *x = X + 0;
+        f64 *y = Y + 0;
+
+        __m128d VertexCountInv_2x = _mm_set1_pd(1.0 / (f64)VertexCount);
+        
+        u32 LoopCount = (CountByFour > 0) ? (CountByTwo + 2) : CountByTwo; 
+        for(u32 I = 0; I < LoopCount; ++I)
+        {
+            if(I < CountByTwo)
+            {
+                X_2x = _mm_load_pd(p_x);
+                Y_2x = _mm_load_pd(p_y);
 
                 p_x += 2;
                 p_y += 2;
             }
+            else
+            {
+                X_2x = _mm_load_pd(x);
+                Y_2x = _mm_load_pd(y);
+                x += 2;
+                y += 2;
+            }
 
-            ItterCount %= 2;
+            TmpCenter_x = _mm_add_pd(TmpCenter_x, X_2x);
+            TmpCenter_y = _mm_add_pd(TmpCenter_y, Y_2x);
         }
 
-        if(ItterCount > 0)
+        Center.W = _mm_hadd_pd(TmpCenter_x, TmpCenter_y);        
+
+        if(CountLeft)
         {
-            v2_f64 P = RandomPoint(MinX, MaxX, MinY, MaxY);
+            Center += V2F64(*(polygon_x + (VertexCount - 1)),
+                            *(polygon_y + (VertexCount - 1)));
+        }
+
+        Center.W = _mm_mul_pd(Center.W, VertexCountInv_2x);
         
-        }
-#if 0    
-        // Generate random points
-        for(s32 i = 0; i < VertexCount; i++)
-        {
-            polygon[i] = RandomPoint(MinX, MaxX, MinY, MaxY);
-        }
-#endif
+//        CenterABCD_x = _mm256_mul_pd(CenterABCD_x, CountInv_4x);
+//        CenterABCD_y = _mm256_mul_pd(CenterABCD_y, CountInv_4x);
     }
 
-    __m256d CenterABCD_x = _mm256_set1_pd(0);
-    __m256d CenterABCD_y = _mm256_set1_pd(0);
-    {
-//        TimeBlock("Calculate Centers");
-
-        u32 ItterCount = VertexCount;
-        f64 *p_x = polygon_x + 0;
-        f64 *p_y = polygon_y + 0;
-
-        __m256d CountInv_4x = _mm256_set1_pd(1.0 / VertexCount);
-        for(u32 I = 0; I < ItterCount; ++I)
-        {
-            __m256d X_ABCD = _mm256_load_pd(p_x);
-            __m256d Y_ABCD = _mm256_load_pd(p_y);
-
-            CenterABCD_x = _mm256_add_pd(CenterABCD_x, X_ABCD);
-            CenterABCD_y = _mm256_add_pd(CenterABCD_y, Y_ABCD);
-
-            p_x += 4;
-            p_y += 4;
-        }
-
-        CenterABCD_x = _mm256_mul_pd(CenterABCD_x, CountInv_4x);
-        CenterABCD_y = _mm256_mul_pd(CenterABCD_y, CountInv_4x);
-    }
-
+#if 0
     
     {
 //        TimeBlock("Compute angles");
@@ -529,6 +589,7 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
         printf("(%.2f, %.2f), ", poly3_x[I], poly3_y[I]);
     }
     printf("\n\n");
+#endif
     
 #if 0    
 
@@ -695,6 +756,10 @@ main()
     __m256d a = _mm256_set_pd(1, 2, 3, 4);
     __m256d b = _mm256_set_pd(5, 6, 7, 8);
     __m256d r = _mm256_hadd_pd(a, b);
+
+    __m128d c = _mm_set_pd(1, 2);
+    __m128d d = _mm_set_pd(3, 4);
+    __m128d r0 = _mm_hadd_pd(c, d);
     
 #if 0    
     u32 Count = 20;
@@ -715,7 +780,10 @@ main()
 
 //    s32 PolygonCount = 1000000;
     s32 PolygonCount = 1;
-    s32 numVertices = 10;
+//    s32 numVertices = 12;
+//    s32 numVertices = 13;
+//    s32 numVertices = 14;
+    s32 numVertices = 150;
 
     polygon_set SubjectSet = {};
     SubjectSet.PolyCount = PolygonCount;
