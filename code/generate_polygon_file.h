@@ -125,8 +125,6 @@ RandomPoint(f64 minX, f64 maxX, f64 minY, f64 maxY)
     return(Result);
 }
 
-#define TABLE_SIZE 1000
-
 // Structure to represent a key-value pair in the hash table
 struct ht_item
 {
@@ -145,22 +143,22 @@ struct ht
 
 // Hash function for double keys
 inline u32
-hash_function(f64 key)
+hash_function(u32 size, f64 key)
 {
     // Convert the double to an integer representation
     s64 int_key = *(s64*)&key;
 
     // Simple hash function using modulo operator
-    return abs(int_key) % TABLE_SIZE;
+    return abs(int_key) % size;
 }
 
 // Create a new hash table
 internal ht *
-ht_create(void)
+ht_create(u32 size)
 {
     ht *table = (ht *)malloc(sizeof(ht));
-    table->size = TABLE_SIZE;
-    table->items = (ht_item **)calloc(TABLE_SIZE, sizeof(ht_item*));
+    table->size = size;
+    table->items = (ht_item **)calloc(size, sizeof(ht_item*));
     return table;
 }
 
@@ -168,7 +166,7 @@ ht_create(void)
 inline void
 ht_insert(ht *table, f64 key, u32 value)
 {
-    u32 index = hash_function(key);
+    u32 index = hash_function(table->size, key);
 
     // Handle collisions using separate chaining (linked list)
     ht_item *item = (ht_item*)malloc(sizeof(ht_item));
@@ -182,7 +180,7 @@ ht_insert(ht *table, f64 key, u32 value)
 inline s32
 ht_get(ht *table, f64 key)
 {
-    u32 index = hash_function(key);
+    u32 index = hash_function(table->size, key);
     ht_item *item = table->items[index];
 
     // Traverse the linked list to find the key
@@ -203,7 +201,7 @@ ht_get(ht *table, f64 key)
 inline void
 ht_delete(ht *table, f64 key)
 {
-    u32 index = hash_function(key);
+    u32 index = hash_function(table->size, key);
     ht_item *item = table->items[index];
     ht_item *prev = 0;
 
