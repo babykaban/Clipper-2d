@@ -19,6 +19,8 @@
 
 #include "clipper_memory.h"
 
+#define TIME_GENERATE 0
+
 inline b32
 IsCollinear(v2_f64 a, v2_f64 b, v2_f64 c, f64 Epsilon)
 {
@@ -197,6 +199,19 @@ ComparePoints(const void* a, const void* b)
     if (p1->x > p2->x) return 1;
     return 0; 
 }
+
+inline s32
+ComparePointsP(const void* a, const void* b)
+{
+    v2_f64p *p1 = (v2_f64p *)a;
+    v2_f64p *p2 = (v2_f64p *)b;
+
+    if (*p1->x < *p2->x) return -1;
+    if (*p1->x > *p2->x) return 1;
+    return 0; 
+}
+
+
 // Comparison function for qsort to sort points by angle
 inline s32
 CompareValues(const void* a, const void* b)
@@ -226,7 +241,9 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
     }
 
     {
+#if TIME_GENERATE
         TimeBlock("Generating points");
+#endif
         // Generate random points
         for(s32 i = 0; i < VertexCount; i++)
         {
@@ -236,7 +253,9 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
 
     v2_f64 center = {};
     {
+#if TIME_GENERATE
         TimeBlock("Calculate Centers");
+#endif
 
         // Sort points in counter-clockwise order using a simple wrapping algorithm
         // This helps avoid self-intersections
@@ -249,7 +268,9 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
     }
 
     {
+#if TIME_GENERATE
         TimeBlock("Compute angles");
+#endif
     
         // Calculate angle for each point relative to the center
         for(s32 i = 0; i < VertexCount; i++)
@@ -261,12 +282,16 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
     }
 
     {
+#if TIME_GENERATE
         TimeBlock("Sort");
+#endif
         qsort(polygon, VertexCount, sizeof(v2_f64), ComparePoints);
     }
 
     {
+#if TIME_GENERATE
         TimeBlock("Restore original x values");
+#endif
         // Restore original x values
         for(s32 i = 0; i < VertexCount; i++)
         {
@@ -326,17 +351,13 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
 
     f64 *polygon_x;
     f64 *polygon_y;
-    u32 *y_indecies;
 
     {
+#if TIME_GENERATE
         TimeBlock("Allocate memory");
+#endif
         polygon_x = (f64 *)malloc(VertexCount * sizeof(f64));
         polygon_y = (f64 *)malloc(VertexCount * sizeof(f64));
-        y_indecies = (u32 *)malloc(VertexCount * sizeof(f64));
-        for(s32 I = 0; I < VertexCount; ++I)
-        {
-            y_indecies[I] = I;
-        }
     }
 
     if((polygon_x == 0) || (polygon_y == 0))
@@ -350,7 +371,9 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
     u32 CountLeft = Left % 2;
     
     {
+#if TIME_GENERATE
         TimeBlock("Generating points");
+#endif
 
         f64 *p_x = polygon_x + 0;
         f64 *p_y = polygon_y + 0;
@@ -391,7 +414,9 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
     
     v2_f64 Center = {};
     {
+#if TIME_GENERATE
         TimeBlock("Calculate Center");
+#endif
 
         f64 *p_x = polygon_x + 0;
         f64 *p_y = polygon_y + 0;
@@ -469,7 +494,9 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
     __m128d CenterY_2x = _mm_set1_pd(Center.y);
 
     {
+#if TIME_GENERATE
         TimeBlock("Compute angles");
+#endif
 
         f64 *p_x = polygon_x + 0;
         f64 *p_y = polygon_y + 0;
@@ -518,38 +545,71 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
         }
     }
 
-    ht* table = ht_create(VertexCount);
+    v2_f64p *sort_array = (v2_f64p *)malloc(VertexCount*sizeof(v2_f64p));
 
     {
-        TimeBlock("Fill Hash Table");
+
+#if TIME_GENERATE
+        TimeBlock("Fill Sort Array");
+#endif
+
+        f64 *p_x = polygon_x + 0;
+        f64 *p_y = polygon_y + 0;
+
         for(s32 I = 0; I < VertexCount; ++I)
         {
-            ht_insert(table, polygon_x[I], I);
+            sort_array[I].x = p_x;
+            sort_array[I].y = p_y;
+
+            ++p_x;
+            ++p_y;
         }
     }
 
     {
+#if TIME_GENERATE
         TimeBlock("Sort");
-        qsort(polygon_x, VertexCount, sizeof(f64), CompareValues);
+#endif
+        qsort(sort_array, VertexCount, sizeof(v2_f64p), ComparePointsP);
     }
 
     {
-        TimeBlock("Fixing Y coords");
+#if TIME_GENERATE
+        TimeBlock("Read after sort");
+#endif
 
-        f64 *temp = (f64 *)malloc(VertexCount*sizeof(f64));
-        Copy(VertexCount*sizeof(f64), polygon_y, temp);
+#if 0
+        f64 *p_x = polygon_x + 0;
+        f64 *p_y = polygon_y + 0;
 
-        for(s32 I = 0; I < VertexCount; ++I)
+        for(s32 I = 0; I < VertexCount; I += 4)
         {
-            u32 Index = ht_get(table, polygon_x[I]);
-            polygon_y[I] = temp[Index];
-        }
+            v4_f64 X =
+                {
+                    sort_array[I + 0].x, sort_array[I + 1].x,
+                    sort_array[I + 2].x, sort_array[I + 3].x
+                };
 
-        free(temp);
+            v4_f64 Y =
+                {
+                    sort_array[I + 0].y, sort_array[I + 1].y,
+                    sort_array[I + 2].y, sort_array[I + 3].y
+                };
+
+            _mm256_store_pd(p_x, X.W);
+            _mm256_store_pd(p_y, Y.W);
+
+            p_x += 4;
+            p_y += 4;
+        }
+#endif
+        free(sort_array);
     }
     
     {
+#if TIME_GENERATE
         TimeBlock("Restore original x values");
+#endif
 
         f64 *p_x = polygon_x + 0;
 
@@ -599,7 +659,9 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
 
 #if 0
     {
+#if TIME_GENERATE
         TimeBlock("Print Poly");
+#endif
         printf("poly0: ");
         for(s32 I = 0; I < VertexCount; ++I)
         {
@@ -640,8 +702,6 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
         return GenerateRandomPolygon(VertexCount, MinX, MaxX, MinY, MaxY);
     }
 #endif
-    
-    ht_destroy(table);
 //    return polygon;
     return 0;
 }
@@ -769,20 +829,6 @@ main()
     __m128d c = _mm_set_pd(1, 2);
     __m128d d = _mm_set_pd(3, 4);
     __m128d r0 = _mm_hadd_pd(c, d);
-    ht* table = ht_create(16);
-
-    ht_insert(table, 3.14, 10);
-    ht_insert(table, 2.71, 20);
-    ht_insert(table, 1.61, 30);
-
-    printf("Value for key 3.14: %u\n", ht_get(table, 3.14));
-    printf("Value for key 2.71: %u\n", ht_get(table, 2.71));
-    printf("Value for key 1.61: %u\n", ht_get(table, 1.61));
-
-    ht_delete(table, 2.71);
-    printf("Value for key 2.71 after deletion: %u\n", ht_get(table, 2.71));
-
-    ht_destroy(table);
     
 #if 0    
     u32 Count = 20;
@@ -806,7 +852,7 @@ main()
 //    s32 numVertices = 12;
 //    s32 numVertices = 13;
 //    s32 numVertices = 14;
-    s32 numVertices = 150;
+    s32 numVertices = 8;
 
     polygon_set SubjectSet = {};
     SubjectSet.PolyCount = PolygonCount;

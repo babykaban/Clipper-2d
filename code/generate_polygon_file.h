@@ -7,6 +7,26 @@
    $Notice: $
    ======================================================================== */
 
+union v4_f64
+{
+    struct
+    {
+        f64 x;
+        f64 y;
+        f64 z;
+        f64 w;
+    };
+
+    f64 E[4];
+    __m256d W;
+};
+
+struct v2_f64p
+{
+    f64 *x;
+    f64 *y;
+};
+
 union triangle
 {
     struct
@@ -123,129 +143,6 @@ RandomPoint(f64 minX, f64 maxX, f64 minY, f64 maxY)
     Result.y = RandDouble(minY, maxY);
 
     return(Result);
-}
-
-// Structure to represent a key-value pair in the hash table
-struct ht_item
-{
-    f64 key;
-    u32 value;
-
-    ht_item *next;
-};
-
-// Structure to represent the hash table
-struct ht
-{
-    u32 size;
-    ht_item** items;
-};
-
-// Hash function for double keys
-inline u32
-hash_function(u32 size, f64 key)
-{
-    // Convert the double to an integer representation
-    s64 int_key = *(s64*)&key;
-
-    // Simple hash function using modulo operator
-    return abs(int_key) % size;
-}
-
-// Create a new hash table
-internal ht *
-ht_create(u32 size)
-{
-    ht *table = (ht *)malloc(sizeof(ht));
-    table->size = size;
-    table->items = (ht_item **)calloc(size, sizeof(ht_item*));
-    return table;
-}
-
-// Insert a key-value pair into the hash table
-inline void
-ht_insert(ht *table, f64 key, u32 value)
-{
-    u32 index = hash_function(table->size, key);
-
-    // Handle collisions using separate chaining (linked list)
-    ht_item *item = (ht_item*)malloc(sizeof(ht_item));
-    item->key = key;
-    item->value = value;
-    item->next = table->items[index];
-    table->items[index] = item;
-}
-
-// Get the value associated with a key from the hash table
-inline s32
-ht_get(ht *table, f64 key)
-{
-    u32 index = hash_function(table->size, key);
-    ht_item *item = table->items[index];
-
-    // Traverse the linked list to find the key
-    while(item)
-    {
-        if(item->key == key)
-        {
-            return item->value;
-        }
-
-        item = item->next;
-    }
-
-    return -1; // Key not found
-}
-
-// Delete a key-value pair from the hash table
-inline void
-ht_delete(ht *table, f64 key)
-{
-    u32 index = hash_function(table->size, key);
-    ht_item *item = table->items[index];
-    ht_item *prev = 0;
-
-    // Traverse the linked list to find the key
-    while(item)
-    {
-        if(item->key == key)
-        {
-            if(!prev)
-            {
-                table->items[index] = item->next;
-            }
-            else
-            {
-                prev->next = item->next;
-            }
-
-            free(item);
-            return;
-        }
-
-        prev = item;
-        item = item->next;
-    }
-}
-
-// Free the memory allocated for the hash table
-internal void
-ht_destroy(ht *table)
-{
-    for(u32 i = 0; i < table->size; i++)
-    {
-        ht_item *item = table->items[i];
-        while(item)
-        {
-            ht_item *next = item->next;
-
-            free(item);
-            item = next;
-        }
-    }
-
-    free(table->items);
-    free(table);
 }
 
 #define GENERATE_POLYGON_FILE_H
