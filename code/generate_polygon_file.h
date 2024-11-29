@@ -145,5 +145,44 @@ RandomPoint(f64 minX, f64 maxX, f64 minY, f64 maxY)
     return(Result);
 }
 
+inline b32
+AngleSorter(f64 x0, f64 x1)
+{
+    b32 Result = false;
+
+    if(x0 < x1)
+    {
+        Result = true;
+    }
+
+    return(!Result);
+}
+
+inline void
+Swap(u32 *A, u32 *B)
+{
+    u32 Temp = *B;
+    *B = *A;
+    *A = Temp;
+}
+
+inline u32
+SortKeyToU32(r32 SortKey)
+{
+    // NOTE(casey): We need to turn our 32-bit floating point value
+    // into some strictly ascending 32-bit unsigned integer value
+    u32 Result = *(u32 *)&SortKey;
+    if(Result & 0x80000000)
+    {
+        Result = ~Result;
+    }
+    else
+    {
+        Result |= 0x80000000;
+    }
+
+    return(Result);
+}
+
 #define GENERATE_POLYGON_FILE_H
 #endif

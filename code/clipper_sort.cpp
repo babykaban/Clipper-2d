@@ -302,3 +302,158 @@ BubbleSort(u32 Count, local_minima *First)
 
     free(Temp);
 }
+
+inline b32
+AngleSorter(f64 x0, f64 x1)
+{
+    b32 Result = false;
+
+    if(x0 > x1)
+    {
+        Result = true;
+    }
+
+    return(!Result);
+}
+
+inline void
+Swap(u32 *A, u32 *B)
+{
+    u32 Temp = *B;
+    *B = *A;
+    *A = Temp;
+}
+
+internal void
+MergeSort(u32 Count, u32 *First, f64 *Angles)
+{
+    u32 *Temp = (u32 *)malloc(sizeof(u32)*Count);
+
+    if(Count == 1)
+    {
+        // NOTE(casey): No work to do.
+    }
+    else if(Count == 2)
+    {
+        u32 *EntryA = First;
+        u32 *EntryB = First + 1;
+        if(AngleSorter(Angles[*EntryA], Angles[*EntryB]))
+        {
+            Swap(EntryA, EntryB);
+        }
+    }
+    else
+    {
+        u32 Half0 = Count / 2;
+        u32 Half1 = Count - Half0;
+
+        Assert(Half0 >= 1);
+        Assert(Half1 >= 1);
+
+        u32 *InHalf0 = First;
+        u32 *InHalf1 = First + Half0;
+        u32 *End = First + Count;
+
+        MergeSort(Half0, InHalf0, Angles);
+        MergeSort(Half1, InHalf1, Angles);
+
+        u32 *ReadHalf0 = InHalf0;
+        u32 *ReadHalf1 = InHalf1;
+
+        u32 *Out = Temp;
+        for(u32 Index = 0;
+            Index < Count;
+            ++Index)
+        {
+            if(ReadHalf0 == InHalf1)
+            {
+                *Out++ = *ReadHalf1++;
+            }
+            else if(ReadHalf1 == End)
+            {
+                *Out++ = *ReadHalf0++;
+            }
+            else if(!AngleSorter(Angles[*ReadHalf0], Angles[*ReadHalf1]))
+            {
+                *Out++ = *ReadHalf0++;
+            }
+            else
+            {
+                *Out++ = *ReadHalf1++;
+            }            
+        }
+        Assert(Out == (Temp + Count));
+        Assert(ReadHalf0 == InHalf1);
+        Assert(ReadHalf1 == End);
+            
+        Copy(sizeof(u32)*Count, Temp, First);
+    }
+
+    free(Temp);
+}
+
+inline u32
+SortKeyToU32(r32 SortKey)
+{
+    // NOTE(casey): We need to turn our 32-bit floating point value
+    // into some strictly ascending 32-bit unsigned integer value
+    u32 Result = *(u32 *)&SortKey;
+    if(Result & 0x80000000)
+    {
+        Result = ~Result;
+    }
+    else
+    {
+        Result |= 0x80000000;
+    }
+
+    return(Result);
+}
+
+internal void
+RadixSort(u32 Count, u32 *First, u32 *Temp, f32 *Angles)
+{
+    u32 *Source = First;
+    u32 *Dest = Temp;
+    for(u32 ByteIndex = 0;
+        ByteIndex < 32;
+        ByteIndex += 8)
+    {
+        u32 SortKeyOffsets[256] = {};
+
+        // NOTE(casey): First pass - count how many of each key
+        for(u32 Index = 0;
+            Index < Count;
+            ++Index)
+        {
+            u32 RadixValue = SortKeyToU32(Angles[Source[Index]]);
+            u32 RadixPiece = (RadixValue >> ByteIndex) & 0xFF;
+            ++SortKeyOffsets[RadixPiece];
+        }
+
+        // NOTE(casey): Change counts to offsets
+        u32 Total = 0;
+        for(u32 SortKeyIndex = 0;
+            SortKeyIndex < ArrayCount(SortKeyOffsets);
+            ++SortKeyIndex)
+        {
+            u32 KeyCount = SortKeyOffsets[SortKeyIndex];
+            SortKeyOffsets[SortKeyIndex] = Total;
+            Total += KeyCount;
+        }
+
+        // NOTE(casey): Second pass - place elements into the right location
+        for(u32 Index = 0;
+            Index < Count;
+            ++Index)
+        {
+            u32 RadixValue = SortKeyToU32(Angles[Source[Index]]);
+            u32 RadixPiece = (RadixValue >> ByteIndex) & 0xFF;
+            Dest[SortKeyOffsets[RadixPiece]++] = Source[Index];
+        }
+
+        u32 *SwapTemp = Dest;
+        Dest = Source;
+        Source = SwapTemp;
+    }
+}

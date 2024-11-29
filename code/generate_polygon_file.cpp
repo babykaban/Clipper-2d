@@ -21,6 +21,124 @@
 
 #define TIME_GENERATE 0
 
+#include "generate_random_polyf32.cpp"
+
+internal void
+RadixSort(u32 Count, u32 *First, u32 *Temp, f32 *Angles)
+{
+    u32 *Source = First;
+    u32 *Dest = Temp;
+    for(u32 ByteIndex = 0;
+        ByteIndex < 32;
+        ByteIndex += 8)
+    {
+        u32 SortKeyOffsets[256] = {};
+
+        // NOTE(casey): First pass - count how many of each key
+        for(u32 Index = 0;
+            Index < Count;
+            ++Index)
+        {
+            u32 RadixValue = SortKeyToU32(Angles[Source[Index]]);
+            u32 RadixPiece = (RadixValue >> ByteIndex) & 0xFF;
+            ++SortKeyOffsets[RadixPiece];
+        }
+
+        // NOTE(casey): Change counts to offsets
+        u32 Total = 0;
+        for(u32 SortKeyIndex = 0;
+            SortKeyIndex < ArrayCount(SortKeyOffsets);
+            ++SortKeyIndex)
+        {
+            u32 KeyCount = SortKeyOffsets[SortKeyIndex];
+            SortKeyOffsets[SortKeyIndex] = Total;
+            Total += KeyCount;
+        }
+
+        // NOTE(casey): Second pass - place elements into the right location
+        for(u32 Index = 0;
+            Index < Count;
+            ++Index)
+        {
+            u32 RadixValue = SortKeyToU32(Angles[Source[Index]]);
+            u32 RadixPiece = (RadixValue >> ByteIndex) & 0xFF;
+            Dest[SortKeyOffsets[RadixPiece]++] = Source[Index];
+        }
+
+        u32 *SwapTemp = Dest;
+        Dest = Source;
+        Source = SwapTemp;
+    }
+}
+
+internal void
+MergeSort(u32 Count, u32 *First, f64 *Angles)
+{
+    u32 *Temp = (u32 *)malloc(sizeof(u32)*Count);
+
+    if(Count == 1)
+    {
+        // NOTE(casey): No work to do.
+    }
+    else if(Count == 2)
+    {
+        u32 *EntryA = First;
+        u32 *EntryB = First + 1;
+        if(AngleSorter(Angles[*EntryA], Angles[*EntryB]))
+        {
+            Swap(EntryA, EntryB);
+        }
+    }
+    else
+    {
+        u32 Half0 = Count / 2;
+        u32 Half1 = Count - Half0;
+
+        Assert(Half0 >= 1);
+        Assert(Half1 >= 1);
+
+        u32 *InHalf0 = First;
+        u32 *InHalf1 = First + Half0;
+        u32 *End = First + Count;
+
+        MergeSort(Half0, InHalf0, Angles);
+        MergeSort(Half1, InHalf1, Angles);
+
+        u32 *ReadHalf0 = InHalf0;
+        u32 *ReadHalf1 = InHalf1;
+
+        u32 *Out = Temp;
+        for(u32 Index = 0;
+            Index < Count;
+            ++Index)
+        {
+            if(ReadHalf0 == InHalf1)
+            {
+                *Out++ = *ReadHalf1++;
+            }
+            else if(ReadHalf1 == End)
+            {
+                *Out++ = *ReadHalf0++;
+            }
+            else if(!AngleSorter(Angles[*ReadHalf0], Angles[*ReadHalf1]))
+            {
+                *Out++ = *ReadHalf0++;
+            }
+            else
+            {
+                *Out++ = *ReadHalf1++;
+            }            
+        }
+        Assert(Out == (Temp + Count));
+        Assert(ReadHalf0 == InHalf1);
+        Assert(ReadHalf1 == End);
+            
+        Copy(sizeof(u32)*Count, Temp, First);
+    }
+
+    free(Temp);
+}
+
 inline b32
 IsCollinear(v2_f64 a, v2_f64 b, v2_f64 c, f64 Epsilon)
 {
@@ -829,6 +947,28 @@ main()
     __m128d c = _mm_set_pd(1, 2);
     __m128d d = _mm_set_pd(3, 4);
     __m128d r0 = _mm_hadd_pd(c, d);
+#if 0
+    u32 Count = 100000;
+    u32 *Indecies = (u32 *)malloc(sizeof(u32)*Count);
+    u32 *Temp = (u32 *)malloc(sizeof(u32)*Count);
+    f32 *X = (f32 *)malloc(sizeof(f32)*Count);
+    f32 *Y = (f32 *)malloc(sizeof(f32)*Count);
+
+    for(u32 I = 0;
+        I < Count;
+        ++I)
+    {
+        Indecies[I] = I;
+        X[I] = (f32)RandDouble1();
+        Y[I] = (f32)RandDouble1();
+    }
+
+    {
+        TimeBlock("TEST");
+        RadixSort(Count, Indecies, Temp, X);
+    }
+    //MergeSort(Count, Indecies, X);
+#endif
     
 #if 0    
     u32 Count = 20;
