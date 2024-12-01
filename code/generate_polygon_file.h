@@ -7,6 +7,12 @@
    $Notice: $
    ======================================================================== */
 
+struct v2_f32
+{
+    f32 x;
+    f32 y;
+};
+
 union v4_f64
 {
     struct
@@ -90,6 +96,26 @@ RandDouble_4x(f64 min, f64 max)
                                     _mm256_set1_pd(DInv));
 
     __m256d Result = _mm256_add_pd(Min_4x, Rand_4x);
+
+    return(Result);
+}
+
+inline f32_8x
+RandFloat_8x(f32 min, f32 max)
+{
+    TimeFunction;
+
+    f32 D = RAND_MAX / (max - min);
+    f32 DInv = 1.0f / D;
+    
+    f32_8x Min_8x = Set1(min);
+    f32_8x Rand_8x = MulWF8(Set((f32)rand(), (f32)rand(),
+                                (f32)rand(), (f32)rand(),
+                                (f32)rand(), (f32)rand(),
+                                (f32)rand(), (f32)rand()),
+                            Set1(DInv));
+
+    f32_8x Result = AddWF8(Min_8x, Rand_8x);
 
     return(Result);
 }
@@ -182,6 +208,93 @@ SortKeyToU32(r32 SortKey)
     }
 
     return(Result);
+}
+
+inline void
+PrintPoly(u32 Count, v2_f64 *Points, u32 Identifier = 0)
+{
+
+    printf("Polygon[%d] points: ", Identifier);
+
+    for(u32 I = 0;
+        I < Count;
+        ++I)
+    {
+        printf("(%.4f, %.4f), ", Points[I].x, Points[I].y);
+    }
+
+    printf("\n\n");
+}
+
+inline void
+PrintPoly(u32 Count, v2_f32 *Points, u32 Identifier = 0)
+{
+
+    printf("Polygon[%d] points: ", Identifier);
+
+    for(u32 I = 0;
+        I < Count;
+        ++I)
+    {
+        printf("(%.4f, %.4f), ", Points[I].x, Points[I].y);
+    }
+
+    printf("\n\n");
+}
+
+inline void
+PrintPoly(u32 Count, f32 *X, f32 *Y, u32 Identifier = 0)
+{
+
+    printf("Polygon[%d] points: ", Identifier);
+
+    for(u32 I = 0;
+        I < Count;
+        ++I)
+    {
+        printf("(%.4f, %.4f), ", X[I], Y[I]);
+    }
+
+    printf("\n\n");
+}
+
+inline void
+PrintPoly(u32 Count, f64 *X, f64 *Y, u32 Identifier = 0)
+{
+
+    printf("Polygon[%d] points: ", Identifier);
+
+    for(u32 I = 0;
+        I < Count;
+        ++I)
+    {
+        printf("(%.4f, %.4f), ", X[I], Y[I]);
+    }
+
+    printf("\n\n");
+}
+
+inline void
+PrintPoly(u32 Count, f64 *Axis, u32 Identifier = 0, b32 IsYAxis = false)
+{
+
+    if(IsYAxis)
+    {
+        printf("Polygon[%d] Y coords: ", Identifier);
+    }
+    else
+    {
+        printf("Polygon[%d] X coords: ", Identifier);
+    }
+    
+    for(u32 I = 0;
+        I < Count;
+        ++I)
+    {
+        printf("%.4f, ", Axis[I]);
+    }
+
+    printf("\n\n");
 }
 
 #define GENERATE_POLYGON_FILE_H

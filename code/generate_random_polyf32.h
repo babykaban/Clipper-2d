@@ -7,11 +7,7 @@
    $Notice: $
    ======================================================================== */
 
-struct v2_f32
-{
-    f32 x;
-    f32 y;
-};
+#include "math_f32.h"
 
 // Function to generate a random float between min and max
 inline f32
@@ -19,7 +15,7 @@ RandFloat(f32 min, f32 max)
 {
     TimeFunction;
 
-    f32 Result = min + (f32)rand() / (f32)(RAND_MAX / (max - min));
+    f32 Result = min + (f32)((f64)rand() / (f64)(RAND_MAX / (max - min)));
     return(Result);
 }
 

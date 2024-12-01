@@ -11,6 +11,8 @@
 #include "clipper_math.h"
 #include "clipper_math_f64.h"
 
+#include "clipper_simd.h"
+
 #define PROFILER 1
 #include "profiler.cpp"
 #include "pcg_random.cpp"
@@ -20,6 +22,8 @@
 #include "clipper_memory.h"
 
 #define TIME_GENERATE 0
+#define TIME_PRINTS 1
+#define PRINT 0
 
 #include "generate_random_polyf32.cpp"
 
@@ -308,7 +312,7 @@ DoIntersect(v2_f64 p1, v2_f64 q1, v2_f64 p2, v2_f64 q2)
 
 // Comparison function for qsort to sort points by angle
 inline s32
-ComparePoints(const void* a, const void* b)
+ComparePointsF64(const void* a, const void* b)
 {
     v2_f64 *p1 = (v2_f64 *)a;
     v2_f64 *p2 = (v2_f64 *)b;
@@ -403,7 +407,7 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
 #if TIME_GENERATE
         TimeBlock("Sort");
 #endif
-        qsort(polygon, VertexCount, sizeof(v2_f64), ComparePoints);
+        qsort(polygon, VertexCount, sizeof(v2_f64), ComparePointsF64);
     }
 
     {
@@ -452,6 +456,15 @@ GenerateRandomPolygon(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 MaxY)
 //        free(polygon);
 
 //        return GenerateRandomPolygon(VertexCount, MinX, MaxX, MinY, MaxY);
+    }
+#endif
+
+#if PRINT
+    {
+#if TIME_PRINTS
+        TimeBlock("Print Poly 0");
+#endif
+        PrintPoly(VertexCount, polygon, 0);
     }
 #endif
     
@@ -774,20 +787,6 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
             }
         }
     }
-
-#if 0
-    {
-#if TIME_GENERATE
-        TimeBlock("Print Poly");
-#endif
-        printf("poly0: ");
-        for(s32 I = 0; I < VertexCount; ++I)
-        {
-            printf("(%.2f, %.2f), ", polygon_x[I], polygon_y[I]);
-        }
-        printf("\n\n");
-    }    
-#endif
     
 #if 0    
 
@@ -820,6 +819,16 @@ GenerateRandomPolygonSIMD(s32 VertexCount, f64 MinX, f64 MaxX, f64 MinY, f64 Max
         return GenerateRandomPolygon(VertexCount, MinX, MaxX, MinY, MaxY);
     }
 #endif
+
+#if PRINT
+    {
+#if TIME_PRINTS
+        TimeBlock("Print Poly 1");
+#endif
+        PrintPoly(VertexCount, polygon_x, polygon_y, 1);
+    }
+#endif
+
 //    return polygon;
     return 0;
 }
@@ -986,6 +995,8 @@ main()
 
     f64 MaxY = 100;
     f64 MaxX = 100;
+    f32 MaxYf32 = 100;
+    f32 MaxXf32 = 100;
 
 //    s32 PolygonCount = 1000000;
     s32 PolygonCount = 1;
@@ -999,7 +1010,8 @@ main()
     SubjectSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
 
     GenerateRandomPolygon(numVertices, -MaxX, MaxX, -MaxY, MaxY);
-    GenerateRandomPolygonSIMD(numVertices, -MaxX, MaxX, -MaxY, MaxY);
+    GenerateRandomPolygonF32(numVertices, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
+//    GenerateRandomPolygonSIMD(numVertices, -MaxX, MaxX, -MaxY, MaxY);
     
 #if 0
     for(s32 I = 0;

@@ -1,0 +1,130 @@
+#if !defined(CLIPPER_SIMD_H)
+/* ========================================================================
+   $File: $
+   $Date: 2024 $
+   $Revision: $
+   $Creator: BabyKaban $
+   $Notice: $
+   ======================================================================== */
+
+typedef __m128d f64_2x;
+typedef __m256d f64_4x;
+
+typedef __m128 f32_4x;
+typedef __m256 f32_8x;
+
+inline f32_8x
+Set1(f32 A)
+{
+    f32_8x Result = _mm256_set1_ps(A);
+    return(Result);
+}
+
+inline f32_8x
+Set(f32 A0, f32 A1, f32 A2, f32 A3,
+    f32 A4, f32 A5, f32 A6, f32 A7)
+{
+    f32_8x Result = _mm256_set_ps(A0, A1, A2, A3,
+                                  A4, A5, A6, A7);
+    return(Result);
+}
+
+inline void
+StoreWF8(f32 *Dest, f32_8x A)
+{
+    _mm256_store_ps(Dest, A);
+}
+
+inline f32_8x
+LoadWF8(f32 *Source)
+{
+    f32_8x Result = _mm256_load_ps(Source);
+    return(Result);
+}
+
+inline f32_4x
+SubWF4(f32_4x A, f32_4x B)
+{
+    f32_4x Result = _mm_sub_ps(A, B);
+    return(Result);
+}
+
+inline f32_4x
+AddWF4(f32_4x A, f32_4x B)
+{
+    f32_4x Result = _mm_add_ps(A, B);
+    return(Result);
+}
+
+inline f32_4x
+MulWF4(f32_4x A, f32_4x B)
+{
+    f32_4x Result = _mm_mul_ps(A, B);
+    return(Result);
+}
+
+inline f32_8x
+SubWF8(f32_8x A, f32_8x B)
+{
+    f32_8x Result = _mm256_sub_ps(A, B);
+    return(Result);
+}
+
+inline f32_8x
+AddWF8(f32_8x A, f32_8x B)
+{
+    f32_8x Result = _mm256_add_ps(A, B);
+    return(Result);
+}
+
+inline f32_8x
+MulWF8(f32_8x A, f32_8x B)
+{
+    f32_8x Result = _mm256_mul_ps(A, B);
+    return(Result);
+}
+
+inline f64_2x
+SubWD2(f64_2x A, f64_2x B)
+{
+    f64_2x Result = _mm_sub_pd(A, B);
+    return(Result);
+}
+
+inline f64_2x
+AddWD2(f64_2x A, f64_2x B)
+{
+    f64_2x Result = _mm_add_pd(A, B);
+    return(Result);
+}
+
+inline f64_2x
+MulWD2(f64_2x A, f64_2x B)
+{
+    f64_2x Result = _mm_mul_pd(A, B);
+    return(Result);
+}
+
+inline f64_4x
+SubWD4(f64_4x A, f64_4x B)
+{
+    f64_4x Result = _mm256_sub_pd(A, B);
+    return(Result);
+}
+
+inline f64_4x
+AddWD4(f64_4x A, f64_4x B)
+{
+    f64_4x Result = _mm256_add_pd(A, B);
+    return(Result);
+}
+
+inline f64_4x
+MulWD4(f64_4x A, f64_4x B)
+{
+    f64_4x Result = _mm256_mul_pd(A, B);
+    return(Result);
+}
+
+#define CLIPPER_SIMD_H
+#endif

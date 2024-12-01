@@ -68,7 +68,14 @@ struct rectangle2i
 inline f64
 SquareRoot(f64 Float64)
 {
-    f64 Result = sqrtf((float)Float64);
+    f64 Result = sqrt((float)Float64);
+    return(Result);
+}
+
+inline f32
+SquareRoot(f32 Float32)
+{
+    f32 Result = sqrtf(Float32);
     return(Result);
 }
 
@@ -76,6 +83,13 @@ inline s64
 RoundF64ToInt64(f64 Value)
 {
     s64 Result = (s64)round(Value);
+    return(Result);
+}
+
+inline s64
+RoundF32ToInt64(f32 Value)
+{
+    s64 Result = (s64)roundf(Value);
     return(Result);
 }
 
