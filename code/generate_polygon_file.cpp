@@ -23,57 +23,9 @@
 
 #define TIME_GENERATE 0
 #define TIME_PRINTS 1
-#define PRINT 0
+#define PRINT 1
 
 #include "generate_random_polyf32.cpp"
-
-internal void
-RadixSort(u32 Count, u32 *First, u32 *Temp, f32 *Angles)
-{
-    u32 *Source = First;
-    u32 *Dest = Temp;
-    for(u32 ByteIndex = 0;
-        ByteIndex < 32;
-        ByteIndex += 8)
-    {
-        u32 SortKeyOffsets[256] = {};
-
-        // NOTE(casey): First pass - count how many of each key
-        for(u32 Index = 0;
-            Index < Count;
-            ++Index)
-        {
-            u32 RadixValue = SortKeyToU32(Angles[Source[Index]]);
-            u32 RadixPiece = (RadixValue >> ByteIndex) & 0xFF;
-            ++SortKeyOffsets[RadixPiece];
-        }
-
-        // NOTE(casey): Change counts to offsets
-        u32 Total = 0;
-        for(u32 SortKeyIndex = 0;
-            SortKeyIndex < ArrayCount(SortKeyOffsets);
-            ++SortKeyIndex)
-        {
-            u32 KeyCount = SortKeyOffsets[SortKeyIndex];
-            SortKeyOffsets[SortKeyIndex] = Total;
-            Total += KeyCount;
-        }
-
-        // NOTE(casey): Second pass - place elements into the right location
-        for(u32 Index = 0;
-            Index < Count;
-            ++Index)
-        {
-            u32 RadixValue = SortKeyToU32(Angles[Source[Index]]);
-            u32 RadixPiece = (RadixValue >> ByteIndex) & 0xFF;
-            Dest[SortKeyOffsets[RadixPiece]++] = Source[Index];
-        }
-
-        u32 *SwapTemp = Dest;
-        Dest = Source;
-        Source = SwapTemp;
-    }
-}
 
 internal void
 MergeSort(u32 Count, u32 *First, f64 *Angles)
@@ -1009,9 +961,9 @@ main()
     SubjectSet.PolyCount = PolygonCount;
     SubjectSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
 
-    GenerateRandomPolygon(numVertices, -MaxX, MaxX, -MaxY, MaxY);
+//    GenerateRandomPolygon(numVertices, -MaxX, MaxX, -MaxY, MaxY);
     GenerateRandomPolygonF32(numVertices, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
-//    GenerateRandomPolygonSIMD(numVertices, -MaxX, MaxX, -MaxY, MaxY);
+    GenerateRandomPolygonSIMDF32(numVertices, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
     
 #if 0
     for(s32 I = 0;

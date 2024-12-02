@@ -103,5 +103,53 @@ RandomPoint(f32 minX, f32 maxX, f32 minY, f32 maxY)
     return(Result);
 }
 
+internal void
+RadixSort(u32 Count, s32 *First, s32 *Temp, f32 *Angles)
+{
+    s32 *Source = First;
+    s32 *Dest = Temp;
+    for(u32 ByteIndex = 0;
+        ByteIndex < 32;
+        ByteIndex += 8)
+    {
+        u32 SortKeyOffsets[256] = {};
+
+        // NOTE(casey): First pass - count how many of each key
+        for(u32 Index = 0;
+            Index < Count;
+            ++Index)
+        {
+            u32 RadixValue = SortKeyToU32(Angles[Source[Index]]);
+            u32 RadixPiece = (RadixValue >> ByteIndex) & 0xFF;
+            ++SortKeyOffsets[RadixPiece];
+        }
+
+        // NOTE(casey): Change counts to offsets
+        u32 Total = 0;
+        for(u32 SortKeyIndex = 0;
+            SortKeyIndex < ArrayCount(SortKeyOffsets);
+            ++SortKeyIndex)
+        {
+            u32 KeyCount = SortKeyOffsets[SortKeyIndex];
+            SortKeyOffsets[SortKeyIndex] = Total;
+            Total += KeyCount;
+        }
+
+        // NOTE(casey): Second pass - place elements into the right location
+        for(u32 Index = 0;
+            Index < Count;
+            ++Index)
+        {
+            u32 RadixValue = SortKeyToU32(Angles[Source[Index]]);
+            u32 RadixPiece = (RadixValue >> ByteIndex) & 0xFF;
+            Dest[SortKeyOffsets[RadixPiece]++] = Source[Index];
+        }
+
+        s32 *SwapTemp = Dest;
+        Dest = Source;
+        Source = SwapTemp;
+    }
+}
+
 #define GENERATE_RANDOM_POLYF32_H
 #endif

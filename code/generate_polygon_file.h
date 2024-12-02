@@ -120,6 +120,22 @@ RandFloat_8x(f32 min, f32 max)
     return(Result);
 }
 
+inline f32_8x
+RandFloat1_8x(void)
+{
+    TimeFunction;
+
+    f32 DInv = 1.0f / RAND_MAX;
+    f32_8x Rand_8x = Set((f32)rand(), (f32)rand(),
+                         (f32)rand(), (f32)rand(),
+                         (f32)rand(), (f32)rand(),
+                         (f32)rand(), (f32)rand());
+
+    f32_8x Result = MulWF8(Rand_8x, Set1(DInv));
+
+    return(Result);
+}
+
 inline __m256d
 RandDouble1_4x(void)
 {
@@ -253,6 +269,22 @@ PrintPoly(u32 Count, f32 *X, f32 *Y, u32 Identifier = 0)
         ++I)
     {
         printf("(%.4f, %.4f), ", X[I], Y[I]);
+    }
+
+    printf("\n\n");
+}
+
+inline void
+PrintPoly(u32 Count, f32 *X, f32 *Y, s32 *Indecies, u32 Identifier = 0)
+{
+
+    printf("Polygon[%d] points: ", Identifier);
+
+    for(u32 I = 0;
+        I < Count;
+        ++I)
+    {
+        printf("(%.4f, %.4f), ", X[Indecies[I]], Y[Indecies[I]]);
     }
 
     printf("\n\n");

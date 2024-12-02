@@ -13,6 +13,8 @@ typedef __m256d f64_4x;
 typedef __m128 f32_4x;
 typedef __m256 f32_8x;
 
+typedef __m256i s32_8x;
+
 inline f32_8x
 Set1(f32 A)
 {
@@ -29,10 +31,32 @@ Set(f32 A0, f32 A1, f32 A2, f32 A3,
     return(Result);
 }
 
+inline s32_8x
+Set(s32 A0, s32 A1, s32 A2, s32 A3,
+    s32 A4, s32 A5, s32 A6, s32 A7)
+{
+    s32_8x Result = _mm256_set_epi32(A0, A1, A2, A3,
+                                     A4, A5, A6, A7);
+    return(Result);
+}
+
+inline s32_8x
+Set1(s32 A)
+{
+    s32_8x Result = _mm256_set1_epi32(A);
+    return(Result);
+}
+
 inline void
 StoreWF8(f32 *Dest, f32_8x A)
 {
     _mm256_store_ps(Dest, A);
+}
+
+inline void
+StoreWI8(s32 *Dest, s32_8x A)
+{
+    _mm256_store_si256((__m256i *)Dest, A);
 }
 
 inline f32_8x
@@ -81,6 +105,27 @@ inline f32_8x
 MulWF8(f32_8x A, f32_8x B)
 {
     f32_8x Result = _mm256_mul_ps(A, B);
+    return(Result);
+}
+
+inline f32_8x
+Atan2WF8(f32_8x A, f32_8x B)
+{
+    f32_8x Result = _mm256_atan2_ps(A, B);
+    return(Result);
+}
+
+inline f32_8x
+CosWF8(f32_8x A)
+{
+    f32_8x Result = _mm256_cos_ps(A);
+    return(Result);
+}
+
+inline s32_8x
+AddWI8(s32_8x A, s32_8x B)
+{
+    s32_8x Result = _mm256_add_epi32(A, B);
     return(Result);
 }
 
