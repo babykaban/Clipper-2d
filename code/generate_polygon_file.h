@@ -108,12 +108,12 @@ RandFloat_8x(f32 min, f32 max)
     f32 D = RAND_MAX / (max - min);
     f32 DInv = 1.0f / D;
     
-    f32_8x Min_8x = Set1(min);
+    f32_8x Min_8x = Set1WF8(min);
     f32_8x Rand_8x = MulWF8(Set((f32)rand(), (f32)rand(),
                                 (f32)rand(), (f32)rand(),
                                 (f32)rand(), (f32)rand(),
                                 (f32)rand(), (f32)rand()),
-                            Set1(DInv));
+                            Set1WF8(DInv));
 
     f32_8x Result = AddWF8(Min_8x, Rand_8x);
 
@@ -131,7 +131,7 @@ RandFloat1_8x(void)
                          (f32)rand(), (f32)rand(),
                          (f32)rand(), (f32)rand());
 
-    f32_8x Result = MulWF8(Rand_8x, Set1(DInv));
+    f32_8x Result = MulWF8(Rand_8x, Set1WF8(DInv));
 
     return(Result);
 }

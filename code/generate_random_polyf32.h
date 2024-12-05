@@ -15,7 +15,10 @@ RandFloat(f32 min, f32 max)
 {
     TimeFunction;
 
-    f32 Result = min + (f32)((f64)rand() / (f64)(RAND_MAX / (max - min)));
+    f32 D = RAND_MAX / (max - min);
+    f32 DInv = 1.0f / D;
+
+    f32 Result = min + ((f32)rand()*DInv);
     return(Result);
 }
 
@@ -35,7 +38,7 @@ RandFloat_2x(f32 min, f32 max)
     return(Result);
 }
 
-inline __m256d
+inline f32_4x
 RandFloat_4x(f32 min, f32 max)
 {
     TimeFunction;
@@ -43,11 +46,12 @@ RandFloat_4x(f32 min, f32 max)
     f32 D = RAND_MAX / (max - min);
     f32 DInv = 1.0f / D;
     
-    __m256d Min_4x = _mm256_set1_pd(min);
-    __m256d Rand_4x = _mm256_mul_pd(_mm256_set_pd((f32)rand(), (f32)rand(), (f32)rand(), (f32)rand()),
-                                    _mm256_set1_pd(DInv));
+    f32_4x Min_4x = Set1WF4(min);
+    f32_4x Rand_4x = MulWF4(Set((f32)rand(), (f32)rand(),
+                                (f32)rand(), (f32)rand()),
+                            Set1WF4(DInv));
 
-    __m256d Result = _mm256_add_pd(Min_4x, Rand_4x);
+    f32_4x Result = AddWF4(Min_4x, Rand_4x);
 
     return(Result);
 }

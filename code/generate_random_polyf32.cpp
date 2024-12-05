@@ -13,7 +13,7 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
 {
     TimeFunction;
 
-    Assert((VertexCount % 8) == 0)
+//    Assert((VertexCount % 8) == 0)
     
     // Allocate memory for the polygon vertices
     f32 VertexCountInv = 1.0f / (f32)VertexCount;
@@ -39,17 +39,34 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
         return 0; // Memory allocation failed
     }
     
-    u32 Increment = 8;
-    u32 CountByEight = VertexCount / 8;
+    u32 Increment8x = 8;
+    u32 Increment4x = 4;
 
-    s32_8x Value = Set(0, 1, 2, 3, 4, 5, 6, 7);
+    u32 Left = VertexCount % 8;
+    u32 CountByEight = (VertexCount - Left) / 8;
+    u32 CountByFour = (Left > 3) ? 1 : 0;
+    u32 CountLeft = Left % 4;
+
+    s32_8x Value = Set(7, 6, 5, 4, 3, 2, 1, 0);
     s32_8x One_8x = Set1(1);
     s32 *Itter = Indecies + 0;
     for(u32 I = 0; I < CountByEight; ++I)
     {
         StoreWI8(Itter, Value);
-        Itter += Increment;
+        Itter += Increment8x;
         Value = AddWI8(Value, One_8x);
+    }
+
+    if(Left)
+    {
+        s32 Before = VertexCount - Left;
+        for(u32 I = 0; I < Left; ++I)
+        {
+            *Itter = Before;
+
+            ++Before;
+            ++Itter;
+        }
     }
     
     {
@@ -69,8 +86,32 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
             StoreWF8(p_x, Rand8_x0);
             StoreWF8(p_y, Rand8_x1);
 
-            p_x += Increment;
-            p_y += Increment;
+            p_x += Increment8x;
+            p_y += Increment8x;
+        }
+
+        if(CountByFour)
+        {
+            f32_4x Rand4_x0 = RandFloat_4x(MinX, MaxX);
+            f32_4x Rand4_x1 = RandFloat_4x(MinY, MaxY);
+
+            StoreWF4(p_x, Rand4_x0);
+            StoreWF4(p_y, Rand4_x1);
+
+            p_x += Increment4x;
+            p_y += Increment4x;
+        }
+
+        if(CountLeft)
+        {
+            for(u32 I = 0; I < CountLeft; ++I)
+            {
+                *p_x = RandFloat(MinX, MaxX);
+                *p_y = RandFloat(MinY, MaxY);
+
+                ++p_x;
+                ++p_y;
+            }
         }
     }
     
@@ -86,8 +127,8 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
         f32 X[8] = {};
         f32 Y[8] = {};
 
-        f32_8x TmpCenter_x = Set1(0.0f);
-        f32_8x TmpCenter_y = Set1(0.0f);
+        f32_8x TmpCenter_x = Set1WF8(0.0f);
+        f32_8x TmpCenter_y = Set1WF8(0.0f);
         for(u32 I = 0; I < CountByEight; ++I)
         {
             f32_8x X_8x = LoadWF8(p_x);
@@ -96,14 +137,14 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
             TmpCenter_x = AddWF8(TmpCenter_x, X_8x);
             TmpCenter_y = AddWF8(TmpCenter_y, Y_8x);
 
-            p_x += Increment;
-            p_y += Increment;
+            p_x += Increment8x;
+            p_y += Increment8x;
         }        
 
         StoreWF8(X, TmpCenter_x);
         StoreWF8(Y, TmpCenter_y);
 
-        for(u32 I = 0; I < Increment; ++I)
+        for(u32 I = 0; I < Increment8x; ++I)
         {
             Center.x += X[I];
             Center.y += Y[I];
@@ -113,8 +154,8 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
         Center *= VertexCountInv;
     }
 
-    f32_8x CenterX_8x = Set1(Center.x);
-    f32_8x CenterY_8x = Set1(Center.y);
+    f32_8x CenterX_8x = Set1WF8(Center.x);
+    f32_8x CenterY_8x = Set1WF8(Center.y);
 
     {
 #if TIME_GENERATE
@@ -135,8 +176,8 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
             f32_8x angle_8x = Atan2WF8(CPY_8x, CPX_8x);
             StoreWF8(p_x, angle_8x);
                 
-            p_x += Increment;
-            p_y += Increment;
+            p_x += Increment8x;
+            p_y += Increment8x;
         }
     }
 
@@ -155,7 +196,7 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
         f32 *p_x = polygon_x + 0;
 
         f32 HalfD = 0.5f*(MaxX - MinX);
-        f32_8x HalfD_8x = Set1(HalfD);
+        f32_8x HalfD_8x = Set1WF8(HalfD);
 
         for(u32 I = 0; I < CountByEight; ++I)
         {
@@ -168,7 +209,7 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
                                                
             StoreWF8(p_x, Result);
             
-            p_x += Increment;
+            p_x += Increment8x;
         }
     }
     

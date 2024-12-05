@@ -16,9 +16,16 @@ typedef __m256 f32_8x;
 typedef __m256i s32_8x;
 
 inline f32_8x
-Set1(f32 A)
+Set1WF8(f32 A)
 {
     f32_8x Result = _mm256_set1_ps(A);
+    return(Result);
+}
+
+inline f32_4x
+Set1WF4(f32 A)
+{
+    f32_4x Result = _mm_set1_ps(A);
     return(Result);
 }
 
@@ -28,6 +35,13 @@ Set(f32 A0, f32 A1, f32 A2, f32 A3,
 {
     f32_8x Result = _mm256_set_ps(A0, A1, A2, A3,
                                   A4, A5, A6, A7);
+    return(Result);
+}
+
+inline f32_4x
+Set(f32 A0, f32 A1, f32 A2, f32 A3)
+{
+    f32_4x Result = _mm_set_ps(A0, A1, A2, A3);
     return(Result);
 }
 
@@ -45,6 +59,12 @@ Set1(s32 A)
 {
     s32_8x Result = _mm256_set1_epi32(A);
     return(Result);
+}
+
+inline void
+StoreWF4(f32 *Dest, f32_4x A)
+{
+    _mm_store_ps(Dest, A);
 }
 
 inline void

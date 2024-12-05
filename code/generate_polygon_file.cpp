@@ -955,14 +955,14 @@ main()
 //    s32 numVertices = 12;
 //    s32 numVertices = 13;
 //    s32 numVertices = 14;
-    s32 numVertices = 8;
+    s32 numVertices = 15;
 
     polygon_set SubjectSet = {};
     SubjectSet.PolyCount = PolygonCount;
     SubjectSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
 
 //    GenerateRandomPolygon(numVertices, -MaxX, MaxX, -MaxY, MaxY);
-    GenerateRandomPolygonF32(numVertices, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
+//    GenerateRandomPolygonF32(numVertices, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
     GenerateRandomPolygonSIMDF32(numVertices, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
     
 #if 0
