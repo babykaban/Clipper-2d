@@ -79,6 +79,13 @@ StoreWI8(s32 *Dest, s32_8x A)
     _mm256_store_si256((__m256i *)Dest, A);
 }
 
+inline f32_4x
+LoadWF4(f32 *Source)
+{
+    f32_4x Result = _mm_load_ps(Source);
+    return(Result);
+}
+
 inline f32_8x
 LoadWF8(f32 *Source)
 {
@@ -90,6 +97,13 @@ inline f32_4x
 SubWF4(f32_4x A, f32_4x B)
 {
     f32_4x Result = _mm_sub_ps(A, B);
+    return(Result);
+}
+
+inline f32_4x
+HaddWF4(f32_4x A, f32_4x B)
+{
+    f32_4x Result = _mm_hadd_ps(A, B);
     return(Result);
 }
 
@@ -128,10 +142,24 @@ MulWF8(f32_8x A, f32_8x B)
     return(Result);
 }
 
+inline f32_4x
+Atan2WF4(f32_4x A, f32_4x B)
+{
+    f32_4x Result = _mm_atan2_ps(A, B);
+    return(Result);
+}
+
 inline f32_8x
 Atan2WF8(f32_8x A, f32_8x B)
 {
     f32_8x Result = _mm256_atan2_ps(A, B);
+    return(Result);
+}
+
+inline f32_4x
+CosWF4(f32_4x A)
+{
+    f32_4x Result = _mm_cos_ps(A);
     return(Result);
 }
 

@@ -116,6 +116,7 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
     }
     
     v2_f32 Center = {};
+    f32_4x CenterW = Set1WF4(0.0f);
     {
 #if TIME_GENERATE
         TimeBlock("Calculate Center");
@@ -127,35 +128,97 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
         f32 X[8] = {};
         f32 Y[8] = {};
 
-        f32_8x TmpCenter_x = Set1WF8(0.0f);
-        f32_8x TmpCenter_y = Set1WF8(0.0f);
-        for(u32 I = 0; I < CountByEight; ++I)
+        if(CountByEight)
         {
-            f32_8x X_8x = LoadWF8(p_x);
-            f32_8x Y_8x = LoadWF8(p_y);
+            f32_8x TmpCenter_x = Set1WF8(0.0f);
+            f32_8x TmpCenter_y = Set1WF8(0.0f);
+            for(u32 I = 0; I < CountByEight; ++I)
+            {
+                f32_8x X_8x = LoadWF8(p_x);
+                f32_8x Y_8x = LoadWF8(p_y);
 
-            TmpCenter_x = AddWF8(TmpCenter_x, X_8x);
-            TmpCenter_y = AddWF8(TmpCenter_y, Y_8x);
+                TmpCenter_x = AddWF8(TmpCenter_x, X_8x);
+                TmpCenter_y = AddWF8(TmpCenter_y, Y_8x);
 
-            p_x += Increment8x;
-            p_y += Increment8x;
-        }        
+                p_x += Increment8x;
+                p_y += Increment8x;
+            }        
 
-        StoreWF8(X, TmpCenter_x);
-        StoreWF8(Y, TmpCenter_y);
-
-        for(u32 I = 0; I < Increment8x; ++I)
-        {
-            Center.x += X[I];
-            Center.y += Y[I];
+            StoreWF8(X, TmpCenter_x);
+            StoreWF8(Y, TmpCenter_y);
         }
-        
-        f32 VertexCountInv = 1.0f / (f32)VertexCount;
-        Center *= VertexCountInv;
+
+        f32_4x TmpCenter_x = Set1WF4(0);
+        f32_4x TmpCenter_y = Set1WF4(0);
+        f32_4x X_2x = Set1WF4(0);
+        f32_4x Y_2x = Set1WF4(0);
+
+        f32 *x = X + 0;
+        f32 *y = Y + 0;
+        f32_4x VertexCountInv_4x = Set1WF4(1.0f / (f32)VertexCount);
+
+        u32 LoopCount = (CountByEight > 0) ? (CountByFour + 2) : CountByFour; 
+        for(u32 I = 0; I < LoopCount; ++I)
+        {
+            if(I < CountByFour)
+            {
+                X_2x = LoadWF4(p_x);
+                Y_2x = LoadWF4(p_y);
+
+                p_x += Increment4x;
+                p_y += Increment4x;
+            }
+            else
+            {
+                X_2x = LoadWF4(x);
+                Y_2x = LoadWF4(y);
+                x += Increment4x;
+                y += Increment4x;
+            }
+
+            TmpCenter_x = AddWF4(TmpCenter_x, X_2x);
+            TmpCenter_y = AddWF4(TmpCenter_y, Y_2x);
+        }
+
+        // NOTE(babykaban): Inside CenterW: [x, x, y, y]
+        CenterW = HaddWF4(TmpCenter_x, TmpCenter_y);        
+
+        f32 PreResult[4] = {};
+        if(CountLeft)
+        {
+            f32 LeftX[4] = {};
+            f32 LeftY[4] = {};
+            for(u32 I = 0; I < CountLeft; ++I)
+            {
+                LeftX[I] = *p_x;
+                LeftY[I] = *p_y;
+
+                ++p_x;
+                ++p_y;
+            }
+
+            f32_4x XLeft = LoadWF4(LeftX);
+            f32_4x YLeft = LoadWF4(LeftY);
+
+            // NOTE(babykaban): Inside SumLeft: [x, x, y, y]
+            f32_4x SumLeft = HaddWF4(XLeft, YLeft);
+            
+            // NOTE(babykaban): Inside CenterW: [x, y, x, y]
+            CenterW = HaddWF4(CenterW, SumLeft);        
+            StoreWF4(PreResult, CenterW);
+        }
+
+        Center =
+            {
+                (PreResult[0] + PreResult[2]),
+                (PreResult[1] + PreResult[3])
+            };
     }
 
     f32_8x CenterX_8x = Set1WF8(Center.x);
     f32_8x CenterY_8x = Set1WF8(Center.y);
+    f32_4x CenterX_4x = Set1WF4(Center.x);
+    f32_4x CenterY_4x = Set1WF4(Center.y);
 
     {
 #if TIME_GENERATE
@@ -179,6 +242,35 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
             p_x += Increment8x;
             p_y += Increment8x;
         }
+
+        if(CountByFour)
+        {
+            f32_4x X_4x = LoadWF4(p_x);
+            f32_4x Y_4x = LoadWF4(p_y);
+
+            f32_4x CPX_4x = SubWF4(X_4x, CenterX_4x);
+            f32_4x CPY_4x = SubWF4(Y_4x, CenterY_4x);
+
+            f32_4x angle_4x = Atan2WF4(CPY_4x, CPX_4x);
+            StoreWF4(p_x, angle_4x);
+                
+            p_x += Increment4x;
+            p_y += Increment4x;
+        }
+
+        if(CountLeft)
+        {
+            for(u32 I = 0; I < CountLeft; ++I)
+            {
+                v2_f32 P = {*p_x, *p_y};
+                v2_f32 CP = {(P.x - Center.x), (P.y - Center.y)};
+
+                f32 angle = atan2f(CP.y, CP.x);
+                *p_x = angle;
+
+                ++p_x;
+            }
+        }
     }
 
     {
@@ -197,6 +289,7 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
 
         f32 HalfD = 0.5f*(MaxX - MinX);
         f32_8x HalfD_8x = Set1WF8(HalfD);
+        f32_4x HalfD_4x = Set1WF4(HalfD);
 
         for(u32 I = 0; I < CountByEight; ++I)
         {
@@ -210,6 +303,36 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
             StoreWF8(p_x, Result);
             
             p_x += Increment8x;
+        }
+
+        if(CountByFour)
+        {
+            f32_4x angle_4x = LoadWF4(p_x);
+            f32_4x cos_4x = CosWF4(angle_4x);
+            f32_4x rand_4x = RandFloat1_4x();
+
+            f32_4x PreResult = MulWF4(MulWF4(cos_4x, rand_4x), HalfD_4x);
+            f32_4x Result = AddWF4(CenterX_4x, PreResult);
+                                               
+            StoreWF4(p_x, Result);
+            
+            p_x += Increment4x;
+        }
+
+        if(CountLeft)
+        {
+            for(u32 I = 0; I < CountLeft; ++I)
+            {
+                f32 angle = *p_x;;
+                f32 cos = cosf(angle);
+
+                f32 rand = RandFloat1();
+                f32 PreResult = cos*rand*HalfD;
+                f32 Result = Center.x + PreResult;
+
+                *p_x = Result;
+                ++p_x;
+            }
         }
     }
     

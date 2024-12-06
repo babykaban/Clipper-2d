@@ -905,9 +905,9 @@ main()
     __m256d b = _mm256_set_pd(5, 6, 7, 8);
     __m256d r = _mm256_hadd_pd(a, b);
 
-    __m128d c = _mm_set_pd(1, 2);
-    __m128d d = _mm_set_pd(3, 4);
-    __m128d r0 = _mm_hadd_pd(c, d);
+    __m128 c = _mm_set_ps(1, 2, 3, 4);
+    __m128 d = _mm_set_ps(5, 6, 7, 8);
+    __m128 r0 = _mm_hadd_ps(c, d);
 #if 0
     u32 Count = 100000;
     u32 *Indecies = (u32 *)malloc(sizeof(u32)*Count);
