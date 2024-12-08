@@ -23,7 +23,7 @@
 
 #define TIME_GENERATE 0
 #define TIME_PRINTS 1
-#define PRINT 1
+#define PRINT 0
 
 #include "generate_random_polyf32.cpp"
 
@@ -947,32 +947,39 @@ main()
 
     f64 MaxY = 100;
     f64 MaxX = 100;
-    f32 MaxYf32 = 100;
-    f32 MaxXf32 = 100;
+    f32 MaxYf32 = 1000;
+    f32 MaxXf32 = 1000;
 
-//    s32 PolygonCount = 1000000;
-    s32 PolygonCount = 1;
+    s32 PolygonCount = 32000;
+//    s32 PolygonCount = 100;
 //    s32 numVertices = 12;
 //    s32 numVertices = 13;
 //    s32 numVertices = 14;
-    s32 numVertices = 15;
+    s32 numVertices = 12;
 
     polygon_set SubjectSet = {};
     SubjectSet.PolyCount = PolygonCount;
     SubjectSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
+#if 0    
+    for(s32 I = 0; I < PolygonCount; ++I)
+    {
+        GenerateRandomPolygonF32(numVertices, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
+    }
 
-//    GenerateRandomPolygon(numVertices, -MaxX, MaxX, -MaxY, MaxY);
-//    GenerateRandomPolygonF32(numVertices, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
-    GenerateRandomPolygonSIMDF32(numVertices, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
+    for(s32 I = 0; I < PolygonCount; ++I)
+    {
+        GenerateRandomPolygonSIMDF32(numVertices, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
+    }
+#endif
     
-#if 0
+#if 1
     for(s32 I = 0;
         I < PolygonCount;
         ++I)
     {
         polygon *Poly = SubjectSet.Polygons + I;
-        Poly->Count = numVertices;
-        Poly->Points = GenerateRandomPolygon(numVertices, -MaxX, MaxX, -MaxY, MaxY);
+        Poly->Count = rand() % (16 - 3 + 1)  + 3;
+        Poly->Points = GenerateRandomPolygonF32(Poly->Count, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
     }
 
     polygon_set ClipSet = {};
@@ -984,11 +991,11 @@ main()
         ++I)
     {
         polygon *Poly = ClipSet.Polygons + I;
-        Poly->Count = numVertices;
-        Poly->Points = GenerateRandomPolygon(numVertices, -MaxX, MaxX, -MaxY, MaxY);
+        Poly->Count = rand() % (16 - 3 + 1)  + 3;
+        Poly->Points = GenerateRandomPolygonF32(Poly->Count, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32);
     }
     
-    WritePolygonsToJSON(&SubjectSet, &ClipSet, "d:/Clipper-2d/output/polygons.json");
+    WritePolygonsToJSON(&SubjectSet, &ClipSet, "c:/Paul/Clipper-2d/output/polygons.json");
 
     for(s32 I = 0;
         I < PolygonCount;

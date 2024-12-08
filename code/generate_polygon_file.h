@@ -48,7 +48,7 @@ union triangle
 struct polygon
 {
     u32 Count;
-    v2_f64 *Points;
+    v2_f32 *Points;
 };
 
 struct polygon_set

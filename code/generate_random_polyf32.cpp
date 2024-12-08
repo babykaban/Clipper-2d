@@ -7,6 +7,51 @@
    ======================================================================== */
 #include "generate_random_polyf32.h"
 
+// Function to calculate the orientation of three points (p, q, r)
+// Returns 0 if collinear, 1 if clockwise, 2 if counterclockwise
+inline s32
+Orientation(v2_f32 p, v2_f32 q, v2_f32 r)
+{
+    f32 val = (q.y - p.y) * (r.x - q.x) - (q.x - p.x) * (r.y - q.y);
+
+    if (val == 0)
+        return 0;
+
+    return((val > 0) ? 1 : 2);
+}
+
+// Function to check if point r lies on line segment pq
+inline s32
+OnSegment(v2_f32 p, v2_f32 r, v2_f32 q)
+{
+    if(r.x <= Maximum(p.x, q.x) && r.x >= Minimum(p.x, q.x) &&
+       r.y <= Maximum(p.y, q.y) && r.y >= Minimum(p.y, q.y))
+        return 1;
+
+    return 0;
+}
+
+// Function to check if line segments p1q1 and p2q2 intersect
+inline s32
+DoIntersect(v2_f32 p1, v2_f32 q1, v2_f32 p2, v2_f32 q2)
+{
+    s32 o1 = Orientation(p1, q1, p2);
+    s32 o2 = Orientation(p1, q1, q2);
+    s32 o3 = Orientation(p2, q2, p1);
+    s32 o4 = Orientation(p2, q2, q1);
+
+    if((o1 != o2) && (o3 != o4))
+        return 1;
+
+    // Special Cases (collinear)
+    if(o1 == 0 && OnSegment(p1, p2, q1)) return 1;
+    if(o2 == 0 && OnSegment(p1, q2, q1)) return 1;
+    if(o3 == 0 && OnSegment(p2, p1, q2)) return 1;
+    if(o4 == 0 && OnSegment(p2, q1, q2)) return 1;
+
+    return 0;
+}
+
 #if 1
 internal v2_f32 *
 GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 MaxY)
@@ -204,14 +249,14 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
             f32_4x SumLeft = HaddWF4(XLeft, YLeft);
             
             // NOTE(babykaban): Inside CenterW: [x, y, x, y]
-            CenterW = HaddWF4(CenterW, SumLeft);        
-            StoreWF4(PreResult, CenterW);
+            f32_4x Result = HaddWF4(CenterW, SumLeft);        
+            StoreWF4(PreResult, Result);
         }
 
         Center =
             {
-                (PreResult[0] + PreResult[2]),
-                (PreResult[1] + PreResult[3])
+                (PreResult[0] + PreResult[2]) * VertexCountInv,
+                (PreResult[1] + PreResult[3]) * VertexCountInv
             };
     }
 
@@ -335,8 +380,16 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
             }
         }
     }
-    
-#if 0    
+
+    v2_f32 *polygon = (v2_f32 *)malloc(sizeof(v2_f32)*VertexCount);
+
+    for(s32 I = 0; I < VertexCount; ++I)
+    {
+        polygon[I].x = polygon_x[Indecies[I]];
+        polygon[I].y = polygon_y[Indecies[I]];
+    }
+
+#if 1    
 
     // Check for self-intersections and regenerate if found
     b32 hasIntersection = 0;
@@ -363,8 +416,12 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
     {
         // Free the current polygon and try generating a new one
         free(polygon);
+        free(polygon_x);
+        free(polygon_y);
+        free(Indecies);
+        free(Temp);
 
-        return GenerateRandomPolygon(VertexCount, MinX, MaxX, MinY, MaxY);
+        return GenerateRandomPolygonSIMDF32(VertexCount, MinX, MaxX, MinY, MaxY);
     }
 #endif
 
@@ -378,8 +435,12 @@ GenerateRandomPolygonSIMDF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 
     }
 #endif
 
-//    return polygon;
-    return 0;
+    free(polygon_x);
+    free(polygon_y);
+    free(Indecies);
+    free(Temp);
+
+    return polygon;
 }
 #endif
 
@@ -473,7 +534,7 @@ GenerateRandomPolygonF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 MaxY
         }
     }
     
-#if 0
+#if 1
 
     // Check for self-intersections and regenerate if found
     
@@ -503,9 +564,9 @@ GenerateRandomPolygonF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 MaxY
     if(hasIntersection)
     {
         // Free the current polygon and try generating a new one
-//        free(polygon);
+        free(polygon);
 
-//        return GenerateRandomPolygon(VertexCount, MinX, MaxX, MinY, MaxY);
+        return GenerateRandomPolygonF32(VertexCount, MinX, MaxX, MinY, MaxY);
     }
 #endif
 
