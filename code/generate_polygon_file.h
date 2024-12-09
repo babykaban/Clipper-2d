@@ -13,26 +13,6 @@ struct v2_f32
     f32 y;
 };
 
-union v4_f64
-{
-    struct
-    {
-        f64 x;
-        f64 y;
-        f64 z;
-        f64 w;
-    };
-
-    f64 E[4];
-    __m256d W;
-};
-
-struct v2_f64p
-{
-    f64 *x;
-    f64 *y;
-};
-
 union triangle
 {
     struct
@@ -57,6 +37,8 @@ struct polygon_set
     polygon *Polygons;
 };
 
+#include "math_f32.h"
+
 // Function to generate a random float between min and max
 inline f64
 RandDouble(f64 min, f64 max)
@@ -67,98 +49,15 @@ RandDouble(f64 min, f64 max)
     return(Result);
 }
 
-inline __m128d
-RandDouble_2x(f64 min, f64 max)
-{
-    TimeFunction;
-
-    f64 D = RAND_MAX / (max - min);
-    f64 DInv = 1.0 / D;
-    
-    __m128d Min_2x = _mm_set1_pd(min);
-    __m128d Rand_2x = _mm_mul_pd(_mm_set_pd((f64)rand(), (f64)rand()), _mm_set1_pd(DInv));
-
-    __m128d Result = _mm_add_pd(Min_2x, Rand_2x);
-
-    return(Result);
-}
-
-inline __m256d
-RandDouble_4x(f64 min, f64 max)
-{
-    TimeFunction;
-
-    f64 D = RAND_MAX / (max - min);
-    f64 DInv = 1.0 / D;
-    
-    __m256d Min_4x = _mm256_set1_pd(min);
-    __m256d Rand_4x = _mm256_mul_pd(_mm256_set_pd((f64)rand(), (f64)rand(), (f64)rand(), (f64)rand()),
-                                    _mm256_set1_pd(DInv));
-
-    __m256d Result = _mm256_add_pd(Min_4x, Rand_4x);
-
-    return(Result);
-}
-
-inline f32_8x
-RandFloat_8x(f32 min, f32 max)
+inline f32
+RandFloat(f32 min, f32 max)
 {
     TimeFunction;
 
     f32 D = RAND_MAX / (max - min);
     f32 DInv = 1.0f / D;
-    
-    f32_8x Min_8x = Set1WF8(min);
-    f32_8x Rand_8x = MulWF8(Set((f32)rand(), (f32)rand(),
-                                (f32)rand(), (f32)rand(),
-                                (f32)rand(), (f32)rand(),
-                                (f32)rand(), (f32)rand()),
-                            Set1WF8(DInv));
 
-    f32_8x Result = AddWF8(Min_8x, Rand_8x);
-
-    return(Result);
-}
-
-inline f32_8x
-RandFloat1_8x(void)
-{
-    TimeFunction;
-
-    f32 DInv = 1.0f / RAND_MAX;
-    f32_8x Rand_8x = Set((f32)rand(), (f32)rand(),
-                         (f32)rand(), (f32)rand(),
-                         (f32)rand(), (f32)rand(),
-                         (f32)rand(), (f32)rand());
-
-    f32_8x Result = MulWF8(Rand_8x, Set1WF8(DInv));
-
-    return(Result);
-}
-
-inline __m256d
-RandDouble1_4x(void)
-{
-    TimeFunction;
-
-    f64 DInv = 1.0 / RAND_MAX;
-    __m256d Rand_4x = _mm256_set_pd((f64)rand(), (f64)rand(), (f64)rand(), (f64)rand());
-
-    __m256d Result = _mm256_mul_pd(Rand_4x, _mm256_set1_pd(DInv));
-
-    return(Result);
-}
-
-inline __m128d
-RandDouble1_2x(void)
-{
-    TimeFunction;
-
-    f64 DInv = 1.0 / RAND_MAX;
-    __m128d Rand_2x = _mm_set_pd((f64)rand(), (f64)rand());
-
-    __m128d Result = _mm_mul_pd(Rand_2x, _mm_set1_pd(DInv));
-
+    f32 Result = min + ((f32)rand()*DInv);
     return(Result);
 }
 
@@ -175,6 +74,19 @@ RandDouble1(void)
     return(Result);
 }
 
+inline f32
+RandFloat1(void)
+{
+    TimeFunction;
+
+    f32 DInv = 1.0 / RAND_MAX;
+    f32 Rand = (f32)rand();
+
+    f32 Result = Rand*DInv;
+
+    return(Result);
+}
+
 // Function to generate a random point within a given bounding box
 inline v2_f64
 RandomPoint(f64 minX, f64 maxX, f64 minY, f64 maxY)
@@ -187,41 +99,13 @@ RandomPoint(f64 minX, f64 maxX, f64 minY, f64 maxY)
     return(Result);
 }
 
-inline b32
-AngleSorter(f64 x0, f64 x1)
+inline v2_f32
+RandomPoint(f32 minX, f32 maxX, f32 minY, f32 maxY)
 {
-    b32 Result = false;
+    v2_f32 Result = {};
 
-    if(x0 < x1)
-    {
-        Result = true;
-    }
-
-    return(!Result);
-}
-
-inline void
-Swap(u32 *A, u32 *B)
-{
-    u32 Temp = *B;
-    *B = *A;
-    *A = Temp;
-}
-
-inline u32
-SortKeyToU32(r32 SortKey)
-{
-    // NOTE(casey): We need to turn our 32-bit floating point value
-    // into some strictly ascending 32-bit unsigned integer value
-    u32 Result = *(u32 *)&SortKey;
-    if(Result & 0x80000000)
-    {
-        Result = ~Result;
-    }
-    else
-    {
-        Result |= 0x80000000;
-    }
+    Result.x = RandFloat(minX, maxX);
+    Result.y = RandFloat(minY, maxY);
 
     return(Result);
 }

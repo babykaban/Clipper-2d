@@ -126,6 +126,24 @@ TestBooleanOp(repetition_tester *Tester, paths_f64 *subjects, paths_f64 *subject
     }
 }
 
+struct v2_f32
+{
+    f32 x;
+    f32 y;
+};
+
+struct polygon
+{
+    u32 Count;
+    v2_f32 *Points;
+};
+
+struct polygon_set
+{
+    u32 PolyCount;
+    polygon *Polygons;
+};
+
 int main()
 {
     BeginProfile();
@@ -151,6 +169,36 @@ int main()
         printf("No wide registers support");
     }
 
+    polygon_set Subjects = {};
+    polygon_set Clips = {};
+
+    FILE *In;
+    fopen_s(&In, "c:/Paul/Clipper-2d/output/polygons_b.bin", "rb");
+    if(In)
+    {
+        u32 SubjectsIdentifier = 0;
+        fread(&SubjectsIdentifier, sizeof(u32), 1, In);
+        Assert(SubjectsIdentifier == 0xFFFF0000);
+
+        fread(&Subjects.PolyCount, sizeof(u32), 1, In);
+        Assert(Subjects.PolyCount != 0);
+
+        Subjects.Polygons = (polygon *)malloc(sizeof(polygon)*Subjects.PolyCount);
+        for(u32 I = 0; I < Subjects.PolyCount; ++ I)
+        {
+            polygon *Poly = Subjects.Polygons + I;
+            fread(&Poly->Count, sizeof(u32), 1, In);
+            Assert(Poly->Count != 0);
+
+            Poly->Points = (v2_f32 *)malloc(sizeof(v2_f32)*Poly->Count);
+            
+            fread(Poly->Points, sizeof(v2_f32)*Poly->Count, 1, In);
+            printf("Read %d completed, v_count: %d", I, Poly->Count);
+        }
+    }    
+
+    fclose(In);
+    
     paths_f64 Subject = GetPathsF64(2);
     Subject.PathCount = 2;
 
