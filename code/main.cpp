@@ -16,6 +16,8 @@
 #include "repetition_tester.cpp"
 #include "clipper.cpp"
 
+#define PRINT_READ 0
+
 internal s32
 BooleanOpD(uint8_t cliptype, uint8_t fillrule, paths_f64 *subjects, paths_f64 *subjects_open,
            paths_f64 *clips, paths_f64 *solution, paths_f64 *solution_open,
@@ -62,22 +64,77 @@ BooleanOpD(uint8_t cliptype, uint8_t fillrule, paths_f64 *subjects, paths_f64 *s
     return 0; //success !!
 }
 
-global_variable char *ClipTypes[] =
+inline void
+IntersectTwoPolies(polygon *S, polygon *C)
 {
-    "ClipType_NoClip",
-    "ClipType_Intersection",
-    "ClipType_Union",
-    "ClipType_Difference",
-    "ClipType_Xor",
-};
+    TimeFunction;
 
-global_variable char *FillRules[] =
+    Assert((S->Count > 0) && (C->Count > 0));
+
+    paths_f64 Subject = GetPathsF64(1);
+    Subject.PathCount = 1;
+    Subject.Paths[0] = GetPathF64(S->Count);
+    Subject.Paths[0].Count = S->Count;
+    for(u32 I = 0; I < S->Count; ++I)
+    {
+        Subject.Paths[0].Points[I] = V2F64(S->Points[I]);        
+    }
+    
+    paths_f64 Clip = GetPathsF64(1);
+    Clip.PathCount = 1;
+    Clip.Paths[0] = GetPathF64(C->Count);
+    Clip.Paths[0].Count = C->Count;
+
+    for(u32 I = 0; I < C->Count; ++I)
+    {
+        Clip.Paths[0].Points[I] = V2F64(C->Points[I]);        
+    }
+
+    paths_f64 Solution = {};
+    BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+    
+#if PRINT_OUT_RESULT
+    printf("\nTest: %s, %s", ClipTypes[ClipType_Intersection], FillRules[FillRule_EvenOdd]);
+
+    for(s32 PC = 0;
+        PC < Solution.PathCount;
+        ++PC)
+    {
+        printf("\n%d. ", PC);
+        path_f64 *Path = Solution.Paths + PC;
+        for(s32 J = 0;
+            J < (Path->Count - 1);
+            ++J)
+        {
+            printf("(%.2f, %.2f), ", Path->Points[J].x, Path->Points[J].y);
+        }
+
+        printf("(%.2f, %.2f)", Path->Points[Path->Count - 1].x, Path->Points[Path->Count - 1].y);
+    }
+
+    printf("\n");
+#endif
+
+    FreePaths(&Solution);
+    FreePaths(&Subject);
+    FreePaths(&Clip);
+}
+
+inline void
+UnionTwoPolies(polygon *S, polygon *C)
 {
-    "FillRule_EvenOdd",
-    "FillRule_NonZero",
-    "FillRule_Positive",
-    "FillRule_Negative",
-};
+}
+
+inline void
+DifferenciateTwoPolies(polygon *S, polygon *C)
+{
+}
+
+
+inline void
+XorTwoPolies(polygon *S, polygon *C)
+{
+}
 
 internal void
 TestBooleanOp(repetition_tester *Tester, paths_f64 *subjects, paths_f64 *subjects_open, paths_f64 *clips,
@@ -126,23 +183,63 @@ TestBooleanOp(repetition_tester *Tester, paths_f64 *subjects, paths_f64 *subject
     }
 }
 
-struct v2_f32
+internal void
+ReadPolies(polygon_set *Subjects, polygon_set *Clips, char *FileName)
 {
-    f32 x;
-    f32 y;
-};
+    FILE *In;
+    fopen_s(&In, FileName, "rb");
+    if(In)
+    {
+        u32 SubjectsIdentifier = 0;
+        fread(&SubjectsIdentifier, sizeof(u32), 1, In);
+        Assert(SubjectsIdentifier == 0xFFFF0000);
 
-struct polygon
-{
-    u32 Count;
-    v2_f32 *Points;
-};
+        fread(&Subjects->PolyCount, sizeof(u32), 1, In);
+        Assert(Subjects->PolyCount != 0);
 
-struct polygon_set
-{
-    u32 PolyCount;
-    polygon *Polygons;
-};
+        Subjects->Polygons = (polygon *)malloc(sizeof(polygon)*Subjects->PolyCount);
+        for(u32 I = 0; I < Subjects->PolyCount; ++ I)
+        {
+            polygon *Poly = Subjects->Polygons + I;
+            fread(&Poly->Count, sizeof(u32), 1, In);
+            Assert(Poly->Count != 0);
+
+            Poly->Points = (v2_f32 *)malloc(sizeof(v2_f32)*Poly->Count);
+            
+            fread(Poly->Points, sizeof(v2_f32)*Poly->Count, 1, In);
+#if PRINT_READ
+            printf("Read Subject %d completed, v_count: %d\n", I, Poly->Count);
+#endif
+        }
+
+        u32 ClipsIdentifier = 0;
+        fread(&ClipsIdentifier, sizeof(u32), 1, In);
+        Assert(ClipsIdentifier == 0x0000FFFF);
+
+        fread(&Clips->PolyCount, sizeof(u32), 1, In);
+        Assert(Clips->PolyCount != 0);
+
+        Clips->Polygons = (polygon *)malloc(sizeof(polygon)*Clips->PolyCount);
+        for(u32 I = 0; I < Clips->PolyCount; ++ I)
+        {
+            polygon *Poly = Clips->Polygons + I;
+            fread(&Poly->Count, sizeof(u32), 1, In);
+            Assert(Poly->Count != 0);
+
+            Poly->Points = (v2_f32 *)malloc(sizeof(v2_f32)*Poly->Count);
+            
+            fread(Poly->Points, sizeof(v2_f32)*Poly->Count, 1, In);
+#if PRINT_READ
+            printf("Read Clip %d completed, v_count: %d\n", I, Poly->Count);
+#endif
+        }
+    }    
+
+    fclose(In);
+}
+
+//#include "clipper2/clipper.h"
+//#include "clipper2/clipper.engine.cpp"
 
 int main()
 {
@@ -172,92 +269,19 @@ int main()
     polygon_set Subjects = {};
     polygon_set Clips = {};
 
-    FILE *In;
-    fopen_s(&In, "c:/Paul/Clipper-2d/output/polygons_b.bin", "rb");
-    if(In)
+    //"c:/Paul/Clipper-2d/output/polygons_b.bin"
+    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
+
+    for(u32 I = 0; I < 1; ++I)
     {
-        u32 SubjectsIdentifier = 0;
-        fread(&SubjectsIdentifier, sizeof(u32), 1, In);
-        Assert(SubjectsIdentifier == 0xFFFF0000);
+//        polygon *S = Subjects.Polygons + I;
+//        polygon *C = Clips.Polygons + I;
 
-        fread(&Subjects.PolyCount, sizeof(u32), 1, In);
-        Assert(Subjects.PolyCount != 0);
+        polygon *S = Subjects.Polygons + 4;
+        polygon *C = Clips.Polygons + 4;
 
-        Subjects.Polygons = (polygon *)malloc(sizeof(polygon)*Subjects.PolyCount);
-        for(u32 I = 0; I < Subjects.PolyCount; ++ I)
-        {
-            polygon *Poly = Subjects.Polygons + I;
-            fread(&Poly->Count, sizeof(u32), 1, In);
-            Assert(Poly->Count != 0);
-
-            Poly->Points = (v2_f32 *)malloc(sizeof(v2_f32)*Poly->Count);
-            
-            fread(Poly->Points, sizeof(v2_f32)*Poly->Count, 1, In);
-            printf("Read %d completed, v_count: %d", I, Poly->Count);
-        }
-    }    
-
-    fclose(In);
-    
-    paths_f64 Subject = GetPathsF64(2);
-    Subject.PathCount = 2;
-
-    paths_f64 Clip = GetPathsF64(1);
-    Clip.PathCount = 1;
-
-    Subject.Paths[0] = GetPathF64(4);
-    Subject.Paths[0].Count = 4;
-    Subject.Paths[0].Points[0] = {0, 0};
-    Subject.Paths[0].Points[1] = {100, 0};
-    Subject.Paths[0].Points[2] = {100, 100};
-    Subject.Paths[0].Points[3] = {0, 100};
-
-    Subject.Paths[1] = GetPathF64(4);
-    Subject.Paths[1].Count = 4;
-    Subject.Paths[1].Points[0] = {30, 30};
-    Subject.Paths[1].Points[1] = {70, 30};
-    Subject.Paths[1].Points[2] = {70, 70};
-    Subject.Paths[1].Points[3] = {30, 70};
-
-    Clip.Paths[0] = GetPathF64(4);
-    Clip.Paths[0].Count = 4;
-    Clip.Paths[0].Points[0] = {50, -20};
-    Clip.Paths[0].Points[1] = {120, -20};
-    Clip.Paths[0].Points[2] = {120, 80};
-    Clip.Paths[0].Points[3] = {50, 80};
-
-//    paths_f64 Result = BooleanOp(ClipType_Intersection, FillRule_EvenOdd, &Subject, &Clip);
-
-    
-    paths_f64 Solution = {};
-    paths_f64 Dummy = {};
-    BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-
-    FreePaths(&Solution);
-    FreePaths(&Subject);
-    FreePaths(&Clip);
-    
-#if PRINT_OUT_RESULT
-    printf("\nTest: %s, %s", ClipTypes[ClipType_Intersection], FillRules[FillRule_EvenOdd]);
-
-    for(s32 PC = 0;
-        PC < Solution.PathCount;
-        ++PC)
-    {
-        printf("\n%d. ", PC);
-        path_f64 *Path = Solution.Paths + PC;
-        for(s32 J = 0;
-            J < (Path->Count - 1);
-            ++J)
-        {
-            printf("(%.2f, %.2f), ", Path->Points[J].x, Path->Points[J].y);
-        }
-
-        printf("(%.2f, %.2f)", Path->Points[Path->Count - 1].x, Path->Points[Path->Count - 1].y);
+        IntersectTwoPolies(S, C);
     }
-
-    printf("\n");
-#endif
 
 #if 0
     u64 CPUTimerFreq = EstimateCPUTimerFreq();

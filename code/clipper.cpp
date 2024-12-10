@@ -3018,3 +3018,4 @@ BooleanOp(clip_type ClipType, fill_rule FillRule,
 
     return(Result);
 }
+

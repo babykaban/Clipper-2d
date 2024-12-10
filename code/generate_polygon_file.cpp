@@ -507,7 +507,7 @@ main()
     f32 MaxYf32 = 1000;
     f32 MaxXf32 = 1000;
 
-    s32 PolygonCount = 128000;
+    s32 PolygonCount = 128;
     s32 numVertices = 12;
 
     polygon_set SubjectSet = {};

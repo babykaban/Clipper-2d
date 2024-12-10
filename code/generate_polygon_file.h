@@ -7,12 +7,6 @@
    $Notice: $
    ======================================================================== */
 
-struct v2_f32
-{
-    f32 x;
-    f32 y;
-};
-
 union triangle
 {
     struct
@@ -23,18 +17,6 @@ union triangle
     };
 
     v2_f64 Verts[3];
-};
-
-struct polygon
-{
-    u32 Count;
-    v2_f32 *Points;
-};
-
-struct polygon_set
-{
-    u32 PolyCount;
-    polygon *Polygons;
 };
 
 #include "math_f32.h"

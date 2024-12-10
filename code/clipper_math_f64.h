@@ -112,6 +112,13 @@ V2F64(v2_s64 A)
     v2_f64 Result = V2F64(A.x, A.y);
     return(Result);
 }
+
+inline v2_f64
+V2F64(v2_f32 A)
+{
+    v2_f64 Result = {A.x, A.y};
+    return(Result);
+}
  
 inline v2_f64
 operator*(f64 A, v2_f64 B)

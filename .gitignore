@@ -1,6 +1,7 @@
 misc
 build
 output
+clipper2
 profiler.cpp
 platform_metrics.cpp
 repetition_tester.cpp

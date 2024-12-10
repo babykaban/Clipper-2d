@@ -74,6 +74,22 @@ typedef intptr_t  smm;
 #define Minimum(A, B) ((A < B) ? (A) : (B))
 #define Maximum(A, B) ((A > B) ? (A) : (B))
 
+global_variable char *ClipTypes[] =
+{
+    "ClipType_NoClip",
+    "ClipType_Intersection",
+    "ClipType_Union",
+    "ClipType_Difference",
+    "ClipType_Xor",
+};
+
+global_variable char *FillRules[] =
+{
+    "FillRule_EvenOdd",
+    "FillRule_NonZero",
+    "FillRule_Positive",
+    "FillRule_Negative",
+};
 
 #define MAIN_H
 #endif
