@@ -2719,8 +2719,11 @@ namespace Clipper2Lib {
         else
         {
           //INTERMEDIATE VERTEX ...
-          if (IsHotEdge(*e)) AddOutPt(*e, e->top);
+          if (IsHotEdge(*e))
+              AddOutPt(*e, e->top);
+
           UpdateEdgeIntoAEL(e);
+
           if (IsHorizontal(*e))
             PushHorz(*e);  // horizontals are processed later
         }

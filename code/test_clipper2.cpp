@@ -145,8 +145,8 @@ int main()
     polygon_set Subjects = {};
     polygon_set Clips = {};
 
-    //"c:/Paul/Clipper-2d/output/polygons_b.bin"
-    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
+    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
+//    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
     for(u32 I = 0; I < 1; ++I)
     {
