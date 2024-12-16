@@ -2706,8 +2706,6 @@ Area(output_point *op)
 inline f64
 AreaTriangle(v2_s64 pt1, v2_s64 pt2, v2_s64 pt3)
 {
-     
-
     return ((f64)(pt3.y + pt1.y) * (f64)(pt3.x - pt1.x) +
             (f64)(pt1.y + pt2.y) * (f64)(pt1.x - pt2.x) +
             (f64)(pt2.y + pt3.y) * (f64)(pt2.x - pt3.x));
