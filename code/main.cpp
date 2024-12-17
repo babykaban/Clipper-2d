@@ -266,6 +266,21 @@ int main()
         printf("No wide registers support");
     }
 
+    u32 *a = (u32 *)malloc(2*sizeof(u32));
+    a[0] = 1;
+    a[1] = 2;
+
+
+    u32 **b = (u32 **)malloc(2*sizeof(u32 *));
+    b[0] = a + 0;
+    b[1] = a + 1;
+    
+    u32 **f = b + 0;
+
+    a = (u32 *)Realloc(a, 2, 4);
+    b[0] = a + 0;
+    b[1] = a + 1;
+    
     polygon_set Subjects = {};
     polygon_set Clips = {};
 

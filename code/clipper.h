@@ -91,7 +91,10 @@ struct output_point
     v2_s64 P;
     output_point *Next;
     output_point *Prev;
-    output_rectangle *OutRect;
+
+    u32 OutRectIndex;
+//    output_rectangle *OutRect;
+
     horz_segment *Horz;
 
     void *Free;
@@ -126,7 +129,9 @@ struct active
     s32 wind_dx;            //1 or -1 depending on winding direction
     s32 wind_cnt;
     s32 wind_cnt2;      //winding count of the opposite polytype
-    output_rectangle *outrec;
+
+    u32 outrecIndex;
+//    output_rectangle *outrec;
     //AEL: 'active edge list' (Vatti's AET - active edge table)
     //     a linked list of all edges (from left to right) that are present
     //     (or 'active') within the current scanbeam (a horizontal 'beam' that
@@ -148,7 +153,10 @@ struct active
 struct output_rectangle
 {
     u32 Index;
-    output_rectangle *Owner;
+
+    u32 OwnerIndex;
+//    output_rectangle *Owner;
+
     active *FrontEdge;
     active *BackEdge;
     output_point *Points;
@@ -183,7 +191,7 @@ struct clipper
     vertex_list *VertexLists;
 
     u32 MinimaListCount;
-    local_minima *MinimaList;       //pointers in case of memory reallocs
+    local_minima *MinimaList;
     b32 MinimaListSorted;
 
     clip_type ClipType;
@@ -196,7 +204,7 @@ struct clipper
     s64 BottomY;
 
     u32 OutputRectCount;
-    output_rectangle *OutRecList; //pointers in case list memory reallocated
+    output_rectangle *OutRecList;
 
     u32 HorzCount;
     horz_segment *HorzSegList;
@@ -330,11 +338,11 @@ GetNewActive(void)
 }
 
 inline output_point *
-GetOutPt(v2_s64 P, output_rectangle *OutRect)
+GetOutPt(v2_s64 P, u32 OutRecIndex)//output_rectangle *OutRect)
 {
     output_point *Result = MallocStruct(output_point);
     Result->P = P;
-    Result->OutRect = OutRect;
+    Result->OutRectIndex = OutRecIndex;
     Result->Next = Result;
     Result->Prev = Result;
     Result->Free = Result;
@@ -353,7 +361,7 @@ IntersectNode(active *edge1, active *edge2, v2_s64 pt)
     return(Result);
 }
 
-inline output_rectangle *
+inline u32
 NewOutRec(clipper *Clipper)
 {
     if(NeedIncrease(Clipper->OutputRectCount))
@@ -364,7 +372,7 @@ NewOutRec(clipper *Clipper)
     output_rectangle *Result = Clipper->OutRecList + Clipper->OutputRectCount;
     Result->Index = Clipper->OutputRectCount++;
 
-    return Result;
+    return(Result->Index);
 }
 
 inline void
