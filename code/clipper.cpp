@@ -712,40 +712,38 @@ SetSides(output_rectangle *OutRec, active *start_edge, active *end_edge)
 }
 
 inline bool
-IsHotEdge(clipper *Clipper, active *e)
+IsHotEdge(active *e)
 {
-    return (Clipper->OutRecList + e->outrecIndex);
+    return (e->outrec);
 }
 
 inline active *
-GetPrevHotEdge(clipper *Clipper, active *e)
+GetPrevHotEdge(active *e)
 {
     active *prev = e->prev_in_ael;
-    while (prev && (IsOpen(prev) || !IsHotEdge(Clipper, prev)))
+    while (prev && (IsOpen(prev) || !IsHotEdge(prev)))
         prev = prev->prev_in_ael;
     return prev;
 }
 
 inline b32
-OutrecIsAscending(clipper *Clipper, active *hotEdge)
+OutrecIsAscending(active *hotEdge)
 {
-    output_rectangle *OutRect = Clipper->OutRecList + hotEdge->outrecIndex;
-    return (hotEdge == OutRect->FrontEdge);
+    return (hotEdge == hotEdge->outrec->FrontEdge);
 }
 
 internal output_point *
 AddLocalMinPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt, b32 is_new = false)
 {
      
-    u32 OutRecIndex = NewOutRec(Clipper);
 
-    output_rectangle *outrec = Clipper->OutRecList + OutRecIndex;
-    e1->outrecIndex = OutRecIndex;
-    e2->outrecIndex = OutRecIndex;
+    output_rectangle *outrec = NewOutRec(Clipper);
+    e1->outrec = outrec;
+    e2->outrec = outrec;
 
     if (IsOpen(e1))
     {
-        outrec->OwnerIndex = 0;
+        outrec->Owner = 0;
         outrec->IsOpen = true;
         if(e1->wind_dx > 0)
             SetSides(outrec, e1, e2);
@@ -754,21 +752,21 @@ AddLocalMinPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt, b32 is_new 
     }
     else
     {
-        active *prevHotEdge = GetPrevHotEdge(Clipper, e1);
+        active *prevHotEdge = GetPrevHotEdge(e1);
         //e.windDx is the winding direction of the **input** paths
         //and unrelated to the winding direction of output polygons.
         //Output orientation is determined by e.outrec.frontE which is
         //the ascending edge (see AddLocalMinPoly).
         if(prevHotEdge)
         {
-            if (OutrecIsAscending(Clipper, prevHotEdge) == is_new)
+            if (OutrecIsAscending(prevHotEdge) == is_new)
                 SetSides(outrec, e2, e1);
             else
                 SetSides(outrec, e1, e2);
         }
         else
         {
-            outrec->OwnerIndex = 0;
+            outrec->Owner = 0;
             if (is_new)
                 SetSides(outrec, e1, e2);
             else
@@ -776,7 +774,7 @@ AddLocalMinPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt, b32 is_new 
         }
     }
 
-    output_point *op = GetOutPt(pt, OutRecIndex);
+    output_point *op = GetOutPt(pt, outrec);
     outrec->Points = op;
     return op;
 }
@@ -807,10 +805,9 @@ Split(clipper *Clipper, active *e, v2_s64 pt)
 }
 
 inline b32
-IsFront(clipper *Clipper, active *e)
+IsFront(active *e)
 {
-    output_rectangle *OutRec = Clipper->OutRecList + e->outrecIndex;
-    return (e == OutRec->FrontEdge);
+    return (e == e->outrec->FrontEdge);
 }
 
 inline bool
@@ -837,7 +834,7 @@ SwapFrontBackSides(output_rectangle *outrec)
 }
 
 inline output_point *
-AddOutPt(clipper *Clipper, active *e, v2_s64 pt)
+AddOutPt(active *e, v2_s64 pt)
 {
      
 
@@ -845,8 +842,8 @@ AddOutPt(clipper *Clipper, active *e, v2_s64 pt)
 
     //Outrec.OutPts: a circular doubly-linked-list of POutPt where ...
     //op_front[.Prev]* ~~~> op_back & op_back == op_front.Next
-    output_rectangle *outrec = Clipper->OutRecList + e->outrecIndex;
-    b32 to_front = IsFront(Clipper, e);
+    output_rectangle *outrec = e->outrec;
+    b32 to_front = IsFront(e);
     output_point *op_front = outrec->Points;
     output_point *op_back = op_front->Next;
 
@@ -858,7 +855,7 @@ AddOutPt(clipper *Clipper, active *e, v2_s64 pt)
     else if (PointsAreEqual(pt, op_back->P))
         return op_back;
 
-    new_op = GetOutPt(pt, outrec->Index);
+    new_op = GetOutPt(pt, outrec);
     op_back->Prev = new_op;
     new_op->Prev = op_front;
     new_op->Next = op_back;
@@ -869,13 +866,11 @@ AddOutPt(clipper *Clipper, active *e, v2_s64 pt)
 }
 
 inline void
-UncoupleOutRec(clipper *Clipper, active *ae)
+UncoupleOutRec(active *ae)
 {
-
-    output_rectangle *outrec = Clipper->OutRecList + ae->outrecIndex;
+    output_rectangle *outrec = ae->outrec;
     if (!outrec)
         return;
-
     outrec->FrontEdge->outrec = 0;
     outrec->BackEdge->outrec = 0;
     outrec->FrontEdge = 0;

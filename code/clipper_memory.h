@@ -28,7 +28,7 @@ enum array_type
 global_variable u32 ArrayMaxSizes[ArrayType_Count] = {};
 #endif
 
-#define BASIC_ALLOCATE_COUNT 32
+#define BASIC_ALLOCATE_COUNT 2
 
 #define Kilobytes(Value) ((Value)*1024LL)
 #define Megabytes(Value) (Kilobytes(Value)*1024LL)
