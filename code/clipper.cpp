@@ -29,6 +29,7 @@ InitClipper(clipper *Clipper, s32 Precision)
     Clipper->InvScale = 1.0 / Clipper->Scale;
 
     InitHeap(&Clipper->ScanLineMaxHeap, BASIC_ALLOCATE_COUNT, HeapType_S64);
+    Clipper->OutputRectCount = 1;
     Clipper->OutRecList = MallocArray(BASIC_ALLOCATE_COUNT, output_rectangle);
 
     Clipper->MinimaList = MallocArray(BASIC_ALLOCATE_COUNT, local_minima);
@@ -712,24 +713,26 @@ SetSides(output_rectangle *OutRec, active *start_edge, active *end_edge)
 }
 
 inline bool
-IsHotEdge(active *e)
+IsHotEdge(clipper *Clipper, active *e)
 {
-    return (e->outrec);
+    output_rectangle *outrec = GetOutRec(Clipper, e->outrecIndex);
+    return(outrec);
 }
 
 inline active *
-GetPrevHotEdge(active *e)
+GetPrevHotEdge(clipper *Clipper, active *e)
 {
     active *prev = e->prev_in_ael;
-    while (prev && (IsOpen(prev) || !IsHotEdge(prev)))
+    while (prev && (IsOpen(prev) || !IsHotEdge(Clipper, prev)))
         prev = prev->prev_in_ael;
     return prev;
 }
 
 inline b32
-OutrecIsAscending(active *hotEdge)
+OutrecIsAscending(clipper *Clipper, active *hotEdge)
 {
-    return (hotEdge == hotEdge->outrec->FrontEdge);
+    output_rectangle *outrec = GetOutRec(Clipper, hotEdge->outrecIndex);
+    return (hotEdge == outrec->FrontEdge);
 }
 
 internal output_point *
@@ -737,13 +740,14 @@ AddLocalMinPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt, b32 is_new 
 {
      
 
-    output_rectangle *outrec = NewOutRec(Clipper);
-    e1->outrec = outrec;
-    e2->outrec = outrec;
+    u32 outrecIndex = NewOutRec(Clipper);
+    output_rectangle *outrec = GetOutRec(Clipper, outrecIndex);
+    e1->outrecIndex = outrecIndex;
+    e2->outrecIndex = outrecIndex;
 
     if (IsOpen(e1))
     {
-        outrec->Owner = 0;
+        outrec->OwnerIndex = 0;
         outrec->IsOpen = true;
         if(e1->wind_dx > 0)
             SetSides(outrec, e1, e2);
@@ -752,21 +756,21 @@ AddLocalMinPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt, b32 is_new 
     }
     else
     {
-        active *prevHotEdge = GetPrevHotEdge(e1);
+        active *prevHotEdge = GetPrevHotEdge(Clipper, e1);
         //e.windDx is the winding direction of the **input** paths
         //and unrelated to the winding direction of output polygons.
         //Output orientation is determined by e.outrec.frontE which is
         //the ascending edge (see AddLocalMinPoly).
         if(prevHotEdge)
         {
-            if (OutrecIsAscending(prevHotEdge) == is_new)
+            if (OutrecIsAscending(Clipper, prevHotEdge) == is_new)
                 SetSides(outrec, e2, e1);
             else
                 SetSides(outrec, e1, e2);
         }
         else
         {
-            outrec->Owner = 0;
+            outrec->OwnerIndex = 0;
             if (is_new)
                 SetSides(outrec, e1, e2);
             else
@@ -774,7 +778,7 @@ AddLocalMinPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt, b32 is_new 
         }
     }
 
-    output_point *op = GetOutPt(pt, outrec);
+    output_point *op = GetOutPt(pt, outrecIndex);
     outrec->Points = op;
     return op;
 }
@@ -805,9 +809,10 @@ Split(clipper *Clipper, active *e, v2_s64 pt)
 }
 
 inline b32
-IsFront(active *e)
+IsFront(clipper *Clipper, active *e)
 {
-    return (e == e->outrec->FrontEdge);
+    output_rectangle *outrec = GetOutRec(Clipper, e->outrecIndex);
+    return (e == outrec->FrontEdge);
 }
 
 inline bool
@@ -834,16 +839,15 @@ SwapFrontBackSides(output_rectangle *outrec)
 }
 
 inline output_point *
-AddOutPt(active *e, v2_s64 pt)
+AddOutPt(clipper *Clipper, active *e, v2_s64 pt)
 {
-     
-
     output_point *new_op = 0;
 
     //Outrec.OutPts: a circular doubly-linked-list of POutPt where ...
     //op_front[.Prev]* ~~~> op_back & op_back == op_front.Next
-    output_rectangle *outrec = e->outrec;
-    b32 to_front = IsFront(e);
+    u32 outrecIndex = e->outrecIndex;
+    output_rectangle *outrec = GetOutRec(Clipper, outrecIndex);
+    b32 to_front = IsFront(Clipper, e);
     output_point *op_front = outrec->Points;
     output_point *op_back = op_front->Next;
 
@@ -855,7 +859,7 @@ AddOutPt(active *e, v2_s64 pt)
     else if (PointsAreEqual(pt, op_back->P))
         return op_back;
 
-    new_op = GetOutPt(pt, outrec);
+    new_op = GetOutPt(pt, outrecIndex);
     op_back->Prev = new_op;
     new_op->Prev = op_front;
     new_op->Next = op_back;
@@ -866,64 +870,71 @@ AddOutPt(active *e, v2_s64 pt)
 }
 
 inline void
-UncoupleOutRec(active *ae)
+UncoupleOutRec(clipper *Clipper, active *ae)
 {
-    output_rectangle *outrec = ae->outrec;
+    output_rectangle *outrec = GetOutRec(Clipper, ae->outrecIndex);
     if (!outrec)
         return;
-    outrec->FrontEdge->outrec = 0;
-    outrec->BackEdge->outrec = 0;
+
+    outrec->FrontEdge->outrecIndex = 0;
+    outrec->BackEdge->outrecIndex = 0;
     outrec->FrontEdge = 0;
     outrec->BackEdge = 0;
 }
 
-inline output_rectangle *
-GetRealOutRec(output_rectangle *outrec)
+inline u32
+GetRealOutRec(clipper *Clipper, output_rectangle *outrec)
 {
-     
-
     while(outrec && !outrec->Points)
-        outrec = outrec->Owner;
-    return outrec;
+        outrec = GetOutRec(Clipper, outrec->OwnerIndex);
+
+    return(outrec->Index);
 }
 
 inline void
-SetOwner(output_rectangle *outrec, output_rectangle *new_owner)
+SetOwner(clipper *Clipper, output_rectangle *outrec, output_rectangle *new_owner)
 {
-     
-
     //precondition1: new_owner is never null
-    while (new_owner->Owner && !new_owner->Owner->Points)
-        new_owner->Owner = new_owner->Owner->Owner;
+    output_rectangle *owner = GetOutRec(Clipper, new_owner->OwnerIndex);
+    while (new_owner->OwnerIndex && !owner->Points)
+    {
+        new_owner->OwnerIndex = owner->OwnerIndex;
+        owner = GetOutRec(Clipper, new_owner->OwnerIndex);
+    }
+
     output_rectangle *tmp = new_owner;
     while (tmp && tmp != outrec)
-        tmp = tmp->Owner;
+        tmp = GetOutRec(Clipper, tmp->OwnerIndex);
+
     if (tmp)
-        new_owner->Owner = outrec->Owner;
-    outrec->Owner = new_owner;
+        new_owner->OwnerIndex = outrec->OwnerIndex;
+
+    outrec->OwnerIndex = new_owner->Index;
 }
 
 internal void
-JoinOutrecPaths(active *e1, active *e2)
+JoinOutrecPaths(clipper *Clipper, active *e1, active *e2)
 {
-     
-
     //join e2 outrec path onto e1 outrec path and then delete e2 outrec path
     //pointers. (NB Only very rarely do the joining ends share the same coords.)
-    output_point *p1_st = e1->outrec->Points;
-    output_point *p2_st = e2->outrec->Points;
+
+    output_rectangle *e1outrec = GetOutRec(Clipper, e1->outrecIndex);
+    output_rectangle *e2outrec = GetOutRec(Clipper, e2->outrecIndex);
+
+    output_point *p1_st = e1outrec->Points;
+    output_point *p2_st = e2outrec->Points;
     output_point *p1_end = p1_st->Next;
     output_point *p2_end = p2_st->Next;
-    if (IsFront(e1))
+    if(IsFront(Clipper, e1))
     {
         p2_end->Prev = p1_st;
         p1_st->Next = p2_end;
         p2_st->Next = p1_end;
         p1_end->Prev = p2_st;
-        e1->outrec->Points = p2_st;
-        e1->outrec->FrontEdge = e2->outrec->FrontEdge;
-        if (e1->outrec->FrontEdge)
-            e1->outrec->FrontEdge->outrec = e1->outrec;
+        e1outrec->Points = p2_st;
+        e1outrec->FrontEdge = e2outrec->FrontEdge;
+        if (e1outrec->FrontEdge)
+            e1outrec->FrontEdge->outrecIndex = e1outrec->Index;
     }
     else
     {
@@ -931,27 +942,31 @@ JoinOutrecPaths(active *e1, active *e2)
         p2_st->Next = p1_end;
         p1_st->Next = p2_end;
         p2_end->Prev = p1_st;
-        e1->outrec->BackEdge = e2->outrec->BackEdge;
-        if(e1->outrec->BackEdge)
-            e1->outrec->BackEdge->outrec = e1->outrec;
+        e1outrec->BackEdge = e2outrec->BackEdge;
+        if(e1outrec->BackEdge)
+            e1outrec->BackEdge->outrecIndex = e1outrec->Index;
     }
 
+    // NOTE(babykaban): Not sure if necessary test!
+//    e1outrec = GetOutRec(Clipper, e1->outrecIndex);
+//    e2outrec = GetOutRec(Clipper, e2->outrecIndex);
+
     //after joining, the e2.OutRec must contains no vertices ...
-    e2->outrec->FrontEdge = 0;
-    e2->outrec->BackEdge = 0;
-    e2->outrec->Points = 0;
+    e2outrec->FrontEdge = 0;
+    e2outrec->BackEdge = 0;
+    e2outrec->Points = 0;
 
     if (IsOpenEnd(e1))
     {
-        e2->outrec->Points = e1->outrec->Points;
-        e1->outrec->Points = 0;
+        e2outrec->Points = e1outrec->Points;
+        e1outrec->Points = 0;
     }
     else
-        SetOwner(e2->outrec, e1->outrec);
+        SetOwner(Clipper, e2outrec, e1outrec);
 
     //and e1 and e2 are maxima and are about to be dropped from the Actives list.
-    e1->outrec = 0;
-    e2->outrec = 0;
+    e1->outrecIndex = 0;
+    e2->outrecIndex = 0;
 }
 
 internal output_point *
@@ -964,12 +979,12 @@ AddLocalMaxPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
     if (IsJoined(e2))
         Split(Clipper, e2, pt);
 
-    if (IsFront(e1) == IsFront(e2))
+    if (IsFront(Clipper, e1) == IsFront(Clipper, e2))
     {
         if (IsOpenEnd(e1))
-            SwapFrontBackSides(e1->outrec);
+            SwapFrontBackSides(GetOutRec(Clipper, e1->outrecIndex));
         else if (IsOpenEnd(e2))
-            SwapFrontBackSides(e2->outrec);
+            SwapFrontBackSides(GetOutRec(Clipper, e2->outrecIndex));
         else
         {
             Clipper->Succeeded = false;
@@ -977,29 +992,29 @@ AddLocalMaxPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
         }
     }
 
-    output_point *result = AddOutPt(e1, pt);
-    if (e1->outrec == e2->outrec)
+    output_point *result = AddOutPt(Clipper, e1, pt);
+    if(e1->outrecIndex == e2->outrecIndex)
     {
-        output_rectangle *outrec = e1->outrec;
+        output_rectangle *outrec = GetOutRec(Clipper, e1->outrecIndex);
         outrec->Points = result;
 
-        UncoupleOutRec(e1);
+        UncoupleOutRec(Clipper, e1);
         result = outrec->Points;
-        if (outrec->Owner && !outrec->Owner->FrontEdge)
-            outrec->Owner = GetRealOutRec(outrec->Owner);
+        if (outrec->OwnerIndex && !GetOutRec(Clipper, outrec->OwnerIndex)->FrontEdge)
+            outrec->OwnerIndex = GetRealOutRec(Clipper, GetOutRec(Clipper, outrec->OwnerIndex));
     }
     //and to preserve the winding orientation of outrec ...
     else if (IsOpen(e1))
     {
         if (e1->wind_dx < 0)
-            JoinOutrecPaths(e1, e2);
+            JoinOutrecPaths(Clipper, e1, e2);
         else
-            JoinOutrecPaths(e2, e1);
+            JoinOutrecPaths(Clipper, e2, e1);
     }
-    else if (e1->outrec->Index < e2->outrec->Index)
-        JoinOutrecPaths(e1, e2);
+    else if (e1->outrecIndex < e2->outrecIndex)
+        JoinOutrecPaths(Clipper, e1, e2);
     else
-        JoinOutrecPaths(e2, e1);
+        JoinOutrecPaths(Clipper, e2, e1);
     return result;
 }
 
@@ -1010,7 +1025,7 @@ CheckJoinLeft(clipper *Clipper, active *e, v2_s64 pt, b32 check_curr_x = false)
 
     active *prev = e->prev_in_ael;
     if (!prev ||
-        !IsHotEdge(e) || !IsHotEdge(prev) ||
+        !IsHotEdge(Clipper, e) || !IsHotEdge(Clipper, prev) ||
         IsHorizontal(e) || IsHorizontal(prev) ||
         IsOpen(e) || IsOpen(prev) )
         return;
@@ -1030,12 +1045,12 @@ CheckJoinLeft(clipper *Clipper, active *e, v2_s64 pt, b32 check_curr_x = false)
     if (!IsCollinear(e->top, pt, prev->top))
         return;
 
-    if (e->outrec->Index == prev->outrec->Index)
+    if (e->outrecIndex == prev->outrecIndex)
         AddLocalMaxPoly(Clipper, prev, e, pt);
-    else if (e->outrec->Index < prev->outrec->Index)
-        JoinOutrecPaths(e, prev);
+    else if (e->outrecIndex < prev->outrecIndex)
+        JoinOutrecPaths(Clipper, e, prev);
     else
-        JoinOutrecPaths(prev, e);
+        JoinOutrecPaths(Clipper, prev, e);
 
     prev->JoinWith = JoinWith_Right;
     e->JoinWith = JoinWith_Left;
@@ -1048,7 +1063,7 @@ CheckJoinRight(clipper *Clipper, active *e, v2_s64 pt, b32 check_curr_x = false)
 
     active *next = e->next_in_ael;
     if (!next ||
-        !IsHotEdge(e) || !IsHotEdge(next) ||
+        !IsHotEdge(Clipper, e) || !IsHotEdge(Clipper, next) ||
         IsHorizontal(e) || IsHorizontal(next) ||
         IsOpen(e) || IsOpen(next))
         return;
@@ -1067,12 +1082,12 @@ CheckJoinRight(clipper *Clipper, active *e, v2_s64 pt, b32 check_curr_x = false)
     if (!IsCollinear(e->top, pt, next->top))
         return;
 
-    if (e->outrec->Index == next->outrec->Index)
+    if (e->outrecIndex == next->outrecIndex)
         AddLocalMaxPoly(Clipper, e, next, pt);
-    else if (e->outrec->Index < next->outrec->Index)
-        JoinOutrecPaths(e, next);
+    else if (e->outrecIndex < next->outrecIndex)
+        JoinOutrecPaths(Clipper, e, next);
     else
-        JoinOutrecPaths(next, e);
+        JoinOutrecPaths(Clipper, next, e);
 
     e->JoinWith = JoinWith_Right;
     next->JoinWith = JoinWith_Left;
@@ -1108,7 +1123,8 @@ StartOpenPath(clipper *Clipper, active *e, v2_s64 pt)
 {
      
 
-    output_rectangle *outrec = NewOutRec(Clipper);
+    u32 outrecIndex = NewOutRec(Clipper);
+    output_rectangle *outrec = GetOutRec(Clipper, outrecIndex);
     outrec->IsOpen = true;
 
     if(e->wind_dx > 0)
@@ -1122,20 +1138,19 @@ StartOpenPath(clipper *Clipper, active *e, v2_s64 pt)
         outrec->BackEdge = e;
     }
 
-    e->outrec = outrec;
+    e->outrecIndex = outrecIndex;
 
-    output_point *op = GetOutPt(pt, outrec);
+    output_point *op = GetOutPt(pt, outrecIndex);
     outrec->Points = op;
     return op;
 }
 
 inline void
-SwapOutrecs(active *e1, active *e2)
+SwapOutrecs(clipper *Clipper, active *e1, active *e2)
 {
-     
+    output_rectangle *or1 = GetOutRec(Clipper, e1->outrecIndex);
+    output_rectangle *or2 = GetOutRec(Clipper, e2->outrecIndex);;
 
-    output_rectangle *or1 = e1->outrec;
-    output_rectangle *or2 = e2->outrec;
     if (or1 == or2)
     {
         active *e = or1->FrontEdge;
@@ -1158,8 +1173,8 @@ SwapOutrecs(active *e1, active *e2)
             or2->BackEdge = e1;
     }
 
-    e1->outrec = or2;
-    e2->outrec = or1;
+    e1->outrecIndex = or2->Index;
+    e2->outrecIndex = or1->Index;
 }
 
 inline b32
@@ -1197,7 +1212,7 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
         switch(Clipper->ClipType)
         {
             case ClipType_Union:
-                if (!IsHotEdge(edge_c)) return;
+                if (!IsHotEdge(Clipper, edge_c)) return;
                 break;
             default:
                 if (edge_c->local_min->PolyType == PathType_Subject)
@@ -1220,14 +1235,17 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
         }
 
         //toggle contribution ...
-        if(IsHotEdge(edge_o))
+        if(IsHotEdge(Clipper, edge_o))
         {
-            AddOutPt(edge_o, pt);
+            AddOutPt(Clipper, edge_o, pt);
 
-            if(IsFront(edge_o))
-                edge_o->outrec->FrontEdge = 0;
-            else edge_o->outrec->BackEdge = 0;
-            edge_o->outrec = 0;
+            output_rectangle *outrec = GetOutRec(Clipper, edge_o->outrecIndex);
+            if(IsFront(Clipper, edge_o))
+                outrec->FrontEdge = 0;
+            else
+                outrec->BackEdge = 0;
+
+            edge_o->outrecIndex = 0;
         }
 
         //horizontal edges can pass under open paths at a LocMins
@@ -1237,13 +1255,13 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
             //find the other side of the LocMin and
             //if it's 'hot' join up with it ...
             active *e3 = FindEdgeWithMatchingLocMin(edge_o);
-            if (e3 && IsHotEdge(e3))
+            if (e3 && IsHotEdge(Clipper, e3))
             {
-                edge_o->outrec = e3->outrec;
+                edge_o->outrecIndex = e3->outrecIndex;
                 if (edge_o->wind_dx > 0)
-                    SetSides(e3->outrec, edge_o, e3);
+                    SetSides(GetOutRec(Clipper, e3->outrecIndex), edge_o, e3);
                 else
-                    SetSides(e3->outrec, e3, edge_o);
+                    SetSides(GetOutRec(Clipper, e3->outrecIndex), e3, edge_o);
                 return;
             }
             else
@@ -1323,20 +1341,20 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
     const bool e1_windcnt_in_01 = old_e1_windcnt == 0 || old_e1_windcnt == 1;
     const bool e2_windcnt_in_01 = old_e2_windcnt == 0 || old_e2_windcnt == 1;
 
-    if ((!IsHotEdge(e1) && !e1_windcnt_in_01) || 
-        (!IsHotEdge(e2) && !e2_windcnt_in_01))
+    if ((!IsHotEdge(Clipper, e1) && !e1_windcnt_in_01) || 
+        (!IsHotEdge(Clipper, e2) && !e2_windcnt_in_01))
         return;
 
     //NOW PROCESS THE INTERSECTION ...
     //if both edges are 'hot' ...
-    if (IsHotEdge(e1) && IsHotEdge(e2))
+    if (IsHotEdge(Clipper, e1) && IsHotEdge(Clipper, e2))
     {
         if ((old_e1_windcnt != 0 && old_e1_windcnt != 1) || (old_e2_windcnt != 0 && old_e2_windcnt != 1) ||
             (e1->local_min->PolyType != e2->local_min->PolyType && Clipper->ClipType != ClipType_Xor))
         {
             AddLocalMaxPoly(Clipper, e1, e2, pt);
         }
-        else if (IsFront(e1) || (e1->outrec == e2->outrec))
+        else if (IsFront(Clipper, e1) || (e1->outrecIndex == e2->outrecIndex))
         {
             //this 'else if' condition isn't strictly needed but
             //it's sensible to split polygons that ony touch at
@@ -1347,20 +1365,20 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
         }
         else
         {
-            AddOutPt(e1, pt);
-            AddOutPt(e2, pt);
-            SwapOutrecs(e1, e2);
+            AddOutPt(Clipper, e1, pt);
+            AddOutPt(Clipper, e2, pt);
+            SwapOutrecs(Clipper, e1, e2);
         }
     }
-    else if (IsHotEdge(e1))
+    else if (IsHotEdge(Clipper, e1))
     {
-        AddOutPt(e1, pt);
-        SwapOutrecs(e1, e2);
+        AddOutPt(Clipper, e1, pt);
+        SwapOutrecs(Clipper, e1, e2);
     }
-    else if (IsHotEdge(e2))
+    else if (IsHotEdge(Clipper, e2))
     {
-        AddOutPt(e2, pt);
-        SwapOutrecs(e1, e2);
+        AddOutPt(Clipper, e2, pt);
+        SwapOutrecs(Clipper, e1, e2);
     }
     else
     {
@@ -1676,7 +1694,7 @@ ResetHorzDirection(active *horz, vertex *max_vertex, s64 *horz_left, s64 *horz_r
 inline void
 AddTrialHorzJoin(clipper *Clipper, output_point *op)
 {
-    if(op->OutRect->IsOpen)
+    if(GetOutRec(Clipper, op->OutRectIndex)->IsOpen)
         return;
 
     if(NeedIncrease(Clipper->HorzCount))
@@ -1774,9 +1792,9 @@ TopX(active *ae, s64 currentY)
 }
 
 inline output_point *
-GetLastOp(active *hot_edge)
+GetLastOp(clipper *Clipper, active *hot_edge)
 {
-    output_rectangle *outrec = hot_edge->outrec;
+    output_rectangle *outrec = GetOutRec(Clipper, hot_edge->outrecIndex);
     output_point *result = outrec->Points;
     if (hot_edge != outrec->FrontEdge)
         result = result->Next;
@@ -1820,9 +1838,9 @@ DoHorizontal(clipper *Clipper, active *horz)
     s64 horz_left, horz_right;
     b32 is_left_to_right = ResetHorzDirection(horz, vertex_max, &horz_left, &horz_right);
 
-    if(IsHotEdge(horz))
+    if(IsHotEdge(Clipper, horz))
     {
-        output_point *op = AddOutPt(horz, V2S64(horz->curr_x, y));
+        output_point *op = AddOutPt(Clipper, horz, V2S64(horz->curr_x, y));
         AddTrialHorzJoin(Clipper, op);
     }
 
@@ -1838,17 +1856,17 @@ DoHorizontal(clipper *Clipper, active *horz)
         {
             if (e->vertex_top == vertex_max)
             {
-                if(IsHotEdge(horz) && IsJoined(e))
+                if(IsHotEdge(Clipper, horz) && IsJoined(e))
                     Split(Clipper, e, e->top);
 
                 //if (IsHotEdge(horz) != IsHotEdge(*e))
                 //    DoError(undefined_error_i);
 
-                if (IsHotEdge(horz))
+                if (IsHotEdge(Clipper, horz))
                 {
                     while(horz->vertex_top != vertex_max)
                     {
-                        AddOutPt(horz, horz->top);
+                        AddOutPt(Clipper, horz, horz->top);
                         UpdateEdgeIntoAEL(Clipper, horz);
                     }
                     if (is_left_to_right)
@@ -1878,7 +1896,7 @@ DoHorizontal(clipper *Clipper, active *horz)
                     if (is_left_to_right)
                     {
                         //with open paths we'll only break once past horz's end
-                        if(IsOpen(e) && !IsSamePolyType(e, horz) && !IsHotEdge(e))
+                        if(IsOpen(e) && !IsSamePolyType(e, horz) && !IsHotEdge(Clipper, e))
                         {
                             if (TopX(e, pt.y) > pt.x)
                                 break;
@@ -1889,7 +1907,7 @@ DoHorizontal(clipper *Clipper, active *horz)
                     }
                     else
                     {
-                        if (IsOpen(e) && !IsSamePolyType(e, horz) && !IsHotEdge(e))
+                        if (IsOpen(e) && !IsSamePolyType(e, horz) && !IsHotEdge(Clipper, e))
                         {
                             if (TopX(e, pt.y) < pt.x)
                                 break;
@@ -1918,25 +1936,27 @@ DoHorizontal(clipper *Clipper, active *horz)
                 e = horz->prev_in_ael;
             }
 
-            if(horz->outrec)
+            if(horz->outrecIndex != 0)
             {
                 //nb: The outrec containining the op returned by IntersectEdges
                 //above may no longer be associated with horzEdge.
-                AddTrialHorzJoin(Clipper, GetLastOp(horz));
+                AddTrialHorzJoin(Clipper, GetLastOp(Clipper, horz));
             }
         }
 
         //check if we've finished with (consecutive) horizontals ...
         if (horzIsOpen && IsOpenEnd(horz)) // ie open at top
         {
-            if (IsHotEdge(horz))
+            if (IsHotEdge(Clipper, horz))
             {
-                AddOutPt(horz, horz->top);
-                if (IsFront(horz))
-                    horz->outrec->FrontEdge = 0;
+                AddOutPt(Clipper, horz, horz->top);
+                output_rectangle *outrec = GetOutRec(Clipper, horz->outrecIndex);
+                if (IsFront(Clipper, horz))
+                    outrec->FrontEdge = 0;
                 else
-                    horz->outrec->BackEdge = 0;
-                horz->outrec = 0;
+                    outrec->BackEdge = 0;
+
+                horz->outrecIndex = 0;
             }
 
             DeleteFromAEL(Clipper, horz);
@@ -1946,17 +1966,17 @@ DoHorizontal(clipper *Clipper, active *horz)
             break;
 
         //still more horizontals in bound to process ...
-        if (IsHotEdge(horz))
-            AddOutPt(horz, horz->top);
+        if (IsHotEdge(Clipper, horz))
+            AddOutPt(Clipper, horz, horz->top);
         UpdateEdgeIntoAEL(Clipper, horz);
 
         is_left_to_right =
             ResetHorzDirection(horz, vertex_max, &horz_left, &horz_right);
     }
 
-    if (IsHotEdge(horz))
+    if (IsHotEdge(Clipper, horz))
     {
-        output_point *op = AddOutPt(horz, horz->top);
+        output_point *op = AddOutPt(Clipper, horz, horz->top);
         AddTrialHorzJoin(Clipper, op);
     }
 
@@ -1987,12 +2007,12 @@ SetHorzSegHeadingForward(horz_segment *hs, output_point *opP, output_point *opN)
 }
 
 inline b32
-UpdateHorzSegment(horz_segment *hs)
+UpdateHorzSegment(clipper *Clipper, horz_segment *hs)
 {
      
 
     output_point *op = hs->left_op;
-    output_rectangle *outrec = GetRealOutRec(op->OutRect);
+    output_rectangle *outrec = GetOutRec(Clipper, GetRealOutRec(Clipper, GetOutRec(Clipper, op->OutRectIndex)));
     b32 outrecHasEdges = (outrec->FrontEdge) ? 1 : 0;
 
     s64 curr_y = op->P.y;
@@ -2034,7 +2054,7 @@ DuplicateOp(output_point *op, b32 insert_after)
 {
      
 
-    output_point *result = GetOutPt(op->P, op->OutRect);
+    output_point *result = GetOutPt(op->P, op->OutRectIndex);
 
     if(insert_after)
     {
@@ -2064,7 +2084,7 @@ ConvertHorzSegsToJoins(clipper *Clipper)
         ++I)
     {
         horz_segment *hs = Clipper->HorzSegList + I;
-        if(UpdateHorzSegment(hs))
+        if(UpdateHorzSegment(Clipper, hs))
         {
             ++J;
         }
@@ -2390,18 +2410,19 @@ DoMaxima(clipper *Clipper, active *e)
     next_e = e->next_in_ael;
     if(IsOpenEnd(e))
     {
-        if(IsHotEdge(e))
-            AddOutPt(e, e->top);
+        if(IsHotEdge(Clipper, e))
+            AddOutPt(Clipper, e, e->top);
 
         if (!IsHorizontal(e))
         {
-            if (IsHotEdge(e))
+            if (IsHotEdge(Clipper, e))
             {
-                if (IsFront(e))
-                    e->outrec->FrontEdge = 0;
+                output_rectangle *outrec = GetOutRec(Clipper, e->outrecIndex);
+                if (IsFront(Clipper, e))
+                    outrec->FrontEdge = 0;
                 else
-                    e->outrec->BackEdge = 0;
-                e->outrec = 0;
+                    outrec->BackEdge = 0;
+                e->outrecIndex = 0;
             }
 
             DeleteFromAEL(Clipper, e);
@@ -2428,7 +2449,7 @@ DoMaxima(clipper *Clipper, active *e)
 
     if (IsOpen(e))
     {
-        if (IsHotEdge(e))
+        if (IsHotEdge(Clipper, e))
             AddLocalMaxPoly(Clipper, e, max_pair, e->top);
         DeleteFromAEL(Clipper, max_pair);
         DeleteFromAEL(Clipper, e);
@@ -2436,7 +2457,7 @@ DoMaxima(clipper *Clipper, active *e)
     }
 
     // e.next_in_ael== max_pair ...
-    if (IsHotEdge(e))
+    if (IsHotEdge(Clipper, e))
         AddLocalMaxPoly(Clipper, e, max_pair, e->top);
 
     DeleteFromAEL(Clipper, e);
@@ -2465,8 +2486,8 @@ DoTopOfScanbeam(clipper *Clipper, s64 y)
             else
             {
                 //INTERMEDIATE VERTEX ...
-                if(IsHotEdge(e))
-                    AddOutPt(e, e->top);
+                if(IsHotEdge(Clipper, e))
+                    AddOutPt(Clipper, e, e->top);
                 UpdateEdgeIntoAEL(Clipper, e);
                 if (IsHorizontal(e))
                     PushHorz(Clipper, e);  // horizontals are processed later
@@ -2486,7 +2507,7 @@ FixOutRecPts(output_rectangle *outrec)
 
     output_point *op = outrec->Points;
     do {
-        op->OutRect = outrec;
+        op->OutRectIndex = outrec->Index;
         op = op->Next;
     } while (op != outrec->Points);
 }
@@ -2501,8 +2522,8 @@ ProcessHorzJoins(clipper *Clipper)
         ++I)
     {
         horz_join *j = Clipper->HorzJoinList + I;
-        output_rectangle *or1 = GetRealOutRec(j->op1->OutRect);
-        output_rectangle *or2 = GetRealOutRec(j->op2->OutRect);
+        output_rectangle *or1 = GetOutRec(Clipper, GetRealOutRec(Clipper, GetOutRec(Clipper, j->op1->OutRectIndex)));
+        output_rectangle *or2 = GetOutRec(Clipper, GetRealOutRec(Clipper, GetOutRec(Clipper, j->op2->OutRectIndex)));
 
         output_point *op1b = j->op1->Next;
         output_point *op2b = j->op2->Prev;
@@ -2513,23 +2534,23 @@ ProcessHorzJoins(clipper *Clipper)
 
         if (or1 == or2) // 'join' is really a split
         {
-            or2 = NewOutRec(Clipper);
+            or2 = GetOutRec(Clipper, NewOutRec(Clipper));
             or2->Points = op1b;
             FixOutRecPts(or2);
 
             //if or1->pts has moved to or2 then update or1->pts!!
-            if(or1->Points->OutRect == or2)
+            if(or1->Points->OutRectIndex == or2->Index)
             {
                 or1->Points = j->op1;
-                or1->Points->OutRect = or1;
+                or1->Points->OutRectIndex = or1->Index;
             }
 
-                or2->Owner = or1;
+                or2->OwnerIndex = or1->Index;
         }
         else
         {
             or2->Points = 0;
-            or2->Owner = or1;
+            or2->OwnerIndex = or1->Index;
         }
     }
 }
@@ -2744,7 +2765,7 @@ DoSplitOp(clipper *Clipper, output_rectangle *outrec, output_point *splitOp)
     }
     else
     {
-        output_point *newOp2 = GetOutPt(ip, prevOp->OutRect);
+        output_point *newOp2 = GetOutPt(ip, prevOp->OutRectIndex);
         newOp2->Prev = prevOp;
         newOp2->Next = nextNextOp;
         nextNextOp->Prev = newOp2;
@@ -2759,13 +2780,13 @@ DoSplitOp(clipper *Clipper, output_rectangle *outrec, output_point *splitOp)
     if (absArea2 >= 1 &&
         (absArea2 > absArea1 || (area2 > 0) == (area1 > 0)))
     {
-        output_rectangle *newOr = NewOutRec(Clipper);
-        newOr->Owner = outrec->Owner;
+        output_rectangle *newOr = GetOutRec(Clipper, NewOutRec(Clipper));
+        newOr->OwnerIndex = outrec->OwnerIndex;
 
-        splitOp->OutRect = newOr;
-        splitOp->Next->OutRect = newOr;
+        splitOp->OutRectIndex = newOr->Index;
+        splitOp->Next->OutRectIndex = newOr->Index;
 
-        output_point *newOp = GetOutPt(ip, newOr);
+        output_point *newOp = GetOutPt(ip, newOr->Index);
         newOp->Prev = splitOp->Next;
         newOp->Next = splitOp;
         newOr->Points = newOp;
@@ -2816,7 +2837,7 @@ CleanCollinear(clipper *Clipper, output_rectangle *outrec)
 {
      
 
-    outrec = GetRealOutRec(outrec);
+    outrec = GetOutRec(Clipper, GetRealOutRec(Clipper, outrec));
     if (!outrec || outrec->IsOpen)
         return;
 
