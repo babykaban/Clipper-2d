@@ -367,6 +367,13 @@ NewOutRec(clipper *Clipper)
     return Result;
 }
 
+inline output_rectangle *
+GetOutRec(clipper *Clipper, u32 Index)
+{
+    output_rectangle *Result = Clipper->OutRecList + Index;
+    return(Result);
+}
+
 inline void
 FreePaths(paths_f64 *Paths)
 {
