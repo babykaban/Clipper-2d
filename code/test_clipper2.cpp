@@ -12,7 +12,7 @@
 #include "main.h"
 
 #define PROFILER 1
-#define PRINT_OUT_RESULT 1
+#define PRINT_OUT_RESULT 0
 
 #define USINGZ 0
 #include "clipper2.h"
@@ -66,6 +66,9 @@ IntersectTwoPolies(polygon *S, polygon *C)
     clip.push_back(tmp1);
 
     solution = Intersect(subject, clip, FillRule::EvenOdd);
+//    solution = Difference(subject, clip, FillRule::EvenOdd);
+//    solution = Union(subject, clip, FillRule::EvenOdd);
+//    solution = Xor(subject, clip, FillRule::EvenOdd);
     
 #if PRINT_OUT_RESULT
     printf("\nTest: %s, %s", ClipTypes[1], FillRules[0]);
@@ -145,16 +148,16 @@ int main()
     polygon_set Subjects = {};
     polygon_set Clips = {};
 
-    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
-//    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
+//    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
+    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
-    for(u32 I = 0; I < 1; ++I)
+    for(u32 I = 0; I < 128; ++I)
     {
-//        polygon *S = Subjects.Polygons + I;
-//        polygon *C = Clips.Polygons + I;
+        polygon *S = Subjects.Polygons + I;
+        polygon *C = Clips.Polygons + I;
 
-        polygon *S = Subjects.Polygons + 4;
-        polygon *C = Clips.Polygons + 4;
+//        polygon *S = Subjects.Polygons + 4;
+//        polygon *C = Clips.Polygons + 4;
 
         IntersectTwoPolies(S, C);
     }

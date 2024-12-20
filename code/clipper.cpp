@@ -715,8 +715,9 @@ SetSides(output_rectangle *OutRec, active *start_edge, active *end_edge)
 inline bool
 IsHotEdge(clipper *Clipper, active *e)
 {
-    output_rectangle *outrec = GetOutRec(Clipper, e->outrecIndex);
-    return(outrec);
+//    output_rectangle *outrec = GetOutRec(Clipper, e->outrecIndex);
+
+    return(e->outrecIndex != 0);
 }
 
 inline active *
@@ -903,10 +904,10 @@ SetOwner(clipper *Clipper, output_rectangle *outrec, output_rectangle *new_owner
     }
 
     output_rectangle *tmp = new_owner;
-    while (tmp && tmp != outrec)
+    while (tmp->Index && (tmp->Index != outrec->Index))
         tmp = GetOutRec(Clipper, tmp->OwnerIndex);
 
-    if (tmp)
+    if (tmp->Index)
         new_owner->OwnerIndex = outrec->OwnerIndex;
 
     outrec->OwnerIndex = new_owner->Index;

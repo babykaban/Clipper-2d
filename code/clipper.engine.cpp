@@ -2123,7 +2123,6 @@ namespace Clipper2Lib {
 
   bool ClipperBase::ExecuteInternal(ClipType ct, FillRule fillrule, bool use_polytrees)
   {
-      TimeFunction;
       cliptype_ = ct;
     fillrule_ = fillrule;
     using_polytree_ = use_polytrees;

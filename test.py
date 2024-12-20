@@ -57,5 +57,5 @@ def view_polygons(json_file):
   plt.show()
 
 # Example usage:
-# view_polygons('c:/Paul/Clipper-2d/output/polygons.json')
-view_polygons('d:/Clipper-2d/output/polygons.json')
+view_polygons('c:/Paul/Clipper-2d/output/polygons.json')
+#view_polygons('d:/Clipper-2d/output/polygons.json')

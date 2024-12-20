@@ -7,7 +7,7 @@
    ======================================================================== */
 
 #define PROFILER 1
-#define PRINT_OUT_RESULT 1
+#define PRINT_OUT_RESULT 0
 
 #include "main.h"
 #include "clipper.h"
@@ -23,8 +23,6 @@ BooleanOpD(uint8_t cliptype, uint8_t fillrule, paths_f64 *subjects, paths_f64 *s
            paths_f64 *clips, paths_f64 *solution, paths_f64 *solution_open,
            b32 preserve_collinear, b32 reverse_solution)
 {
-    TimeFunction;
-    
     if (cliptype > ClipType_Xor)
     {
         Assert(!"Out of range");
@@ -92,6 +90,9 @@ IntersectTwoPolies(polygon *S, polygon *C)
 
     paths_f64 Solution = {};
     BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+//    BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+//    BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+//    BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
     
 #if PRINT_OUT_RESULT
     printf("\nTest: %s, %s", ClipTypes[ClipType_Intersection], FillRules[FillRule_EvenOdd]);
@@ -272,13 +273,13 @@ int main()
 //    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
-    for(u32 I = 0; I < 1; ++I)
+    for(u32 I = 0; I < 128; ++I)
     {
-//        polygon *S = Subjects.Polygons + I;
-//        polygon *C = Clips.Polygons + I;
+        polygon *S = Subjects.Polygons + I;
+        polygon *C = Clips.Polygons + I;
 
-        polygon *S = Subjects.Polygons + 4;
-        polygon *C = Clips.Polygons + 4;
+//        polygon *S = Subjects.Polygons + 4;
+//        polygon *C = Clips.Polygons + 4;
 
         IntersectTwoPolies(S, C);
     }
