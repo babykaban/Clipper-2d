@@ -218,6 +218,8 @@ AddPaths(clipper *Clipper, paths_s64 *Paths, path_type Type, b32 IsOpen)
 inline void
 AddSubjects(clipper *Clipper, paths_f64 *Subjects)
 {
+    TimeFunction;
+
     paths_s64 Paths = ScalePathsF64(Subjects, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Subject, false);
     FreePaths(&Paths);
@@ -234,6 +236,8 @@ AddOpenSubjects(clipper *Clipper, paths_f64 *Subjects)
 inline void
 AddClips(clipper *Clipper, paths_f64 *Clips)
 {
+    TimeFunction;
+
     paths_s64 Paths = ScalePathsF64(Clips, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Clip, false);
     FreePaths(&Paths);
@@ -242,8 +246,8 @@ AddClips(clipper *Clipper, paths_f64 *Clips)
 internal void
 ResetClipper(clipper *Clipper)
 {
-     
-
+    TimeFunction;
+    
     if (!Clipper->MinimaListSorted)
     {
         MergeSort(Clipper->MinimaListCount, Clipper->MinimaList); //#594
@@ -1477,7 +1481,7 @@ InsertScanline(clipper *Clipper, s64 y)
 internal void
 InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
 {
-     
+    TimeFunction;
 
     local_minima *Minima = 0;
     active *left_bound;
@@ -1819,7 +1823,7 @@ DoHorizontal(clipper *Clipper, active *horz)
  *         /              |        /       |       /                            *
  *******************************************************************************/
 {
-     
+    TimeFunction;
 
     v2_s64 pt;
     b32 horzIsOpen = IsOpen(horz);
@@ -2077,7 +2081,7 @@ DuplicateOp(output_point *op, b32 insert_after)
 internal void
 ConvertHorzSegsToJoins(clipper *Clipper)
 {
-     
+    TimeFunction;
 
     u32 J = 0;
     for(u32 I = 0;
@@ -2247,7 +2251,7 @@ Insert1Before2InSEL(active *ae1, active *ae2)
 internal b32
 BuildIntersectList(clipper *Clipper, s64 top_y)
 {
-     
+    TimeFunction;
 
     if (!Clipper->ActiveEdgeList || !Clipper->ActiveEdgeList->next_in_ael)
         return false;
@@ -2328,7 +2332,7 @@ EdgesAdjacentInAEL(intersect_node *inode)
 internal void
 ProcessIntersectList(clipper *Clipper)
 {
-     
+    TimeFunction;
 
     //We now have a list of intersections required so that edges will be
     //correctly positioned at the top of the scanbeam. However, it's important
@@ -2373,8 +2377,6 @@ ProcessIntersectList(clipper *Clipper)
 internal void
 DoIntersections(clipper *Clipper, s64 top_y)
 {
-     
-
     if(BuildIntersectList(Clipper, top_y))
     {
         ProcessIntersectList(Clipper);
@@ -2469,7 +2471,7 @@ DoMaxima(clipper *Clipper, active *e)
 internal void
 DoTopOfScanbeam(clipper *Clipper, s64 y)
 {
-     
+    TimeFunction;
 
     Clipper->StoredEdgeList = 0;  // StoredEdgeList is reused to flag horizontals (see PushHorz below)
     active *e = Clipper->ActiveEdgeList;
@@ -2516,7 +2518,7 @@ FixOutRecPts(output_rectangle *outrec)
 internal void
 ProcessHorzJoins(clipper *Clipper)
 {
-     
+    TimeFunction;
 
     for(u32 I = 0;
         I < Clipper->JointCount;
@@ -2559,8 +2561,6 @@ ProcessHorzJoins(clipper *Clipper)
 internal b32
 ExecuteInternal(clipper *Clipper, clip_type ClipType, fill_rule FillRule)
 {
-     
-
     Clipper->ClipType = ClipType;
     Clipper->FillRule = FillRule;
 
@@ -2897,6 +2897,8 @@ CountPathCount(clipper *Clipper)
 internal void
 BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen)
 {
+    TimeFunction;
+
     *solutionClosed = GetPathsF64(CountPathCount(Clipper));
     if(solutionOpen)
     {
@@ -2964,6 +2966,8 @@ DisposeAllOutRecs(clipper *Clipper)
 void
 CleanUp(clipper *Clipper)
 {
+    TimeFunction;
+
     DeleteEdges(Clipper->ActiveEdgeList);
 #if RECORD_MEMORY_USEAGE
     Free(Clipper->ScanLineMaxHeap.Nodes, Clipper->ScanLineMaxHeap.MaxSize*sizeof(sort_entry));

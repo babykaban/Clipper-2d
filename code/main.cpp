@@ -6,11 +6,12 @@
    $Notice:  $
    ======================================================================== */
 
-#define PROFILER 1
 #define PRINT_OUT_RESULT 0
 
 #include "main.h"
 #include "clipper.h"
+
+#define PROFILER 1
 
 #include "profiler.cpp"
 #include "repetition_tester.cpp"
@@ -89,8 +90,8 @@ IntersectTwoPolies(polygon *S, polygon *C)
     }
 
     paths_f64 Solution = {};
-    BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-//    BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+//    BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+    BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
 //    BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
 //    BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
     
@@ -273,7 +274,7 @@ int main()
 //    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
-    for(u32 I = 0; I < 128; ++I)
+    for(u32 I = 0; I < 16000; ++I)
     {
         polygon *S = Subjects.Polygons + I;
         polygon *C = Clips.Polygons + I;

@@ -507,8 +507,8 @@ main()
     f32 MaxYf32 = 1000;
     f32 MaxXf32 = 1000;
 
-    s32 PolygonCount = 128;
-    s32 numVertices = 12;
+    s32 PolygonCount = 262144;
+    s32 numVertices = 16;
 
     polygon_set SubjectSet = {};
     SubjectSet.PolyCount = PolygonCount;

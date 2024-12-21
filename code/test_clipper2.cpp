@@ -15,9 +15,10 @@
 #define PRINT_OUT_RESULT 0
 
 #define USINGZ 0
+#include "profiler.cpp"
+
 #include "clipper2.h"
 
-#include "profiler.cpp"
 #include "clipper.engine.cpp"
 //#include "clipper.offset.cpp"
 //#include "clipper.rectclip.cpp"
@@ -65,8 +66,8 @@ IntersectTwoPolies(polygon *S, polygon *C)
     }
     clip.push_back(tmp1);
 
-    solution = Intersect(subject, clip, FillRule::EvenOdd);
-//    solution = Difference(subject, clip, FillRule::EvenOdd);
+//    solution = Intersect(subject, clip, FillRule::EvenOdd);
+    solution = Difference(subject, clip, FillRule::EvenOdd);
 //    solution = Union(subject, clip, FillRule::EvenOdd);
 //    solution = Xor(subject, clip, FillRule::EvenOdd);
     
@@ -151,7 +152,7 @@ int main()
 //    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
-    for(u32 I = 0; I < 128; ++I)
+    for(u32 I = 0; I < 16000; ++I)
     {
         polygon *S = Subjects.Polygons + I;
         polygon *C = Clips.Polygons + I;

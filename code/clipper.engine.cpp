@@ -767,7 +767,9 @@ namespace Clipper2Lib {
 
   void ClipperBase::CleanUp()
   {
-    DeleteEdges(actives_);
+      TimeFunction;
+
+      DeleteEdges(actives_);
     scanline_list_ = std::priority_queue<int64_t>();
     intersect_nodes_.clear();
     DisposeAllOutRecs();
@@ -788,6 +790,7 @@ namespace Clipper2Lib {
 
   void ClipperBase::Reset()
   {
+      TimeFunction;
     if (!minima_list_sorted_)
     {
       std::stable_sort(minima_list_.begin(), minima_list_.end(), LocMinSorter()); //#594
@@ -1204,7 +1207,9 @@ namespace Clipper2Lib {
 
   void ClipperBase::InsertLocalMinimaIntoAEL(int64_t bot_y)
   {
-    LocalMinima* local_minima;
+      TimeFunction;
+
+      LocalMinima* local_minima;
     Active* left_bound, * right_bound;
     //Add any local minima (if any) at BotY ...
     //nb: horizontal local minima edges should contain locMin.vertex.prev
@@ -2274,7 +2279,9 @@ namespace Clipper2Lib {
 
   void ClipperBase::ProcessHorzJoins()
   {
-    for (const HorzJoin& j : horz_join_list_)
+      TimeFunction;
+
+      for (const HorzJoin& j : horz_join_list_)
     {
       OutRec* or1 = GetRealOutRec(j.op1->outrec);
       OutRec* or2 = GetRealOutRec(j.op2->outrec);
@@ -2384,7 +2391,9 @@ namespace Clipper2Lib {
 
   bool ClipperBase::BuildIntersectList(const int64_t top_y)
   {
-    if (!actives_ || !actives_->next_in_ael) return false;
+      TimeFunction;
+
+      if (!actives_ || !actives_->next_in_ael) return false;
 
     //Calculate edge positions at the top of the current scanbeam, and from this
     //we will determine the intersections required to reach these new positions.
@@ -2442,7 +2451,9 @@ namespace Clipper2Lib {
 
   void ClipperBase::ProcessIntersectList()
   {
-    //We now have a list of intersections required so that edges will be
+      TimeFunction;
+
+            //We now have a list of intersections required so that edges will be
     //correctly positioned at the top of the scanbeam. However, it's important
     //that edge intersections are processed from the bottom up, but it's also
     //crucial that intersections only occur between adjacent edges.
@@ -2702,7 +2713,9 @@ namespace Clipper2Lib {
 
   void ClipperBase::DoTopOfScanbeam(const int64_t y)
   {
-    sel_ = nullptr;  // sel_ is reused to flag horizontals (see PushHorz below)
+      TimeFunction;
+
+      sel_ = nullptr;  // sel_ is reused to flag horizontals (see PushHorz below)
     Active* e = actives_;
     while (e)
     {
@@ -3094,7 +3107,9 @@ namespace Clipper2Lib {
 
   void ClipperD::BuildPathsD(PathsD& solutionClosed, PathsD* solutionOpen)
   {
-    solutionClosed.resize(0);
+      TimeFunction;
+
+      solutionClosed.resize(0);
     solutionClosed.reserve(outrec_list_.size());
     if (solutionOpen)
     {
