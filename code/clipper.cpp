@@ -2884,7 +2884,7 @@ inline u32
 CountPathCount(clipper *Clipper)
 {
     u32 Result = 0;
-    for(u32 i = 0; i < Clipper->OutputRectCount; ++i)
+    for(u32 i = 1; i < Clipper->OutputRectCount; ++i)
     {
         output_rectangle *outrec = Clipper->OutRecList + i;
         if(outrec->Points)
@@ -2909,7 +2909,7 @@ BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen
     // OutRecList.size() is not static here because
     // CleanCollinear below can indirectly add additional
     // OutRec (via FixOutRecPts)
-    for(u32 i = 0; i < Clipper->OutputRectCount; ++i)
+    for(u32 i = 1; i < Clipper->OutputRectCount; ++i)
     {
         output_rectangle *outrec = Clipper->OutRecList + i;
         if (outrec->Points == nullptr)

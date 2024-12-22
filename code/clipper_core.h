@@ -39,6 +39,7 @@ inline path_f64
 GetPathF64(s32 Count)
 {
     path_f64 Result = {};
+    Result.AllocateCount = Count;
     Result.Points = MallocArray(Count, v2_f64);
 
 #if RECORD_MEMORY_USEAGE
@@ -65,6 +66,7 @@ inline path_s64
 GetPathS64(s32 Count)
 {
     path_s64 Result = {};
+    Result.AllocateCount = Count;
     Result.Points = MallocArray(Count, v2_s64);
 
 #if RECORD_MEMORY_USEAGE
@@ -93,6 +95,8 @@ IncreasePathF64(path_f64 *Path)
     Path->Points =
         ReallocArray(Path->Points, Path->Count,
                      Path->Count + BASIC_ALLOCATE_COUNT, v2_f64);
+    Path->AllocateCount = Path->Count + BASIC_ALLOCATE_COUNT;
+
     PathMemoryUsed += BASIC_ALLOCATE_COUNT*sizeof(v2_f64);
 }
 
@@ -102,6 +106,7 @@ IncreasePathS64(path_s64 *Path)
     Path->Points =
         ReallocArray(Path->Points, Path->Count,
                      Path->Count + BASIC_ALLOCATE_COUNT, v2_s64);
+    Path->AllocateCount = Path->Count + BASIC_ALLOCATE_COUNT;
     PathMemoryUsed += BASIC_ALLOCATE_COUNT*sizeof(v2_f64);
 }
 

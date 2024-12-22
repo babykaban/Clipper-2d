@@ -408,10 +408,10 @@ FreePaths(paths_f64 *Paths)
     {
         path_f64 *Path = Paths->Paths + I;
 #if RECORD_MEMORY_USEAGE
-        Free(Path->Points, sizeof(v2_f64)*Path->Count);
-        PathMemoryUsed -= sizeof(v2_f64)*Path->Count;
+        Free(Path->Points, sizeof(v2_f64)*Path->AllocateCount);
+        PathMemoryUsed -= sizeof(v2_f64)*Path->AllocateCount;
 #else
-        Free(Path->Points, sizeof(v2_f64)*Path->Count);
+        Free(Path->Points, sizeof(v2_f64)*Path->AllocateCount);
 #endif
     }
 
@@ -432,10 +432,10 @@ FreePaths(paths_s64 *Paths)
     {
         path_s64 *Path = Paths->Paths + I;
 #if RECORD_MEMORY_USEAGE
-        Free(Path->Points, sizeof(v2_s64)*Path->Count);
-        PathMemoryUsed -= sizeof(v2_s64)*Path->Count;
+        Free(Path->Points, sizeof(v2_s64)*Path->AllocateCount);
+        PathMemoryUsed -= sizeof(v2_s64)*Path->AllocateCount;
 #else
-        Free(Path->Points, sizeof(v2_s64)*Path->Count);
+        Free(Path->Points, sizeof(v2_s64)*Path->AllocateCount);
 #endif
     }
 

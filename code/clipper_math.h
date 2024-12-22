@@ -39,6 +39,8 @@ union v2_s64
 struct path_s64
 {
     s32 Count;
+    u32 AllocateCount;
+
     v2_s64 *Points;
 };
 
@@ -62,6 +64,8 @@ union v2_f64
 struct path_f64
 {
     s32 Count;
+    u32 AllocateCount;
+
     v2_f64 *Points;
 };
 
