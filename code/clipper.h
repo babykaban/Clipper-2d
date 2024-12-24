@@ -416,10 +416,10 @@ FreePaths(paths_f64 *Paths)
     }
 
 #if RECORD_MEMORY_USEAGE
-    Free(Paths->Paths, Paths->PathCount*sizeof(path_f64));
-    PathMemoryUsed -= Paths->PathCount*sizeof(path_f64);
+    Free(Paths->Paths, Paths->AllocateCount*sizeof(path_f64));
+    PathMemoryUsed -= Paths->AllocateCount*sizeof(path_f64);
 #else
-    Free(Paths->Paths, Paths->PathCount*sizeof(path_s64));
+    Free(Paths->Paths, Paths->AllocateCount*sizeof(path_s64));
 #endif
 }
 
@@ -440,10 +440,10 @@ FreePaths(paths_s64 *Paths)
     }
 
 #if RECORD_MEMORY_USEAGE
-    Free(Paths->Paths, Paths->PathCount*sizeof(path_s64));
-    PathMemoryUsed -= Paths->PathCount*sizeof(path_s64);
+    Free(Paths->Paths, Paths->AllocateCount*sizeof(path_s64));
+    PathMemoryUsed -= Paths->AllocateCount*sizeof(path_s64);
 #else
-    Free(Paths->Paths, Paths->PathCount*sizeof(path_s64));
+    Free(Paths->Paths, Paths->AllocateCount*sizeof(path_s64));
 #endif
 }
 

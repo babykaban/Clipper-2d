@@ -47,6 +47,8 @@ struct path_s64
 struct paths_s64
 {
     s32 PathCount;
+    u32 AllocateCount;
+
     path_s64 *Paths;
 };
 
@@ -72,6 +74,8 @@ struct path_f64
 struct paths_f64
 {
     s32 PathCount;
+    u32 AllocateCount;
+
     path_f64 *Paths;
 };
 

@@ -53,8 +53,9 @@ inline paths_f64
 GetPathsF64(s32 Count)
 {
     paths_f64 Result = {};
+    Result.AllocateCount = Count;
     Result.Paths = MallocArray(Count, path_f64);
-
+    
 #if RECORD_MEMORY_USEAGE
     PathMemoryUsed += Count*sizeof(path_f64);
 #endif
@@ -80,6 +81,7 @@ inline paths_s64
 GetPathsS64(s32 Count)
 {
     paths_s64 Result = {};
+    Result.AllocateCount = Count;
     Result.Paths = MallocArray(Count, path_s64);
 
 #if RECORD_MEMORY_USEAGE

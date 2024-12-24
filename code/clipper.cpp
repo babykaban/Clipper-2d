@@ -2622,10 +2622,10 @@ IsVerySmallTriangle(output_point *op)
 internal b32
 BuildPathD(output_point *op, b32 reverse, b32 isOpen, path_f64 *path, f64 inv_scale)
 {
-    *path = GetPathF64(BASIC_ALLOCATE_COUNT);
-
     if (!op || op->Next == op || (!isOpen && op->Next == op->Prev))
         return false;
+
+    *path = GetPathF64(BASIC_ALLOCATE_COUNT);
 
     v2_s64 lastPt;
     output_point *op2;
@@ -2664,7 +2664,15 @@ BuildPathD(output_point *op, b32 reverse, b32 isOpen, path_f64 *path, f64 inv_sc
     }
 
     if ((path->Count == 3) && IsVerySmallTriangle(op2))
+    {
+#if RECORD_MEMORY_USEAGE
+        Free(path->Points, sizeof(v2_f64)*path->AllocateCount);
+        PathMemoryUsed -= sizeof(v2_f64)*path->AllocateCount;
+#else
+        Free(path->Points, sizeof(v2_f64)*path->AllocateCount);
+#endif
         return false;
+    }
 
     return true;
 }

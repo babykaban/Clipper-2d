@@ -276,13 +276,15 @@ int main()
 
     for(u32 I = 0; I < 262144; ++I)
     {
-        polygon *S = Subjects.Polygons + I;
-        polygon *C = Clips.Polygons + I;
+//        polygon *S = Subjects.Polygons + I;
+//        polygon *C = Clips.Polygons + I;
 
-//        polygon *S = Subjects.Polygons + 4;
-//        polygon *C = Clips.Polygons + 4;
-
+        polygon *S = Subjects.Polygons + 64315;
+        polygon *C = Clips.Polygons + 64315;
+        
         IntersectTwoPolies(S, C);
+
+        Assert(MemoryAllocated == 0);
     }
 
 #if 0
