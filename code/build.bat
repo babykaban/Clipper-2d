@@ -2,10 +2,10 @@
 
 set BuildPath=..\
 
-set CommonCompilerFlags2=-Zi -W4 -EHsc -MT -nologo -GR- -Gm- -EHa- -Od -Oi -WX -wd4456 -wd4201 -wd4100 -wd4189 -FC  
+set CommonCompilerFlags2=-Zi -W4 -EHsc -MT -nologo -GR- -Gm- -EHa- -O2 -Oi -WX -wd4456 -wd4201 -wd4100 -wd4702 -wd4189 -FC  
 set CommonLinkerFlags2= -opt:ref user32.lib gdi32.lib winmm.lib
 
-set CommonCompilerFlags= -Od -MTd -nologo -fp:fast -fp:except- -Gm- -GR- -EHa- -Zo -Oi -WX -W4 -wd4201 -wd4100 -wd4189 -wd4505 -wd4127 -wd4456 -wd4146 -FC -Z7
+set CommonCompilerFlags= -O2 -MTd -nologo -fp:fast -fp:except- -Gm- -GR- -EHa- -Zo -Oi -WX -W4 -wd4201 -wd4100 -wd4189 -wd4505 -wd4127 -wd4456 -wd4146 -FC -Z7
 set CommonLinkerFlags= -incremental:no -opt:ref user32.lib
 
 IF NOT EXIST %BuildPath%\build mkdir %BuildPath%\build

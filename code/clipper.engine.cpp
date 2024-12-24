@@ -1740,7 +1740,9 @@ namespace Clipper2Lib {
 
   inline void ClipperBase::UpdateEdgeIntoAEL(Active* e)
   {
-    e->bot = e->top;
+      TimeFunction;
+      
+      e->bot = e->top;
     e->vertex_top = NextVertex(*e);
     e->top = e->vertex_top->pt;
     e->curr_x = e->bot.x;

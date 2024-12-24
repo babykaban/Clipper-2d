@@ -846,6 +846,8 @@ SwapFrontBackSides(output_rectangle *outrec)
 inline output_point *
 AddOutPt(clipper *Clipper, active *e, v2_s64 pt)
 {
+    TimeFunction;
+    
     output_point *new_op = 0;
 
     //Outrec.OutPts: a circular doubly-linked-list of POutPt where ...
@@ -1742,7 +1744,7 @@ TrimHorz(active *horzEdge, b32 preserveCollinear)
 inline void
 UpdateEdgeIntoAEL(clipper *Clipper, active *e)
 {
-     
+    TimeFunction;
 
     e->bot = e->top;
     e->vertex_top = NextVertex(e);
@@ -2403,7 +2405,7 @@ GetMaximaPair(active *e)
 internal active *
 DoMaxima(clipper *Clipper, active *e)
 {
-     
+    TimeFunction;
 
     active *next_e;
     active *prev_e;
@@ -2491,7 +2493,9 @@ DoTopOfScanbeam(clipper *Clipper, s64 y)
                 //INTERMEDIATE VERTEX ...
                 if(IsHotEdge(Clipper, e))
                     AddOutPt(Clipper, e, e->top);
+
                 UpdateEdgeIntoAEL(Clipper, e);
+
                 if (IsHorizontal(e))
                     PushHorz(Clipper, e);  // horizontals are processed later
             }
@@ -2917,6 +2921,7 @@ BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen
     // OutRecList.size() is not static here because
     // CleanCollinear below can indirectly add additional
     // OutRec (via FixOutRecPts)
+    u32 PrevCount = Clipper->OutputRectCount;
     for(u32 i = 1; i < Clipper->OutputRectCount; ++i)
     {
         output_rectangle *outrec = Clipper->OutRecList + i;
@@ -2937,6 +2942,21 @@ BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen
             {
                 solutionClosed->Paths[solutionClosed->PathCount++] = path;
             }
+        }
+
+        if(PrevCount != Clipper->OutputRectCount)
+        {
+            PrevCount = Clipper->OutputRectCount;
+            paths_f64 New = GetAndCopyPathsF64(solutionClosed,
+                                               (Clipper->OutputRectCount - 1));
+
+#if RECORD_MEMORY_USEAGE
+            Free(solutionClosed->Paths, solutionClosed->AllocateCount*sizeof(path_s64));
+            PathMemoryUsed -= solutionClosed->AllocateCount*sizeof(path_s64);
+#else
+            Free(solutionClosed->Paths, solutionClosed->AllocateCount*sizeof(path_s64));
+#endif
+            *solutionClosed = New;
         }
     }
 }

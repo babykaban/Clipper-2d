@@ -64,7 +64,7 @@ BooleanOpD(uint8_t cliptype, uint8_t fillrule, paths_f64 *subjects, paths_f64 *s
 }
 
 inline void
-IntersectTwoPolies(polygon *S, polygon *C)
+IntersectTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 {
     TimeFunction;
 
@@ -96,7 +96,7 @@ IntersectTwoPolies(polygon *S, polygon *C)
 //    BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
     
 #if PRINT_OUT_RESULT
-    printf("\nTest: %s, %s", ClipTypes[ClipType_Intersection], FillRules[FillRule_EvenOdd]);
+    printf("\nTest[%d]: %s, %s", Index, ClipTypes[ClipType_Intersection], FillRules[FillRule_EvenOdd]);
 
     for(s32 PC = 0;
         PC < Solution.PathCount;
@@ -276,13 +276,13 @@ int main()
 
     for(u32 I = 0; I < 262144; ++I)
     {
-//        polygon *S = Subjects.Polygons + I;
-//        polygon *C = Clips.Polygons + I;
+        polygon *S = Subjects.Polygons + I;
+        polygon *C = Clips.Polygons + I;
 
-        polygon *S = Subjects.Polygons + 64315;
-        polygon *C = Clips.Polygons + 64315;
+//        polygon *S = Subjects.Polygons + 64315;
+//        polygon *C = Clips.Polygons + 64315;
         
-        IntersectTwoPolies(S, C);
+        IntersectTwoPolies(S, C, I);
 
         Assert(MemoryAllocated == 0);
     }

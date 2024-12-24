@@ -63,6 +63,23 @@ GetPathsF64(s32 Count)
     return(Result);
 }
 
+inline paths_f64
+GetAndCopyPathsF64(paths_f64 *Old, s32 Count)
+{
+    paths_f64 Result = {};
+    Result.AllocateCount = Count;
+    Result.Paths = MallocArray(Count, path_f64);
+
+    Result.PathCount = Old->PathCount;
+    Copy(Old->PathCount*sizeof(path_f64), Old->Paths, Result.Paths);
+    
+#if RECORD_MEMORY_USEAGE
+    PathMemoryUsed += Count*sizeof(path_f64);
+#endif
+
+    return(Result);
+}
+
 inline path_s64
 GetPathS64(s32 Count)
 {

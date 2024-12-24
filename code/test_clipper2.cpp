@@ -42,7 +42,7 @@ struct polygon_set
 };
 
 inline void
-IntersectTwoPolies(polygon *S, polygon *C)
+IntersectTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 {
     TimeFunction;
     using namespace Clipper2Lib;
@@ -72,7 +72,7 @@ IntersectTwoPolies(polygon *S, polygon *C)
 //    solution = Xor(subject, clip, FillRule::EvenOdd);
     
 #if PRINT_OUT_RESULT
-    printf("\nTest: %s, %s", ClipTypes[1], FillRules[0]);
+    printf("\nTest[%d]: %s, %s", Index, ClipTypes[1], FillRules[0]);
 
     for (const PathD& path : solution) {
         for (const PointD& pt : path) {
@@ -152,7 +152,7 @@ int main()
 //    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
-    for(u32 I = 0; I < 16000; ++I)
+    for(u32 I = 0; I < 262144; ++I)
     {
         polygon *S = Subjects.Polygons + I;
         polygon *C = Clips.Polygons + I;
@@ -160,7 +160,7 @@ int main()
 //        polygon *S = Subjects.Polygons + 4;
 //        polygon *C = Clips.Polygons + 4;
 
-        IntersectTwoPolies(S, C);
+        IntersectTwoPolies(S, C, I);
     }
 
     EndAndPrintProfile();
