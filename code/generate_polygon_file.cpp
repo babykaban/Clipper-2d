@@ -537,8 +537,11 @@ main()
         Poly->Points = GenerateRandomPolygonF32(Poly->Count, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32, Count++);
     }
     
-    WritePolygonsToJSON(&SubjectSet, &ClipSet, "c:/Paul/Clipper-2d/output/polygons.json");
-    WritePolygonsToBIN(&SubjectSet, &ClipSet, "c:/Paul/Clipper-2d/output/polygons_b.bin");
+//    WritePolygonsToJSON(&SubjectSet, &ClipSet, "c:/Paul/Clipper-2d/output/polygons.json");
+//    WritePolygonsToBIN(&SubjectSet, &ClipSet, "c:/Paul/Clipper-2d/output/polygons_b.bin");
+
+    WritePolygonsToJSON(&SubjectSet, &ClipSet, "d:/Clipper-2d/output/polygons.json");
+    WritePolygonsToBIN(&SubjectSet, &ClipSet, "d:/Clipper-2d/output/polygons_b.bin");
 
 #if PRINT
     for(s32 I = 0;

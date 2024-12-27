@@ -129,9 +129,13 @@ namespace Clipper2Lib {
 
   inline int64_t TopX(const Active& ae, const int64_t currentY)
   {
-    if ((currentY == ae.top.y) || (ae.top.x == ae.bot.x)) return ae.top.x;
-    else if (currentY == ae.bot.y) return ae.bot.x;
-    else return ae.bot.x + static_cast<int64_t>(nearbyint(ae.dx * (currentY - ae.bot.y)));
+      TimeFunction;
+      if ((currentY == ae.top.y) || (ae.top.x == ae.bot.x))
+          return ae.top.x;
+    else if (currentY == ae.bot.y)
+        return ae.bot.x;
+    else
+        return ae.bot.x + static_cast<int64_t>(nearbyint(ae.dx * (currentY - ae.bot.y)));
     // nb: std::nearbyint (or std::round) substantially *improves* performance here
     // as it greatly improves the likelihood of edge adjacency in ProcessIntersectList().
   }
