@@ -7,6 +7,12 @@
    $Notice: $
    ======================================================================== */
 
+global_variable b32 AVX2_SUPPORTED = false;
+global_variable b32 AVX_SUPPORTED = false;
+global_variable b32 SSE_SUPPORTED = false;
+global_variable b32 SSE2_SUPPORTED = false;
+global_variable b32 SSE3_SUPPORTED = false;
+
 #if defined(_MSC_VER)
 #include <intrin.h>
 #else
@@ -38,6 +44,33 @@ check_avx2_support()
     return(0);
 }
 
+inline int
+check_avx_support()
+{
+    int info[4] = {0};
+
+    // Call cpuid with EAX=1 to get processor feature information
+#if defined(_MSC_VER)
+    __cpuid(info, 1);
+#else
+    __cpuid(1, info[0], info[1], info[2], info[3]);
+#endif
+
+    // Check for AVX support (bit 28 of ECX) and OSXSAVE (bit 27 of ECX)
+    if ((info[2] & (1 << 28)) && (info[2] & (1 << 27))) {
+        // Check if the OS supports XSAVE/XRESTOR
+        unsigned long long xcrFeatureMask = 0;
+#if defined(_MSC_VER)
+        xcrFeatureMask = _xgetbv(_XCR_XFEATURE_ENABLED_MASK);
+#else
+        __asm__ volatile(".byte 0x0f, 0x01, 0xd0" : "=a"(xcrFeatureMask) : "c"(0) : "%edx");
+#endif
+        // AVX requires that the OS supports saving YMM registers (bit 1 of XCR0)
+        return (xcrFeatureMask & 0x6) == 0x6;
+    }
+
+    return 0;
+}
 inline int
 check_sse_support()
 {

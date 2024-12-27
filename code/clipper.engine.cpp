@@ -771,7 +771,6 @@ namespace Clipper2Lib {
 
   void ClipperBase::CleanUp()
   {
-      TimeFunction;
 
       DeleteEdges(actives_);
     scanline_list_ = std::priority_queue<int64_t>();
@@ -794,7 +793,6 @@ namespace Clipper2Lib {
 
   void ClipperBase::Reset()
   {
-      TimeFunction;
     if (!minima_list_sorted_)
     {
       std::stable_sort(minima_list_.begin(), minima_list_.end(), LocMinSorter()); //#594
@@ -1211,7 +1209,6 @@ namespace Clipper2Lib {
 
   void ClipperBase::InsertLocalMinimaIntoAEL(int64_t bot_y)
   {
-      TimeFunction;
 
       LocalMinima* local_minima;
     Active* left_bound, * right_bound;
@@ -1744,7 +1741,6 @@ namespace Clipper2Lib {
 
   inline void ClipperBase::UpdateEdgeIntoAEL(Active* e)
   {
-      TimeFunction;
       
       e->bot = e->top;
     e->vertex_top = NextVertex(*e);
@@ -2285,7 +2281,6 @@ namespace Clipper2Lib {
 
   void ClipperBase::ProcessHorzJoins()
   {
-      TimeFunction;
 
       for (const HorzJoin& j : horz_join_list_)
     {
@@ -2457,7 +2452,6 @@ namespace Clipper2Lib {
 
   void ClipperBase::ProcessIntersectList()
   {
-      TimeFunction;
 
             //We now have a list of intersections required so that edges will be
     //correctly positioned at the top of the scanbeam. However, it's important
@@ -2719,7 +2713,6 @@ namespace Clipper2Lib {
 
   void ClipperBase::DoTopOfScanbeam(const int64_t y)
   {
-      TimeFunction;
 
       sel_ = nullptr;  // sel_ is reused to flag horizontals (see PushHorz below)
     Active* e = actives_;
@@ -3113,7 +3106,6 @@ namespace Clipper2Lib {
 
   void ClipperD::BuildPathsD(PathsD& solutionClosed, PathsD* solutionOpen)
   {
-      TimeFunction;
 
       solutionClosed.resize(0);
     solutionClosed.reserve(outrec_list_.size());

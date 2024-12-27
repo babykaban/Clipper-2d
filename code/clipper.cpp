@@ -219,8 +219,8 @@ inline void
 AddSubjects(clipper *Clipper, paths_f64 *Subjects)
 {
     TimeFunction;
-
     paths_s64 Paths = ScalePathsF64(Subjects, Clipper->Scale);
+
     AddPaths(Clipper, &Paths, PathType_Subject, false);
     FreePaths(&Paths);
 }
@@ -236,7 +236,6 @@ AddOpenSubjects(clipper *Clipper, paths_f64 *Subjects)
 inline void
 AddClips(clipper *Clipper, paths_f64 *Clips)
 {
-    TimeFunction;
 
     paths_s64 Paths = ScalePathsF64(Clips, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Clip, false);
@@ -246,7 +245,6 @@ AddClips(clipper *Clipper, paths_f64 *Clips)
 inline void
 ResetClipper(clipper *Clipper)
 {
-    TimeFunction;
     
     if (!Clipper->MinimaListSorted)
     {
@@ -844,7 +842,6 @@ SwapFrontBackSides(output_rectangle *outrec)
 inline output_point *
 AddOutPt(clipper *Clipper, active *e, v2_s64 pt)
 {
-    TimeFunction;
     
     output_point *new_op = 0;
 
@@ -1481,7 +1478,6 @@ InsertScanline(clipper *Clipper, s64 y)
 inline void
 InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
 {
-    TimeFunction;
 
     local_minima *Minima = 0;
     active *left_bound;
@@ -1740,7 +1736,6 @@ TrimHorz(active *horzEdge, b32 preserveCollinear)
 inline void
 UpdateEdgeIntoAEL(clipper *Clipper, active *e)
 {
-    TimeFunction;
 
     e->bot = e->top;
     e->vertex_top = NextVertex(e);
@@ -1791,11 +1786,11 @@ TopX(active ae, s64 currentY)
     else if (currentY == ae.bot.y)
         return ae.bot.x;
     else
-        return ae.bot.x + (s64)(nearbyint(ae.dx * (currentY - ae.bot.y)));
+        return ae.bot.x + nearbyint(ae.dx * (currentY - ae.bot.y));
     // nb: std::nearbyint (or std::round) substantially *improves* performance here
     // as it greatly improves the likelihood of edge adjacency in ProcessIntersectList().
 }
-
+ 
 inline output_point *
 GetLastOp(clipper *Clipper, active *hot_edge)
 {
@@ -1823,7 +1818,6 @@ DoHorizontal(clipper *Clipper, active *horz)
  *         /              |        /       |       /                            *
  *******************************************************************************/
 {
-    TimeFunction;
 
     v2_s64 pt;
     b32 horzIsOpen = IsOpen(horz);
@@ -2081,7 +2075,6 @@ DuplicateOp(output_point *op, b32 insert_after)
 inline void
 ConvertHorzSegsToJoins(clipper *Clipper)
 {
-    TimeFunction;
 
     u32 J = 0;
     for(u32 I = 0;
@@ -2252,7 +2245,7 @@ internal b32
 BuildIntersectList(clipper *Clipper, s64 top_y)
 {
     TimeFunction;
-
+    
     if (!Clipper->ActiveEdgeList || !Clipper->ActiveEdgeList->next_in_ael)
         return false;
 
@@ -2332,7 +2325,6 @@ EdgesAdjacentInAEL(intersect_node *inode)
 inline void
 ProcessIntersectList(clipper *Clipper)
 {
-    TimeFunction;
 
     //We now have a list of intersections required so that edges will be
     //correctly positioned at the top of the scanbeam. However, it's important
@@ -2469,7 +2461,6 @@ DoMaxima(clipper *Clipper, active *e)
 inline void
 DoTopOfScanbeam(clipper *Clipper, s64 y)
 {
-    TimeFunction;
 
     Clipper->StoredEdgeList = 0;  // StoredEdgeList is reused to flag horizontals (see PushHorz below)
     active *e = Clipper->ActiveEdgeList;
@@ -2516,7 +2507,6 @@ FixOutRecPts(output_rectangle *outrec)
 inline void
 ProcessHorzJoins(clipper *Clipper)
 {
-    TimeFunction;
 
     for(u32 I = 0;
         I < Clipper->JointCount;
@@ -2591,230 +2581,6 @@ ExecuteInternal(clipper *Clipper, clip_type ClipType, fill_rule FillRule)
 
         while(PopHorz(Clipper, &e))
             DoHorizontal(Clipper, e);
-    }
-
-    if (Clipper->Succeeded)
-        ProcessHorzJoins(Clipper);
-
-    b32 Result = Clipper->Succeeded;
-    return(Result);
-}
-
-internal b32
-ExecuteInternalUnfolded(clipper *Clipper, clip_type ClipType, fill_rule FillRule)
-{
-    Clipper->ClipType = ClipType;
-    Clipper->FillRule = FillRule;
-
-// NOTE(babykaban): Init Clipper    
-    if (!Clipper->MinimaListSorted)
-    {
-        MergeSort(Clipper->MinimaListCount, Clipper->MinimaList); //#594
-        Clipper->MinimaListSorted = true;
-    }
-
-    for(u32 I = 0;
-        I < Clipper->MinimaListCount;
-        ++I)
-    {
-        local_minima *Minima = Clipper->MinimaList + I;
-        sort_entry Entry = {};
-        Entry.Value_S64 = Minima->Vertex->P.y;
-        MaxHeapInsertNode(&Clipper->ScanLineMaxHeap, Entry);
-    }
-
-    Clipper->CurrentLocalMinima = Clipper->MinimaList + 0;
-    Clipper->ActiveEdgeList = 0;
-    Clipper->StoredEdgeList = 0;
-    Clipper->Succeeded = true;
-// ===================================================================
-
-    s64 y = 0;
-    if((ClipType == ClipType_NoClip) || !PopScanline(Clipper, &y))
-        return true;
-
-    while(Clipper->Succeeded)
-    {
-
-
-// NOTE(babykaban): Insert local minima ======================================================================================================
-        {
-            TimeBlock("Insert minima");
-
-            local_minima *Minima = 0;
-            active *left_bound;
-            active *right_bound;
-            //Add any local minima (if any) at BotY ...
-            //nb: horizontal local minima edges should contain locMin.vertex.prev
-
-            while(PopLocalMinima(Clipper, y, &Minima))
-            {
-                if(IsVertexFlagSet(Minima->Vertex->Flags, VertexFlag_OpenStart))
-                {
-                    left_bound = 0;
-                }
-                else
-                {
-                    left_bound = GetNewActive();
-                    left_bound->bot = Minima->Vertex->P;
-                    left_bound->curr_x = left_bound->bot.x;
-                    left_bound->wind_dx = -1;
-                    left_bound->vertex_top = Minima->Vertex->Prev;  // ie descending
-                    left_bound->top = left_bound->vertex_top->P;
-                    left_bound->local_min = Minima;
-                    SetDx(left_bound);
-                }
-
-                if (IsVertexFlagSet(Minima->Vertex->Flags, VertexFlag_OpenEnd))
-                {
-                    right_bound = 0;
-                }
-                else
-                {
-                    right_bound = GetNewActive();
-                    right_bound->bot = Minima->Vertex->P;
-                    right_bound->curr_x = right_bound->bot.x;
-                    right_bound->wind_dx = 1;
-                    right_bound->vertex_top = Minima->Vertex->Next;  // ie ascending
-                    right_bound->top = right_bound->vertex_top->P;
-                    right_bound->local_min = Minima;
-                    SetDx(right_bound);
-                }
-
-                //Currently LeftB is just the descending bound and RightB is the ascending.
-                //Now if the LeftB isn't on the left of RightB then we need swap them.
-                if(left_bound && right_bound)
-                {
-                    if(IsHorizontal(left_bound))
-                    {
-                        if(IsHeadingRightHorz(left_bound))
-                            SwapActives(&left_bound, &right_bound);
-                    }
-                    else if (IsHorizontal(right_bound))
-                    {
-                        if (IsHeadingLeftHorz(right_bound))
-                            SwapActives(&left_bound, &right_bound);
-                    }
-                    else if (left_bound->dx < right_bound->dx)
-                        SwapActives(&left_bound, &right_bound);
-                }
-                else if (!left_bound)
-                {
-                    left_bound = right_bound;
-                    right_bound = 0;
-                }
-
-                b32 contributing;
-                left_bound->IsLeftBound = true;
-                InsertLeftEdge(Clipper, left_bound);
-
-                if(IsOpen(left_bound))
-                {
-                    SetWindCountForOpenPathEdge(Clipper, left_bound);
-                    contributing = IsContributingOpen(Clipper, left_bound);
-                }
-                else
-                {
-                    SetWindCountForClosedPathEdge(Clipper, left_bound);
-                    contributing = IsContributingClosed(Clipper, left_bound);
-                }
-
-                if(right_bound)
-                {
-                    right_bound->IsLeftBound = false;
-                    right_bound->wind_cnt = left_bound->wind_cnt;
-                    right_bound->wind_cnt2 = left_bound->wind_cnt2;
-                    InsertRightEdge(left_bound, right_bound);  ///////
-                    if (contributing)
-                    {
-                        AddLocalMinPoly(Clipper, left_bound, right_bound, left_bound->bot, true);
-                        if (!IsHorizontal(left_bound))
-                            CheckJoinLeft(Clipper, left_bound, left_bound->bot);
-                    }
-
-                    while (right_bound->next_in_ael &&
-                           IsValidAelOrder(right_bound->next_in_ael, right_bound))
-                    {
-                        IntersectEdges(Clipper, right_bound, right_bound->next_in_ael, right_bound->bot);
-                        SwapPositionsInAEL(Clipper, right_bound, right_bound->next_in_ael);
-                    }
-
-                    if(IsHorizontal(right_bound))
-                        PushHorz(Clipper, right_bound);
-                    else
-                    {
-                        CheckJoinRight(Clipper, right_bound, right_bound->bot);
-                        InsertScanline(Clipper, right_bound->top.y);
-                    }
-                }
-                else if (contributing)
-                {
-                    StartOpenPath(Clipper, left_bound, left_bound->bot);
-                }
-
-                if (IsHorizontal(left_bound))
-                    PushHorz(Clipper, left_bound);
-                else
-                    InsertScanline(Clipper, left_bound->top.y);
-            }
-        }
-        
-// ======================================================================================================
-
-        active *horz = 0;
-        while (PopHorz(Clipper, &horz))
-            DoHorizontal(Clipper, horz);
-
-        if(Clipper->HorzCount > 0)
-        {
-            ConvertHorzSegsToJoins(Clipper);
-            Clipper->HorzCount = 0;
-        }
-
-        Clipper->BottomY = y;  // bot_y_ == bottom of scanbeam
-        if (!PopScanline(Clipper, &y))
-            break;  // y new top of scanbeam
-
-        if(BuildIntersectList(Clipper, y))
-        {
-            ProcessIntersectList(Clipper);
-            Clipper->IntersectNodeCount = 0;
-        }
-
-
-        Clipper->StoredEdgeList = 0;  // StoredEdgeList is reused to flag horizontals (see PushHorz below)
-        active *e = Clipper->ActiveEdgeList;
-        while(e)
-        {
-            //nb: 'e' will never be horizontal here
-            if (e->top.y == y)
-            {
-                e->curr_x = e->top.x;
-                if(IsMaxima(e))
-                {
-                    e = DoMaxima(Clipper, e);  // TOP OF BOUND (MAXIMA)
-                    continue;
-                }
-                else
-                {
-                    //INTERMEDIATE VERTEX ...
-                    if(IsHotEdge(e))
-                        AddOutPt(Clipper, e, e->top);
-
-                    UpdateEdgeIntoAEL(Clipper, e);
-
-                    if (IsHorizontal(e))
-                        PushHorz(Clipper, e);  // horizontals are processed later
-                }
-            }
-            else // i.e. not the top of the edge
-                e->curr_x = TopX(*e, y);
-
-            e = e->next_in_ael;
-        }
-
-        while(PopHorz(Clipper, &horz))
-            DoHorizontal(Clipper, horz);
     }
 
     if (Clipper->Succeeded)
@@ -3127,7 +2893,6 @@ CountPathCount(clipper *Clipper)
 internal void
 BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen)
 {
-    TimeFunction;
 
     *solutionClosed = GetPathsF64(CountPathCount(Clipper));
     if(solutionOpen)
@@ -3212,7 +2977,6 @@ DisposeAllOutRecs(clipper *Clipper)
 void
 CleanUp(clipper *Clipper)
 {
-    TimeFunction;
 
     DeleteEdges(Clipper->ActiveEdgeList);
 #if RECORD_MEMORY_USEAGE
@@ -3257,7 +3021,7 @@ CleanUp(clipper *Clipper)
 inline b32
 Execute(clipper *Clipper, clip_type ClipType, fill_rule FillRule, paths_f64 *ClosedPaths, paths_f64 *OpenPaths)
 {
-    if(ExecuteInternalUnfolded(Clipper, ClipType, FillRule))
+    if(ExecuteInternal(Clipper, ClipType, FillRule))
     {
         BuildPathsD(Clipper, ClosedPaths, OpenPaths);
     }

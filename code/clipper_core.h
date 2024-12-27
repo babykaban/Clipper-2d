@@ -184,28 +184,28 @@ RectAsPath(rectangle2 Rect)
 }
 
 inline path_f64
-ScalePath(path_f64 *Source, f64 ScaleX, f64 ScaleY)
+ScalePath(path_f64 *Source, v2_f64 Scale)
 {
     // TODO(babykaban): Error Handling
 
     path_f64 Result = GetPathF64(Source->Count);
     Result.Count = Source->Count;
-    if((ScaleX == 0) || (ScaleY == 0))
+    if((Scale.x == 0) || (Scale.y == 0))
     {
 //        error_code |= scale_error_i;
 //        DoError(scale_error_i);
         // if no exception, treat as non-fatal error
-        if(ScaleX == 0)
-            ScaleX = 1.0;
-        if(ScaleY == 0)
-            ScaleY = 1.0;
+        if(Scale.x == 0)
+            Scale.x = 1.0;
+        if(Scale.y == 0)
+            Scale.y = 1.0;
     }
-
+    
     for(s32 I = 0;
         I < Source->Count;
         ++I)
     {
-        Result.Points[I] = ScaleX*Source->Points[I];
+        Result.Points[I] = Scale*Source->Points[I];
     }
 
     return(Result);
@@ -214,7 +214,7 @@ ScalePath(path_f64 *Source, f64 ScaleX, f64 ScaleY)
 inline path_f64
 ScalePath(path_f64 *Source, f64 Scale)
 {
-    path_f64 Result = ScalePath(Source, Scale, Scale);
+    path_f64 Result = ScalePath(Source, V2F64(Scale, Scale));
     return(Result);
 }
 
@@ -228,7 +228,7 @@ ScalePaths(paths_f64 *Source, f64 ScaleX, f64 ScaleY)
         I < Source->PathCount;
         ++I)
     {
-        Result.Paths[I] = ScalePath(Source->Paths + I, ScaleX, ScaleY);
+        Result.Paths[I] = ScalePath(Source->Paths + I, V2F64(ScaleX, ScaleY));
     }
 
     return(Result);
@@ -408,27 +408,26 @@ ScalePaths(paths_s64 *Source, f64 Scale)
 }
 
 inline path_s64
-ScalePathF64(path_f64 *Source, f64 ScaleX, f64 ScaleY)
+ScalePathF64(path_f64 *Source, v2_f64 Scale)
 {
     // TODO(babykaban): Error Handling
 
     path_s64 Result = GetPathS64(Source->Count);
     Result.Count = Source->Count;
-    if((ScaleX == 0) || (ScaleY == 0))
+    if((Scale.x == 0) || (Scale.y == 0))
     {
 //        error_code |= scale_error_i;
 //        DoError(scale_error_i);
         // if no exception, treat as non-fatal error
-        if(ScaleX == 0) ScaleX = 1.0;
-        if(ScaleY == 0) ScaleY = 1.0;
+        if(Scale.x == 0) Scale.x = 1.0;
+        if(Scale.y == 0) Scale.y = 1.0;
     }
 
     for(s32 I = 0;
         I < Source->Count;
         ++I)
     {
-        Result.Points[I] = V2S64(ScaleX*(f64)Source->Points[I].x,
-                                 ScaleY*(f64)Source->Points[I].y);
+        Result.Points[I] = V2S64(Scale*Source->Points[I]);
     }
 
     return(Result);
@@ -437,7 +436,7 @@ ScalePathF64(path_f64 *Source, f64 ScaleX, f64 ScaleY)
 inline path_s64
 ScalePathF64(path_f64 *Source, f64 Scale)
 {
-    path_s64 Result = ScalePathF64(Source, Scale, Scale);
+    path_s64 Result = ScalePathF64(Source, V2F64(Scale, Scale));
     return(Result);
 }
 
@@ -451,7 +450,7 @@ ScalePathsF64(paths_f64 *Source, f64 ScaleX, f64 ScaleY)
         I < Source->PathCount;
         ++I)
     {
-        Result.Paths[I] = ScalePathF64(Source->Paths + I, ScaleX, ScaleY);
+        Result.Paths[I] = ScalePathF64(Source->Paths + I, V2F64(ScaleX, ScaleY));
     }
 
     return(Result);

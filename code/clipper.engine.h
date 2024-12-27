@@ -587,7 +587,6 @@ namespace Clipper2Lib {
 
         void AddClip(const PathsD& clips)
         {
-            TimeFunction;
             AddPaths(ScalePaths<int64_t, double>(clips, scale_, error_code_), PathType::Clip, false);
         }
 

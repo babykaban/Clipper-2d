@@ -7,13 +7,13 @@
    ======================================================================== */
 
 #define PRINT_OUT_RESULT 0
-
-#include "main.h"
-#include "clipper.h"
-
 #define PROFILER 1
 
+#include "main.h"
 #include "profiler.cpp"
+
+#include "clipper.h"
+
 #include "repetition_tester.cpp"
 #include "clipper.cpp"
 
@@ -90,8 +90,8 @@ IntersectTwoPolies(polygon *S, polygon *C, u32 Index = 0)
     }
 
     paths_f64 Solution = {};
-//    BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-    BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+    BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+//    BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
 //    BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
 //    BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
     
@@ -249,18 +249,27 @@ int main()
 
     if(check_avx2_support())
     {
+        AVX2_SUPPORTED = true;
         printf("Support wide registers from AVX2 and lower");
+    }
+    if(check_avx_support())
+    {
+        AVX_SUPPORTED = true;
+        printf("Support wide registers from AVX and lower");
     }
     else if(check_sse3_support())
     {
+        SSE3_SUPPORTED = true;
         printf("Support wide registers from SSE3 and lower");
     }
     else if(check_sse2_support())
     {
+        SSE2_SUPPORTED = true;
         printf("Support wide registers from SSE2 and lower");
     }
     else if(check_sse_support())
     {
+        SSE_SUPPORTED = true;
         printf("Support wide registers SSE only");
     }
     else

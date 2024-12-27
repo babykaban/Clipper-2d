@@ -7,8 +7,23 @@
    $Notice: $
    ======================================================================== */
 
+// https://github.com/AngusJohnson/Clipper2/discussions/334
+// #discussioncomment-4248602
+#if defined(_MSC_VER) && ( defined(_M_AMD64) || defined(_M_X64) )
+#include <xmmintrin.h>
+#include <emmintrin.h>
+#define fmin(a,b) _mm_cvtsd_f64(_mm_min_sd(_mm_set_sd(a),_mm_set_sd(b)))
+#define fmax(a,b) _mm_cvtsd_f64(_mm_max_sd(_mm_set_sd(a),_mm_set_sd(b)))
+#define nearbyint(a) _mm_cvtsd_si64(_mm_set_sd(a)) /* Note: expression type is (int64_t) */
+#endif
+
 typedef __m128d f64_2x;
-typedef __m256d f64_4x;
+
+union f64_4x
+{
+    __m256d Value;
+    __m128d E[2];
+};
 
 typedef __m128 f32_4x;
 typedef __m256 f32_8x;
@@ -26,6 +41,37 @@ inline f32_4x
 Set1WF4(f32 A)
 {
     f32_4x Result = _mm_set1_ps(A);
+    return(Result);
+}
+
+inline f64_2x
+Set1WD2(f64 A)
+{
+    f64_2x Result = _mm_set1_pd(A);
+    return(Result);
+}
+
+inline f64_4x
+Set1WD4(f64 A)
+{
+    f64_4x Result = {};
+    Result.Value = _mm256_set1_pd(A);
+    return(Result);
+}
+
+inline f64_4x
+SetWD4(f64 A, f64 B, f64 C, f64 D)
+{
+    f64_4x Result = {};
+    Result.Value = _mm256_set_pd(A, B, C, D);
+    return(Result);
+}
+
+inline f64_4x
+SetWF64_2x4(f64_2x A, f64_2x B)
+{
+    f64_4x Result = {};
+    Result.Value = _mm256_set_m128d(A, B);
     return(Result);
 }
 
@@ -201,21 +247,24 @@ MulWD2(f64_2x A, f64_2x B)
 inline f64_4x
 SubWD4(f64_4x A, f64_4x B)
 {
-    f64_4x Result = _mm256_sub_pd(A, B);
+    f64_4x Result = {};
+    Result.Value = _mm256_sub_pd(A.Value, B.Value);
     return(Result);
 }
 
 inline f64_4x
 AddWD4(f64_4x A, f64_4x B)
 {
-    f64_4x Result = _mm256_add_pd(A, B);
+    f64_4x Result = {};
+    Result.Value = _mm256_add_pd(A.Value, B.Value);
     return(Result);
 }
 
 inline f64_4x
 MulWD4(f64_4x A, f64_4x B)
 {
-    f64_4x Result = _mm256_mul_pd(A, B);
+    f64_4x Result = {};
+    Result.Value = _mm256_mul_pd(A.Value, B.Value);
     return(Result);
 }
 

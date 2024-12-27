@@ -66,8 +66,8 @@ IntersectTwoPolies(polygon *S, polygon *C, u32 Index = 0)
     }
     clip.push_back(tmp1);
 
-//    solution = Intersect(subject, clip, FillRule::EvenOdd);
-    solution = Difference(subject, clip, FillRule::EvenOdd);
+    solution = Intersect(subject, clip, FillRule::EvenOdd);
+//    solution = Difference(subject, clip, FillRule::EvenOdd);
 //    solution = Union(subject, clip, FillRule::EvenOdd);
 //    solution = Xor(subject, clip, FillRule::EvenOdd);
     

@@ -7,6 +7,7 @@
    $Notice: $
    ======================================================================== */
 
+#include "clipper_simd.h"
 #include "clipper_platform.h"
 #include "clipper_memory.h"
 #include "clipper_heap.h"
