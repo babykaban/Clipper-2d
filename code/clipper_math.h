@@ -188,11 +188,5 @@ ProductsAreEqual(s64 a, s64 b, s64 c, s64 d)
     return(Result);
 }
 
-inline void
-FreePath(path_f64 *Path)
-{
-    free(Path->Points);
-}
-
 #define CLIPPER_MATH_H
 #endif

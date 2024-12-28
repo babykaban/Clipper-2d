@@ -139,7 +139,6 @@ CheckPrecisionRange(s32 *Precision)
     }
 }
 
-
 inline path_s64
 ConvertF64PathToS64(path_f64 *Source)
 {
