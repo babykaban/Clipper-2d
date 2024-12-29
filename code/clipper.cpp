@@ -1022,8 +1022,6 @@ AddLocalMaxPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
 internal void
 CheckJoinLeft(clipper *Clipper, active *e, v2_s64 pt, b32 check_curr_x = false)
 {
-     
-
     active *prev = e->prev_in_ael;
     if (!prev ||
         !IsHotEdge(e) || !IsHotEdge(prev) ||
@@ -1060,8 +1058,6 @@ CheckJoinLeft(clipper *Clipper, active *e, v2_s64 pt, b32 check_curr_x = false)
 internal void
 CheckJoinRight(clipper *Clipper, active *e, v2_s64 pt, b32 check_curr_x = false)
 {
-     
-
     active *next = e->next_in_ael;
     if (!next ||
         !IsHotEdge(e) || !IsHotEdge(next) ||
@@ -1187,7 +1183,7 @@ IsSamePolyType(active *e1, active *e2)
 internal void
 IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
 {
-     
+    TimeFunction;
 
     //MANAGE OPEN PATH INTERSECTIONS SEPARATELY ...
     if(Clipper->HasOpenPaths && (IsOpen(e1) || IsOpen(e2)))
@@ -1439,8 +1435,6 @@ IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
 inline void
 SwapPositionsInAEL(clipper *Clipper, active *e1, active *e2)
 {
-     
-
     //preconditon: e1 must be immediately to the left of e2
     active *next = e2->next_in_ael;
     if(next)
@@ -1477,7 +1471,7 @@ InsertScanline(clipper *Clipper, s64 y)
 inline void
 InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
 {
-    TimeFunction;
+//    TimeFunction;
     
     local_minima *Minima = 0;
     active *left_bound;
@@ -1816,7 +1810,9 @@ DoHorizontal(clipper *Clipper, active *horz)
  *         /              |        /       |       /                            *
  *******************************************************************************/
 {
-
+//    TimeFunction;
+    
+    
     v2_s64 pt;
     b32 horzIsOpen = IsOpen(horz);
     s64 y = horz->bot.y;
@@ -2073,7 +2069,8 @@ DuplicateOp(output_point *op, b32 insert_after)
 inline void
 ConvertHorzSegsToJoins(clipper *Clipper)
 {
-
+//    TimeFunction;
+    
     u32 J = 0;
     for(u32 I = 0;
         I < Clipper->HorzCount;
@@ -2242,6 +2239,8 @@ Insert1Before2InSEL(active *ae1, active *ae2)
 internal b32
 BuildIntersectList(clipper *Clipper, s64 top_y)
 {
+    TimeFunction;
+    
     if (!Clipper->ActiveEdgeList || !Clipper->ActiveEdgeList->next_in_ael)
         return false;
 
@@ -2315,20 +2314,24 @@ BuildIntersectList(clipper *Clipper, s64 top_y)
 inline b32
 EdgesAdjacentInAEL(intersect_node *inode)
 {
-    return (inode->edge1->next_in_ael == inode->edge2) || (inode->edge1->prev_in_ael == inode->edge2);
+    return((inode->edge1->next_in_ael == inode->edge2) ||
+           (inode->edge1->prev_in_ael == inode->edge2));
 }
 
 inline void
 ProcessIntersectList(clipper *Clipper)
 {
-
+    TimeFunction;
     //We now have a list of intersections required so that edges will be
     //correctly positioned at the top of the scanbeam. However, it's important
     //that edge intersections are processed from the bottom up, but it's also
     //crucial that intersections only occur between adjacent edges.
 
     //First we do a quicksort so intersections proceed in a bottom up order ...
-    MergeSort(Clipper->IntersectNodeCount, Clipper->IntersectNodes);
+    {
+        TimeBlock("ProcessIntersectList Sort");
+        MergeSort(Clipper->IntersectNodeCount, Clipper->IntersectNodes);
+    }
 
     //Now as we process these intersections, we must sometimes adjust the order
     //to ensure that intersecting edges are always adjacent ...
@@ -2365,6 +2368,8 @@ ProcessIntersectList(clipper *Clipper)
 inline void
 DoIntersections(clipper *Clipper, s64 top_y)
 {
+//    TimeFunction;
+    
     if(BuildIntersectList(Clipper, top_y))
     {
         ProcessIntersectList(Clipper);

@@ -93,7 +93,7 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 
     BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
     FreePaths(&Solution);
-
+#if 0
     BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
     FreePaths(&Solution);
 
@@ -102,6 +102,7 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 
     BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
     FreePaths(&Solution);
+#endif
     
 #if PRINT_OUT_RESULT
     printf("\nTest[%d]: %s, %s", Index, ClipTypes[ClipType_Intersection], FillRules[FillRule_EvenOdd]);
@@ -287,8 +288,8 @@ int main()
     polygon_set Subjects = {};
     polygon_set Clips = {};
 
-    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
-//    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
+//    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
+    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
     
     u32 Count = 262144;
 //    u32 Count = 1;

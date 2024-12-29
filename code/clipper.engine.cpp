@@ -1208,7 +1208,7 @@ namespace Clipper2Lib {
 
   void ClipperBase::InsertLocalMinimaIntoAEL(int64_t bot_y)
   {
-      TimeFunction;
+//      TimeFunction;
       
       LocalMinima* local_minima;
     Active* left_bound, * right_bound;
@@ -1783,7 +1783,8 @@ namespace Clipper2Lib {
 
   void ClipperBase::IntersectEdges(Active& e1, Active& e2, const Point64& pt)
   {
-    //MANAGE OPEN PATH INTERSECTIONS SEPARATELY ...
+      TimeFunction;
+      //MANAGE OPEN PATH INTERSECTIONS SEPARATELY ...
     if (has_open_paths_ && (IsOpen(e1) || IsOpen(e2)))
     {
       if (IsOpen(e1) && IsOpen(e2)) return;
@@ -2349,7 +2350,8 @@ namespace Clipper2Lib {
 
   void ClipperBase::DoIntersections(const int64_t top_y)
   {
-    if (BuildIntersectList(top_y))
+//      TimeFunction;
+      if (BuildIntersectList(top_y))
     {
       ProcessIntersectList();
       intersect_nodes_.clear();
@@ -2392,6 +2394,8 @@ namespace Clipper2Lib {
 
   bool ClipperBase::BuildIntersectList(const int64_t top_y)
   {
+      TimeFunction;
+      
       if (!actives_ || !actives_->next_in_ael) return false;
 
     //Calculate edge positions at the top of the current scanbeam, and from this
@@ -2450,14 +2454,17 @@ namespace Clipper2Lib {
 
   void ClipperBase::ProcessIntersectList()
   {
-
+      TimeFunction;
             //We now have a list of intersections required so that edges will be
     //correctly positioned at the top of the scanbeam. However, it's important
     //that edge intersections are processed from the bottom up, but it's also
     //crucial that intersections only occur between adjacent edges.
 
     //First we do a quicksort so intersections proceed in a bottom up order ...
-    std::sort(intersect_nodes_.begin(), intersect_nodes_.end(), IntersectListSort);
+      {
+          TimeBlock("ClipperBase::ProcessIntersectList Sort");
+          std::sort(intersect_nodes_.begin(), intersect_nodes_.end(), IntersectListSort);
+      }
     //Now as we process these intersections, we must sometimes adjust the order
     //to ensure that intersecting edges are always adjacent ...
 
@@ -2554,7 +2561,9 @@ namespace Clipper2Lib {
         *         /              |        /       |       /                            *
         *******************************************************************************/
   {
-    Point64 pt;
+//      TimeFunction;
+      
+      Point64 pt;
     bool horzIsOpen = IsOpen(horz);
     int64_t y = horz.bot.y;
     Vertex* vertex_max;
