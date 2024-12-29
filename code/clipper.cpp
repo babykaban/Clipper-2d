@@ -219,8 +219,7 @@ inline void
 AddSubjects(clipper *Clipper, paths_f64 *Subjects)
 {
     TimeFunction;
-    paths_s64 Paths = ScalePathsF64(Subjects, Clipper->Scale);
-
+    paths_s64 Paths = ScaleConvertPathsToS64(Subjects, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Subject, false);
     FreePaths(&Paths);
 }
@@ -228,7 +227,7 @@ AddSubjects(clipper *Clipper, paths_f64 *Subjects)
 inline void
 AddOpenSubjects(clipper *Clipper, paths_f64 *Subjects)
 {
-    paths_s64 Paths = ScalePathsF64(Subjects, Clipper->Scale);
+    paths_s64 Paths = ScaleConvertPathsToS64(Subjects, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Subject, true);
     FreePaths(&Paths);
 }
@@ -236,8 +235,8 @@ AddOpenSubjects(clipper *Clipper, paths_f64 *Subjects)
 inline void
 AddClips(clipper *Clipper, paths_f64 *Clips)
 {
-
-    paths_s64 Paths = ScalePathsF64(Clips, Clipper->Scale);
+    TimeFunction;
+    paths_s64 Paths = ScaleConvertPathsToS64(Clips, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Clip, false);
     FreePaths(&Paths);
 }
@@ -1478,7 +1477,8 @@ InsertScanline(clipper *Clipper, s64 y)
 inline void
 InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
 {
-
+    TimeFunction;
+    
     local_minima *Minima = 0;
     active *left_bound;
     active *right_bound;
@@ -1779,8 +1779,6 @@ DeleteFromAEL(clipper *Clipper, active *e)
 inline s64
 TopX(active ae, s64 currentY)
 {
-    TimeFunction;
-    
     if ((currentY == ae.top.y) || (ae.top.x == ae.bot.x))
         return ae.top.x;
     else if (currentY == ae.bot.y)
@@ -2244,8 +2242,6 @@ Insert1Before2InSEL(active *ae1, active *ae2)
 internal b32
 BuildIntersectList(clipper *Clipper, s64 top_y)
 {
-    TimeFunction;
-    
     if (!Clipper->ActiveEdgeList || !Clipper->ActiveEdgeList->next_in_ael)
         return false;
 

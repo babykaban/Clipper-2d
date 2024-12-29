@@ -239,8 +239,6 @@ internal v2_f32 *
 GenerateRandomPolygonF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 MaxY,
                          u32 Index = 0)
 {
-    TimeFunction;
-
     // Allocate memory for the polygon vertices
     f32 VertexCountInv = 1.0f / (f32)VertexCount;
 
@@ -425,8 +423,6 @@ JSONWritePolyPair(FILE *Out, polygon *S, polygon *C, u32 Index, b32 Last)
 internal void
 WritePolygonsToJSON(polygon_set *Ss, polygon_set *Cs, char *FileName)
 {
-    TimeFunction;
-    
     FILE *Out;
 
     fopen_s(&Out, FileName, "w");
@@ -460,8 +456,6 @@ WritePolygonsToJSON(polygon_set *Ss, polygon_set *Cs, char *FileName)
 internal void
 WritePolygonsToBIN(polygon_set *Ss, polygon_set *Cs, char *FileName)
 {
-    TimeFunction;
-    
     FILE *Out;
 
     u32 SubjectsIdentifier = 0xFFFF0000;

@@ -139,37 +139,6 @@ CheckPrecisionRange(s32 *Precision)
     }
 }
 
-inline path_s64
-ConvertF64PathToS64(path_f64 *Source)
-{
-    path_s64 Result = GetPathS64(Source->Count);
-    Result.Count = Source->Count;
-    for(s32 I = 0;
-        I < Source->Count;
-        ++I)
-    {
-        Result.Points[I] = V2S64(Source->Points[I]);
-    }
-
-    return(Result);
-}
-
-inline paths_s64
-ConvertF64PathsToS64(paths_f64 *Source)
-{
-    paths_s64 Result = GetPathsS64(Source->PathCount);
-    Result.PathCount = Source->PathCount;
-
-    for(s32 I = 0;
-        I < Source->PathCount;
-        ++I)
-    {
-        Result.Paths[I] = ConvertF64PathToS64(Source->Paths + I);
-    }
-
-    return(Result);
-}
-
 inline path_f64
 RectAsPath(rectangle2 Rect)
 {
@@ -210,10 +179,109 @@ ScalePath(path_f64 *Source, v2_f64 Scale)
     return(Result);
 }
 
+inline void
+ScaleCurrentPath(path_f64 *Source, v2_f64 Scale)
+{
+    // TODO(babykaban): Error Handling
+    if((Scale.x == 0) || (Scale.y == 0))
+    {
+//        error_code |= scale_error_i;
+//        DoError(scale_error_i);
+        // if no exception, treat as non-fatal error
+        if(Scale.x == 0)
+            Scale.x = 1.0;
+        if(Scale.y == 0)
+            Scale.y = 1.0;
+    }
+    
+    for(s32 I = 0;
+        I < Source->Count;
+        ++I)
+    {
+        Source->Points[I] = Scale*Source->Points[I];
+    }
+}
+
+inline path_f64
+ScaleConvertPathToF64(path_s64 *Source, v2_f64 Scale)
+{
+    // TODO(babykaban): Error Handling
+
+    path_f64 Result = GetPathF64(Source->Count);
+    Result.Count = Source->Count;
+    if((Scale.x == 0) || (Scale.y == 0))
+    {
+//        error_code |= scale_error_i;
+//        DoError(scale_error_i);
+        // if no exception, treat as non-fatal error
+        if(Scale.x == 0)
+            Scale.x = 1.0;
+        if(Scale.y == 0)
+            Scale.y = 1.0;
+    }
+    
+    for(s32 I = 0;
+        I < Source->Count;
+        ++I)
+    {
+        Result.Points[I] = Scale*V2F64(Source->Points[I]);
+    }
+
+    return(Result);
+}
+
+inline path_s64
+ScaleConvertPathToS64(path_f64 *Source, v2_f64 Scale)
+{
+    // TODO(babykaban): Error Handling
+
+    path_s64 Result = GetPathS64(Source->Count);
+    Result.Count = Source->Count;
+    if((Scale.x == 0) || (Scale.y == 0))
+    {
+//        error_code |= scale_error_i;
+//        DoError(scale_error_i);
+        // if no exception, treat as non-fatal error
+        if(Scale.x == 0)
+            Scale.x = 1.0;
+        if(Scale.y == 0)
+            Scale.y = 1.0;
+    }
+    
+    for(s32 I = 0;
+        I < Source->Count;
+        ++I)
+    {
+        Result.Points[I] = V2S64(Scale*Source->Points[I]);
+    }
+
+    return(Result);
+}
+
 inline path_f64
 ScalePath(path_f64 *Source, f64 Scale)
 {
     path_f64 Result = ScalePath(Source, V2F64(Scale, Scale));
+    return(Result);
+}
+
+inline void
+ScaleCurrentPath(path_f64 *Source, f64 Scale)
+{
+    ScaleCurrentPath(Source, V2F64(Scale, Scale));
+}
+
+inline path_s64
+ScaleConvertPathToS64(path_f64 *Source, f64 Scale)
+{
+    path_s64 Result = ScaleConvertPathToS64(Source, V2F64(Scale, Scale));
+    return(Result);
+}
+
+inline path_f64
+ScaleConvertPathToF64(path_s64 *Source, f64 Scale)
+{
+    path_f64 Result = ScaleConvertPathToF64(Source, V2F64(Scale, Scale));
     return(Result);
 }
 
@@ -233,10 +301,104 @@ ScalePaths(paths_f64 *Source, f64 ScaleX, f64 ScaleY)
     return(Result);
 }
 
+inline void
+ScaleCurrentPaths(paths_f64 *Source, f64 ScaleX, f64 ScaleY)
+{
+    for(s32 I = 0;
+        I < Source->PathCount;
+        ++I)
+    {
+        ScaleCurrentPath(Source->Paths + I, V2F64(ScaleX, ScaleY));
+    }
+}
+
+inline paths_f64
+ScaleConvertPathsToF64(paths_s64 *Source, f64 ScaleX, f64 ScaleY)
+{
+    paths_f64 Result = GetPathsF64(Source->PathCount);
+    Result.PathCount = Source->PathCount;
+    
+    for(s32 I = 0;
+        I < Source->PathCount;
+        ++I)
+    {
+        Result.Paths[I] = ScaleConvertPathToF64(Source->Paths + I, V2F64(ScaleX, ScaleY));
+    }
+
+    return(Result);
+}
+
+inline paths_s64
+ScaleConvertPathsToS64(paths_f64 *Source, f64 ScaleX, f64 ScaleY)
+{
+    paths_s64 Result = GetPathsS64(Source->PathCount);
+    Result.PathCount = Source->PathCount;
+    
+    for(s32 I = 0;
+        I < Source->PathCount;
+        ++I)
+    {
+        Result.Paths[I] = ScaleConvertPathToS64(Source->Paths + I, V2F64(ScaleX, ScaleY));
+    }
+
+    return(Result);
+}
+
 inline paths_f64
 ScalePaths(paths_f64 *Source, f64 Scale)
 {
     paths_f64 Result = ScalePaths(Source, Scale, Scale);
+    return(Result);
+}
+
+inline void
+ScaleCurrentPaths(paths_f64 *Source, f64 Scale)
+{
+    ScaleCurrentPaths(Source, Scale, Scale);
+}
+
+inline paths_s64
+ScaleConvertPathsToS64(paths_f64 *Source, f64 Scale)
+{
+    paths_s64 Result = ScaleConvertPathsToS64(Source, Scale, Scale);
+    return(Result);
+}
+
+inline paths_f64
+ScaleConvertPathsToS64(paths_s64 *Source, f64 Scale)
+{
+    paths_f64 Result = ScaleConvertPathsToF64(Source, Scale, Scale);
+    return(Result);
+}
+
+inline path_s64
+ConvertF64PathToS64(path_f64 *Source)
+{
+    path_s64 Result = GetPathS64(Source->Count);
+    Result.Count = Source->Count;
+    for(s32 I = 0;
+        I < Source->Count;
+        ++I)
+    {
+        Result.Points[I] = V2S64(Source->Points[I]);
+    }
+
+    return(Result);
+}
+
+inline paths_s64
+ConvertF64PathsToS64(paths_f64 *Source)
+{
+    paths_s64 Result = GetPathsS64(Source->PathCount);
+    Result.PathCount = Source->PathCount;
+
+    for(s32 I = 0;
+        I < Source->PathCount;
+        ++I)
+    {
+        Result.Paths[I] = ConvertF64PathToS64(Source->Paths + I);
+    }
+
     return(Result);
 }
 
@@ -347,118 +509,6 @@ RectAsPath(rectangle2i Rect)
     Result.Points[2] = V2S64(Rect.Max.x, Rect.Min.y);
     Result.Points[3] = Rect.Min;
 
-    return(Result);
-}
-
-inline path_s64
-ScalePath(path_s64 *Source, f64 ScaleX, f64 ScaleY)
-{
-    // TODO(babykaban): Error Handling
-
-    path_s64 Result = GetPathS64(Source->Count);
-    Result.Count = Source->Count;
-    if((ScaleX == 0) || (ScaleY == 0))
-    {
-//        error_code |= scale_error_i;
-//        DoError(scale_error_i);
-        // if no exception, treat as non-fatal error
-        if(ScaleX == 0) ScaleX = 1.0;
-        if(ScaleY == 0) ScaleY = 1.0;
-    }
-
-    for(s32 I = 0;
-        I < Source->Count;
-        ++I)
-    {
-        Result.Points[I] = V2S64(ScaleX*V2F64(Source->Points[I]));
-    }
-
-    return(Result);
-}
-
-inline path_s64
-ScalePath(path_s64 *Source, f64 Scale)
-{
-    path_s64 Result = ScalePath(Source, Scale, Scale);
-    return(Result);
-}
-
-inline paths_s64
-ScalePaths(paths_s64 *Source, f64 ScaleX, f64 ScaleY)
-{
-    paths_s64 Result = GetPathsS64(Source->PathCount);
-    Result.PathCount = Source->PathCount;
-    
-    for(s32 I = 0;
-        I < Source->PathCount;
-        ++I)
-    {
-        Result.Paths[I] = ScalePath(Source->Paths + I, ScaleX, ScaleY);
-    }
-
-    return(Result);
-}
-
-inline paths_s64
-ScalePaths(paths_s64 *Source, f64 Scale)
-{
-    paths_s64 Result = ScalePaths(Source, Scale, Scale);
-    return(Result);
-}
-
-inline path_s64
-ScalePathF64(path_f64 *Source, v2_f64 Scale)
-{
-    // TODO(babykaban): Error Handling
-
-    path_s64 Result = GetPathS64(Source->Count);
-    Result.Count = Source->Count;
-    if((Scale.x == 0) || (Scale.y == 0))
-    {
-//        error_code |= scale_error_i;
-//        DoError(scale_error_i);
-        // if no exception, treat as non-fatal error
-        if(Scale.x == 0) Scale.x = 1.0;
-        if(Scale.y == 0) Scale.y = 1.0;
-    }
-
-    for(s32 I = 0;
-        I < Source->Count;
-        ++I)
-    {
-        Result.Points[I] = V2S64(Scale*Source->Points[I]);
-    }
-
-    return(Result);
-}
-
-inline path_s64
-ScalePathF64(path_f64 *Source, f64 Scale)
-{
-    path_s64 Result = ScalePathF64(Source, V2F64(Scale, Scale));
-    return(Result);
-}
-
-inline paths_s64
-ScalePathsF64(paths_f64 *Source, f64 ScaleX, f64 ScaleY)
-{
-    paths_s64 Result = GetPathsS64(Source->PathCount);
-    Result.PathCount = Source->PathCount;
-    
-    for(s32 I = 0;
-        I < Source->PathCount;
-        ++I)
-    {
-        Result.Paths[I] = ScalePathF64(Source->Paths + I, V2F64(ScaleX, ScaleY));
-    }
-
-    return(Result);
-}
-
-inline paths_s64
-ScalePathsF64(paths_f64 *Source, f64 Scale)
-{
-    paths_s64 Result = ScalePathsF64(Source, Scale, Scale);
     return(Result);
 }
 

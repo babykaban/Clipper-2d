@@ -129,7 +129,6 @@ namespace Clipper2Lib {
 
   inline int64_t TopX(const Active& ae, const int64_t currentY)
   {
-      TimeFunction;
       if ((currentY == ae.top.y) || (ae.top.x == ae.bot.x))
           return ae.top.x;
     else if (currentY == ae.bot.y)
@@ -1209,7 +1208,8 @@ namespace Clipper2Lib {
 
   void ClipperBase::InsertLocalMinimaIntoAEL(int64_t bot_y)
   {
-
+      TimeFunction;
+      
       LocalMinima* local_minima;
     Active* left_bound, * right_bound;
     //Add any local minima (if any) at BotY ...
@@ -2392,8 +2392,6 @@ namespace Clipper2Lib {
 
   bool ClipperBase::BuildIntersectList(const int64_t top_y)
   {
-      TimeFunction;
-
       if (!actives_ || !actives_->next_in_ael) return false;
 
     //Calculate edge positions at the top of the current scanbeam, and from this

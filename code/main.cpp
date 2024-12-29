@@ -64,10 +64,10 @@ BooleanOpD(uint8_t cliptype, uint8_t fillrule, paths_f64 *subjects, paths_f64 *s
 }
 
 inline void
-IntersectTwoPolies(polygon *S, polygon *C, u32 Index = 0)
+TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 {
     TimeFunction;
-
+    
     Assert((S->Count > 0) && (C->Count > 0));
 
     paths_f64 Subject = GetPathsF64(1);
@@ -90,10 +90,18 @@ IntersectTwoPolies(polygon *S, polygon *C, u32 Index = 0)
     }
 
     paths_f64 Solution = {};
+
     BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-//    BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-//    BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-//    BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+    FreePaths(&Solution);
+
+    BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+    FreePaths(&Solution);
+
+    BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+    FreePaths(&Solution);
+
+    BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+    FreePaths(&Solution);
     
 #if PRINT_OUT_RESULT
     printf("\nTest[%d]: %s, %s", Index, ClipTypes[ClipType_Intersection], FillRules[FillRule_EvenOdd]);
@@ -117,7 +125,6 @@ IntersectTwoPolies(polygon *S, polygon *C, u32 Index = 0)
     printf("\n");
 #endif
 
-    FreePaths(&Solution);
     FreePaths(&Subject);
     FreePaths(&Clip);
 }
@@ -250,38 +257,38 @@ int main()
     if(check_avx2_support())
     {
         AVX2_SUPPORTED = true;
-        printf("Support wide registers from AVX2 and lower");
+        printf("Support wide registers from AVX2 and lower\n");
     }
-    if(check_avx_support())
+    else if(check_avx_support())
     {
         AVX_SUPPORTED = true;
-        printf("Support wide registers from AVX and lower");
+        printf("Support wide registers from AVX and lower\n");
     }
     else if(check_sse3_support())
     {
         SSE3_SUPPORTED = true;
-        printf("Support wide registers from SSE3 and lower");
+        printf("Support wide registers from SSE3 and lower\n");
     }
     else if(check_sse2_support())
     {
         SSE2_SUPPORTED = true;
-        printf("Support wide registers from SSE2 and lower");
+        printf("Support wide registers from SSE2 and lower\n");
     }
     else if(check_sse_support())
     {
         SSE_SUPPORTED = true;
-        printf("Support wide registers SSE only");
+        printf("Support wide registers SSE only\n");
     }
     else
     {
-        printf("No wide registers support");
+        printf("No wide registers support\n");
     }
 
     polygon_set Subjects = {};
     polygon_set Clips = {};
 
-//    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
-    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
+    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
+//    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
     
     u32 Count = 262144;
 //    u32 Count = 1;
@@ -293,7 +300,7 @@ int main()
 //        polygon *S = Subjects.Polygons + 64315;
 //        polygon *C = Clips.Polygons + 64315;
         
-        IntersectTwoPolies(S, C, I);
+        TESTTwoPolies(S, C, I);
 
         Assert(MemoryAllocated == 0);
     }

@@ -25,8 +25,6 @@ union triangle
 inline f64
 RandDouble(f64 min, f64 max)
 {
-    TimeFunction;
-
     f64 Result = min + (f64)rand() / (f64)(RAND_MAX / (max - min));
     return(Result);
 }
@@ -34,8 +32,6 @@ RandDouble(f64 min, f64 max)
 inline f32
 RandFloat(f32 min, f32 max)
 {
-    TimeFunction;
-
     f32 D = RAND_MAX / (max - min);
     f32 DInv = 1.0f / D;
 
@@ -46,8 +42,6 @@ RandFloat(f32 min, f32 max)
 inline f64
 RandDouble1(void)
 {
-    TimeFunction;
-
     f64 DInv = 1.0 / RAND_MAX;
     f64 Rand = rand();
 
@@ -59,8 +53,6 @@ RandDouble1(void)
 inline f32
 RandFloat1(void)
 {
-    TimeFunction;
-
     f32 DInv = 1.0 / RAND_MAX;
     f32 Rand = (f32)rand();
 
