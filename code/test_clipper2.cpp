@@ -66,9 +66,9 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
     }
     clip.push_back(tmp1);
 
-    solution = Intersect(subject, clip, FillRule::EvenOdd);
-#if 0
     solution = Difference(subject, clip, FillRule::EvenOdd);
+#if 0
+    solution = Intersect(subject, clip, FillRule::EvenOdd);
 
     solution = Union(subject, clip, FillRule::EvenOdd);
 
@@ -154,7 +154,7 @@ int main()
 //    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
-    for(u32 I = 0; I < 262144; ++I)
+    for(u32 I = 0; I < 262144*2; ++I)
     {
         polygon *S = Subjects.Polygons + I;
         polygon *C = Clips.Polygons + I;

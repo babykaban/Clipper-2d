@@ -247,7 +247,15 @@ ResetClipper(clipper *Clipper)
     
     if (!Clipper->MinimaListSorted)
     {
-        MergeSort(Clipper->MinimaListCount, Clipper->MinimaList); //#594
+        if(Clipper->MinimaListCount < 32)
+        {
+            InsertionSort(Clipper->MinimaListCount, Clipper->MinimaList);
+        }
+        else
+        {
+            MergeSort(Clipper->MinimaListCount, Clipper->MinimaList); //#594
+        }
+
         Clipper->MinimaListSorted = true;
     }
 
@@ -2087,7 +2095,7 @@ ConvertHorzSegsToJoins(clipper *Clipper)
         return;
 
     MergeSort(Clipper->HorzCount, Clipper->HorzSegList);
-
+        
     horz_segment *hs1 = Clipper->HorzSegList + 0;
     horz_segment *hs2;
     horz_segment *hs_end = hs1 + J;
@@ -2330,7 +2338,19 @@ ProcessIntersectList(clipper *Clipper)
     //First we do a quicksort so intersections proceed in a bottom up order ...
     {
         TimeBlock("ProcessIntersectList Sort");
-        MergeSort(Clipper->IntersectNodeCount, Clipper->IntersectNodes);
+        if(Clipper->IntersectNodeCount > IntersectCountMAX)
+        {
+            IntersectCountMAX = Clipper->IntersectNodeCount;
+        }
+
+        if(Clipper->IntersectNodeCount < 32)
+        {
+            InsertionSort(Clipper->IntersectNodeCount, Clipper->IntersectNodes);
+        }
+        else
+        {
+            MergeSort(Clipper->IntersectNodeCount, Clipper->IntersectNodes);
+        }
     }
 
     //Now as we process these intersections, we must sometimes adjust the order

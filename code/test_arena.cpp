@@ -11,7 +11,7 @@
 #define PROFILER 1
 #include "profiler.cpp"
 
-#if 0
+#if 1
 struct point 
 {
     s64 x;
@@ -181,6 +181,25 @@ generateRandomPoint(s64 minVal, s64 maxVal) {
 #define MIN -1000
 #define MAX 1000
 
+inline void
+InsertionSort(s32 Count, intersect_node *Nodes)
+{
+    TimeFunction;
+    for(s32 I = 1; I < Count; ++I)
+    {
+        intersect_node *Node = Nodes + I;
+        s32 J = I - 1;
+
+        while((J >= 0) && IntersectListSort(Nodes + J, Node))
+        {
+            Nodes[J + 1] = Nodes[J];
+            J = J - 1;
+        }
+
+        Nodes[J + 1] = *Node;
+    }
+}
+
 int main()
 {
     BeginProfile();
@@ -233,36 +252,3 @@ int main()
     return 0;
 }
 #endif
-
-#include <stdio.h>
-#include <stdint.h>
-
-uint64_t generate_key(int64_t x, int64_t y) {
-    const int64_t BIAS = 1LL << 30; // Bias to handle negatives
-    const uint64_t MASK_31_BITS = 0x7FFFFFFF;
-    uint64_t y_part = ((uint64_t)(y + BIAS) & MASK_31_BITS) << 31;
-    uint64_t x_part = ((uint64_t)(x + BIAS) & MASK_31_BITS);
-    return y_part | x_part;
-}
-
-void decode_key(uint64_t key, int64_t *x, int64_t *y) {
-    const int64_t BIAS = 1LL << 30;
-    const uint64_t MASK_31_BITS = 0x7FFFFFFF;
-    *x = (int64_t)(key & MASK_31_BITS) - BIAS;
-    *y = (int64_t)((key >> 31) & MASK_31_BITS) - BIAS;
-}
-
-int main() {
-    int64_t x = 3, y = -2;
-
-    // Generate key
-    uint64_t key = generate_key(x, y);
-    printf("Encoded key: %llu\n", key);
-
-    // Decode key
-    int64_t decoded_x, decoded_y;
-    decode_key(key, &decoded_x, &decoded_y);
-    printf("Decoded values: x = %lld, y = %lld\n", decoded_x, decoded_y);
-
-    return 0;
-}

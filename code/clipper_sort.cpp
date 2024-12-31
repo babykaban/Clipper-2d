@@ -57,17 +57,108 @@ HorzSegSorter(horz_segment *hs1, horz_segment *hs2)
 }
 
 inline b32
+IntersectListSortI(intersect_node a, intersect_node b)
+{
+    if(a.pt.y == b.pt.y)
+    {
+        return a.pt.x < b.pt.x;
+    }
+    else
+    {
+        return a.pt.y > b.pt.y; 
+    }
+}
+
+inline b32
+HorzSegSorterI(horz_segment hs1, horz_segment hs2)
+{
+    if(!hs1.right_op || !hs2.right_op)
+        return !(hs1.right_op ? 1 : 0);
+
+    return !(hs2.left_op->P.x > hs1.left_op->P.x);
+}
+
+inline b32
+LocMinSorterI(vertex *A, vertex *B)
+{
+    b32 Result = false;
+
+    if(B->P.y != A->P.y)
+    {
+        Result = (B->P.y < A->P.y);
+    }
+    else
+    {
+        Result = (B->P.x > A->P.x);
+    }
+
+    return(!Result);
+}
+
+inline b32
 IntersectListSort(intersect_node *a, intersect_node *b)
 {
     //note different inequality tests ...
     return (a->pt.y == b->pt.y) ? (a->pt.x < b->pt.x) : (a->pt.y > b->pt.y);
 }
 
+inline void
+InsertionSort(s32 Count, intersect_node *Nodes)
+{
+    for(s32 I = 1; I < Count; ++I)
+    {
+        intersect_node Node = Nodes[I];
+        s32 J = I - 1;
+
+        while((J >= 0) && IntersectListSortI(Nodes[J], Node))
+        {
+            Nodes[J + 1] = Nodes[J];
+            J = J - 1;
+        }
+
+        Nodes[J + 1] = Node;
+    }
+}
+
+inline void
+InsertionSort(s32 Count, horz_segment *Nodes)
+{
+    for(s32 I = 1; I < Count; ++I)
+    {
+        horz_segment Node = Nodes[I];
+        s32 J = I - 1;
+
+        while((J >= 0) && HorzSegSorterI(Nodes[J], Node))
+        {
+            Nodes[J + 1] = Nodes[J];
+            J = J - 1;
+        }
+
+        Nodes[J + 1] = Node;
+    }
+}
+
+inline void
+InsertionSort(s32 Count, local_minima *Nodes)
+{
+    for(s32 I = 1; I < Count; ++I)
+    {
+        local_minima Node = Nodes[I];
+        s32 J = I - 1;
+
+        while((J >= 0) && LocMinSorterI(Nodes[J].Vertex, Node.Vertex))
+        {
+            Nodes[J + 1] = Nodes[J];
+            J = J - 1;
+        }
+
+        Nodes[J + 1] = Node;
+    }
+}
+
 internal void
 MergeSort(u32 Count, intersect_node *First)
 {
-    intersect_node *Temp = (intersect_node *)malloc(sizeof(intersect_node)*Count);
-
     if(Count == 1)
     {
         // NOTE(casey): No work to do.
@@ -83,6 +174,8 @@ MergeSort(u32 Count, intersect_node *First)
     }
     else
     {
+        intersect_node *Temp = (intersect_node *)malloc(sizeof(intersect_node)*Count);
+
         u32 Half0 = Count / 2;
         u32 Half1 = Count - Half0;
 
@@ -126,16 +219,14 @@ MergeSort(u32 Count, intersect_node *First)
         Assert(ReadHalf1 == End);
             
         Copy(sizeof(intersect_node)*Count, Temp, First);
-    }
 
-    free(Temp);
+        free(Temp);
+    }
 }
 
 internal void
 MergeSort(u32 Count, local_minima *First)
 {
-    local_minima *Temp = (local_minima *)malloc(sizeof(local_minima)*Count);
-
     if(Count == 1)
     {
         // NOTE(casey): No work to do.
@@ -151,6 +242,8 @@ MergeSort(u32 Count, local_minima *First)
     }
     else
     {
+        local_minima *Temp = (local_minima *)malloc(sizeof(local_minima)*Count);
+
         u32 Half0 = Count / 2;
         u32 Half1 = Count - Half0;
 
@@ -194,16 +287,14 @@ MergeSort(u32 Count, local_minima *First)
         Assert(ReadHalf1 == End);
             
         Copy(sizeof(local_minima)*Count, Temp, First);
-    }
 
-    free(Temp);
+        free(Temp);
+    }
 }
 
 internal void
 MergeSort(u32 Count, horz_segment *First)
 {
-    horz_segment *Temp = (horz_segment *)malloc(sizeof(horz_segment)*Count);
-
     if(Count == 1)
     {
         // NOTE(casey): No work to do.
@@ -219,6 +310,8 @@ MergeSort(u32 Count, horz_segment *First)
     }
     else
     {
+        horz_segment *Temp = (horz_segment *)malloc(sizeof(horz_segment)*Count);
+
         u32 Half0 = Count / 2;
         u32 Half1 = Count - Half0;
 
@@ -262,9 +355,9 @@ MergeSort(u32 Count, horz_segment *First)
         Assert(ReadHalf1 == End);
             
         Copy(sizeof(horz_segment)*Count, Temp, First);
-    }
 
-    free(Temp);
+        free(Temp);
+    }
 }
 
 internal void
@@ -327,8 +420,6 @@ Swap(u32 *A, u32 *B)
 internal void
 MergeSort(u32 Count, u32 *First, f64 *Angles)
 {
-    u32 *Temp = (u32 *)malloc(sizeof(u32)*Count);
-
     if(Count == 1)
     {
         // NOTE(casey): No work to do.
@@ -344,6 +435,8 @@ MergeSort(u32 Count, u32 *First, f64 *Angles)
     }
     else
     {
+        u32 *Temp = (u32 *)malloc(sizeof(u32)*Count);
+
         u32 Half0 = Count / 2;
         u32 Half1 = Count - Half0;
 
@@ -387,9 +480,9 @@ MergeSort(u32 Count, u32 *First, f64 *Angles)
         Assert(ReadHalf1 == End);
             
         Copy(sizeof(u32)*Count, Temp, First);
-    }
 
-    free(Temp);
+        free(Temp);
+    }
 }
 
 inline u32

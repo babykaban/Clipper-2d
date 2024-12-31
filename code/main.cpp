@@ -12,6 +12,8 @@
 #include "main.h"
 #include "profiler.cpp"
 
+global_variable u32 IntersectCountMAX = 0;
+
 #include "clipper.h"
 
 #include "repetition_tester.cpp"
@@ -91,10 +93,11 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 
     paths_f64 Solution = {};
 
-    BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-    FreePaths(&Solution);
-#if 0
     BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+    FreePaths(&Solution);
+
+#if 0
+    BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
     FreePaths(&Solution);
 
     BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
@@ -291,7 +294,7 @@ int main()
 //    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
     
-    u32 Count = 262144;
+    u32 Count = 262144*2;
 //    u32 Count = 1;
     for(u32 I = 0; I < Count; ++I)
     {
