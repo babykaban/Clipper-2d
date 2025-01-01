@@ -9,7 +9,6 @@
 #include "clipper_memory.h"
 
 #define PROFILER 1
-#include "profiler.cpp"
 
 #if 1
 struct point 
@@ -36,8 +35,6 @@ SortKeyToU64(point pt)
 
 void RadixSort(u32 Count, sort_entry *First, sort_entry *Temp)
 {
-    TimeFunction;
-    
     sort_entry *Source = First;
     sort_entry *Dest = Temp;
     for(u32 ByteIndex = 0;
@@ -100,8 +97,6 @@ Swap(intersect_node *A, intersect_node *B)
 internal void
 MergeSort(u32 Count, intersect_node *First)
 {
-    TimeFunction;
-
     intersect_node *Temp = (intersect_node *)malloc(sizeof(intersect_node)*Count);
 
     if(Count == 1)
@@ -184,7 +179,6 @@ generateRandomPoint(s64 minVal, s64 maxVal) {
 inline void
 InsertionSort(s32 Count, intersect_node *Nodes)
 {
-    TimeFunction;
     for(s32 I = 1; I < Count; ++I)
     {
         intersect_node *Node = Nodes + I;

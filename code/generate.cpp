@@ -6,14 +6,6 @@
    $Notice:  $
    ======================================================================== */
 
-#include "main.h"
-#include <time.h>
-#define PROFILER 1
-
-#include "clipper_memory.h"
-#include "clipper_math.h"
-#include "clipper_math_f64.h"
-
 #include "generate_polygon_file.h"
 
 #define TIME_GENERATE 0
@@ -489,93 +481,4 @@ WritePolygonsToBIN(polygon_set *Ss, polygon_set *Cs, char *FileName)
 
     fclose(Out);
     
-}
-
-int
-main()
-{
-    BeginProfile();
-
-    srand((u32)time(0)); // Seed for randomness
-
-    f32 MaxYf32 = 2000;
-    f32 MaxXf32 = 2000;
-
-    s32 PolygonCount = 262144*2;
-    s32 numVertices = 16;
-
-    polygon_set SubjectSet = {};
-    SubjectSet.PolyCount = PolygonCount;
-    SubjectSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
-    
-    u32 Count = 0;
-    for(s32 I = 0;
-        I < PolygonCount;
-        ++I)
-    {
-        polygon *Poly = SubjectSet.Polygons + I;
-        Poly->Count = rand() % (16 - 3 + 1)  + 3;
-        Poly->Points = GenerateRandomPolygonF32(Poly->Count, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32, Count++);
-    }
-
-    polygon_set ClipSet = {};
-    ClipSet.PolyCount = PolygonCount;
-    ClipSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
-
-    for(s32 I = 0;
-        I < PolygonCount;
-        ++I)
-    {
-        polygon *Poly = ClipSet.Polygons + I;
-        Poly->Count = rand() % (16 - 3 + 1)  + 3;
-        Poly->Points = GenerateRandomPolygonF32(Poly->Count, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32, Count++);
-    }
-    
-    WritePolygonsToJSON(&SubjectSet, &ClipSet, "c:/Paul/Clipper-2d/output/polygons.json");
-    WritePolygonsToBIN(&SubjectSet, &ClipSet, "c:/Paul/Clipper-2d/output/polygons_b.bin");
-
-//    WritePolygonsToJSON(&SubjectSet, &ClipSet, "d:/Clipper-2d/output/polygons.json");
-//    WritePolygonsToBIN(&SubjectSet, &ClipSet, "d:/Clipper-2d/output/polygons_b.bin");
-
-#if PRINT
-    for(s32 I = 0;
-        I < PolygonCount;
-        ++I)
-    {
-        polygon *S = SubjectSet.Polygons + I;
-        polygon *C = ClipSet.Polygons + I;
-        // Print the polygon vertices
-
-        printf("==============================\n");
-        printf("Polygon Pair[%d] Is: \n", I);
-
-        printf("Subject[%d]: ", S->Count);
-        for(int i = 0; i < numVertices; i++)
-        {
-            printf("(%f, %f), ", S->Points[i].x, S->Points[i].y);
-        }
-
-        printf("\n\n");
-
-        printf("Clip[%d]: ", C->Count);
-        for(int i = 0; i < numVertices; i++)
-        {
-            printf("(%f, %f), ", C->Points[i].x, C->Points[i].y);
-        }
-
-        free(S->Points);
-        free(C->Points);
-        printf("\n==============================\n");
-
-        printf("\n\n");
-    }
-#endif
-    
-    // Free the allocated memory
-    free(SubjectSet.Polygons);
-    free(ClipSet.Polygons);
-    
-    EndAndPrintProfile();
-    
-    return(0);
 }

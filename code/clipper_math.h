@@ -7,24 +7,6 @@
    $Notice: $
    ======================================================================== */
 
-struct v2_f32
-{
-    f32 x;
-    f32 y;
-};
-
-struct polygon
-{
-    u32 Count;
-    v2_f32 *Points;
-};
-
-struct polygon_set
-{
-    u32 PolyCount;
-    polygon *Polygons;
-};
-
 union v2_s64
 {
     struct

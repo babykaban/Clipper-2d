@@ -6,9 +6,15 @@
    $Notice:  $
    ======================================================================== */
 
-
 #include "main.h"
+
+global_variable u32 IntersectCountMAX = 0;
+#define PRINT_READ 0
+
 #include "original_clipper.cpp"
+#include "renewed_clipper.cpp"
+
+#include "generate.cpp"
 
 internal void
 ReadPolies(polygon_set *Subjects, polygon_set *Clips, char *FileName)
@@ -69,24 +75,64 @@ int main()
 {
     BeginProfile();
 
+    if(check_avx2_support())
+    {
+        AVX2_SUPPORTED = true;
+        printf("Support wide registers from AVX2 and lower\n");
+    }
+    else if(check_avx_support())
+    {
+        AVX_SUPPORTED = true;
+        printf("Support wide registers from AVX and lower\n");
+    }
+    else if(check_sse3_support())
+    {
+        SSE3_SUPPORTED = true;
+        printf("Support wide registers from SSE3 and lower\n");
+    }
+    else if(check_sse2_support())
+    {
+        SSE2_SUPPORTED = true;
+        printf("Support wide registers from SSE2 and lower\n");
+    }
+    else if(check_sse_support())
+    {
+        SSE_SUPPORTED = true;
+        printf("Support wide registers SSE only\n");
+    }
+    else
+    {
+        printf("No wide registers support\n");
+    }
+
     polygon_set Subjects = {};
     polygon_set Clips = {};
 
 //    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
-    for(u32 I = 0; I < 262144*2; ++I)
+    u32  TestCount = 1;
+    for(u32 TestIndex = 0;
+        TestIndex < TestCount;
+        ++TestIndex)
     {
-        polygon *S = Subjects.Polygons + I;
-        polygon *C = Clips.Polygons + I;
+        u32 Count = 262144/2;
+        for(u32 I = 0; I < Count; ++I)
+        {
+            polygon *S = Subjects.Polygons + I;
+            polygon *C = Clips.Polygons + I;
+        
+            TESTTwoPoliesOriginal(S, C, I);
+            TESTTwoPolies(S, C, I);
 
-//        polygon *S = Subjects.Polygons + 4;
-//        polygon *C = Clips.Polygons + 4;
+            Assert(MemoryAllocated == 0);
 
-        TESTTwoPoliesOriginal(S, C, I);
+            u64 TotalCPUElapsed = GlobalProfiler.EndTSC - GlobalProfiler.StartTSC;
+            PrintAnchorData(TotalCPUElapsed);
+        }
     }
 
     EndAndPrintProfile();
-    
-    return 0;
+
+    return(0);
 }

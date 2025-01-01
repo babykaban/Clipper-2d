@@ -7,8 +7,8 @@
 * License   :  http://www.boost.org/LICENSE_1_0.txt                            *
 *******************************************************************************/
 
-#ifndef CLIPPER_CORE_H
-#define CLIPPER_CORE_H
+#ifndef CLIPPER2_CORE_H
+#define CLIPPER2_CORE_H
 
 #include <cstdint>
 #include <cstdlib>

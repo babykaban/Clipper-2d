@@ -6,7 +6,7 @@
    $Notice:  $
    ======================================================================== */
 
-#include "clipper_sort.cpp"
+
 
 inline u32
 GetPathsVertexCount(paths_s64 *Paths)
@@ -218,7 +218,6 @@ AddPaths(clipper *Clipper, paths_s64 *Paths, path_type Type, b32 IsOpen)
 inline void
 AddSubjects(clipper *Clipper, paths_f64 *Subjects)
 {
-    TimeFunction;
     paths_s64 Paths = ScaleConvertPathsToS64(Subjects, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Subject, false);
     FreePaths(&Paths);
@@ -235,7 +234,6 @@ AddOpenSubjects(clipper *Clipper, paths_f64 *Subjects)
 inline void
 AddClips(clipper *Clipper, paths_f64 *Clips)
 {
-    TimeFunction;
     paths_s64 Paths = ScaleConvertPathsToS64(Clips, Clipper->Scale);
     AddPaths(Clipper, &Paths, PathType_Clip, false);
     FreePaths(&Paths);
@@ -1191,7 +1189,6 @@ IsSamePolyType(active *e1, active *e2)
 internal void
 IntersectEdges(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
 {
-    TimeFunction;
 
     //MANAGE OPEN PATH INTERSECTIONS SEPARATELY ...
     if(Clipper->HasOpenPaths && (IsOpen(e1) || IsOpen(e2)))
@@ -1479,8 +1476,6 @@ InsertScanline(clipper *Clipper, s64 y)
 inline void
 InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
 {
-//    TimeFunction;
-    
     local_minima *Minima = 0;
     active *left_bound;
     active *right_bound;
@@ -1818,8 +1813,6 @@ DoHorizontal(clipper *Clipper, active *horz)
  *         /              |        /       |       /                            *
  *******************************************************************************/
 {
-//    TimeFunction;
-    
     
     v2_s64 pt;
     b32 horzIsOpen = IsOpen(horz);
@@ -2077,8 +2070,6 @@ DuplicateOp(output_point *op, b32 insert_after)
 inline void
 ConvertHorzSegsToJoins(clipper *Clipper)
 {
-//    TimeFunction;
-    
     u32 J = 0;
     for(u32 I = 0;
         I < Clipper->HorzCount;
@@ -2247,8 +2238,6 @@ Insert1Before2InSEL(active *ae1, active *ae2)
 internal b32
 BuildIntersectList(clipper *Clipper, s64 top_y)
 {
-    TimeFunction;
-    
     if (!Clipper->ActiveEdgeList || !Clipper->ActiveEdgeList->next_in_ael)
         return false;
 
@@ -2329,28 +2318,24 @@ EdgesAdjacentInAEL(intersect_node *inode)
 inline void
 ProcessIntersectList(clipper *Clipper)
 {
-    TimeFunction;
     //We now have a list of intersections required so that edges will be
     //correctly positioned at the top of the scanbeam. However, it's important
     //that edge intersections are processed from the bottom up, but it's also
     //crucial that intersections only occur between adjacent edges.
 
     //First we do a quicksort so intersections proceed in a bottom up order ...
+    if(Clipper->IntersectNodeCount > IntersectCountMAX)
     {
-        TimeBlock("ProcessIntersectList Sort");
-        if(Clipper->IntersectNodeCount > IntersectCountMAX)
-        {
-            IntersectCountMAX = Clipper->IntersectNodeCount;
-        }
+        IntersectCountMAX = Clipper->IntersectNodeCount;
+    }
 
-        if(Clipper->IntersectNodeCount < 32)
-        {
-            InsertionSort(Clipper->IntersectNodeCount, Clipper->IntersectNodes);
-        }
-        else
-        {
-            MergeSort(Clipper->IntersectNodeCount, Clipper->IntersectNodes);
-        }
+    if(Clipper->IntersectNodeCount < 32)
+    {
+        InsertionSort(Clipper->IntersectNodeCount, Clipper->IntersectNodes);
+    }
+    else
+    {
+        MergeSort(Clipper->IntersectNodeCount, Clipper->IntersectNodes);
     }
 
     //Now as we process these intersections, we must sometimes adjust the order
@@ -2388,8 +2373,6 @@ ProcessIntersectList(clipper *Clipper)
 inline void
 DoIntersections(clipper *Clipper, s64 top_y)
 {
-//    TimeFunction;
-    
     if(BuildIntersectList(Clipper, top_y))
     {
         ProcessIntersectList(Clipper);
@@ -3074,3 +3057,47 @@ BooleanOp(clip_type ClipType, fill_rule FillRule,
     return(Result);
 }
 
+
+internal s32
+BooleanOpD(uint8_t cliptype, uint8_t fillrule, paths_f64 *subjects, paths_f64 *subjects_open,
+           paths_f64 *clips, paths_f64 *solution, paths_f64 *solution_open,
+           b32 preserve_collinear, b32 reverse_solution)
+{
+    if (cliptype > ClipType_Xor)
+    {
+        Assert(!"Out of range");
+        return -4;
+    }
+
+    if (fillrule > FillRule_Negative)
+    {
+        Assert(!"Out of range");
+        return -3;
+    }
+
+    clipper Clipper = {};
+    InitClipper(&Clipper, 2);
+    
+    Clipper.PreserveCollinear = preserve_collinear;
+    Clipper.ReverseSolution = reverse_solution;
+
+    if(subjects->PathCount > 0)
+        AddSubjects(&Clipper, subjects);
+
+    if(subjects_open)
+    {
+        if(subjects_open->PathCount > 0)
+            AddOpenSubjects(&Clipper, subjects_open);
+    }
+
+    if(clips->PathCount > 0)
+        AddClips(&Clipper, clips);
+
+    if(!Execute(&Clipper, (clip_type)cliptype, (fill_rule)fillrule, solution, solution_open))
+    {
+        Assert(!"clipping bug - should never happen :)");
+        return -1; // clipping bug - should never happen :)
+    }
+
+    return 0; //success !!
+}

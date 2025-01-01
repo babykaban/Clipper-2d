@@ -7,6 +7,7 @@
    $Notice: $
    ======================================================================== */
 
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -90,6 +91,28 @@ global_variable char *FillRules[] =
     "FillRule_Positive",
     "FillRule_Negative",
 };
+
+struct v2_f32
+{
+    f32 x;
+    f32 y;
+};
+
+struct polygon
+{
+    u32 Count;
+    v2_f32 *Points;
+};
+
+struct polygon_set
+{
+    u32 PolyCount;
+    polygon *Polygons;
+};
+
+#define PRINT_OUT_RESULT 0
+#define PROFILER 1
+#include "profiler.cpp"
 
 #define MAIN_H
 #endif

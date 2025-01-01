@@ -7,8 +7,8 @@
    $Notice: $
    ======================================================================== */
 
-#ifndef CLIPPER_H
-#define CLIPPER_H
+#ifndef CLIPPER2_H
+#define CLIPPER2_H
 
 #include <cstdlib>
 #include <type_traits>
