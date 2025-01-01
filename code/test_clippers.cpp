@@ -8,6 +8,12 @@
 
 #include "main.h"
 
+#define PRINT_OUT_RESULT 0
+#define PROFILER 1
+#include "profiler.cpp"
+
+#include "test_clippers_profiler.cpp"
+
 global_variable u32 IntersectCountMAX = 0;
 #define PRINT_READ 0
 
@@ -108,15 +114,15 @@ int main()
     polygon_set Subjects = {};
     polygon_set Clips = {};
 
-//    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
-    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
+    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
+//    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
     u32  TestCount = 1;
     for(u32 TestIndex = 0;
         TestIndex < TestCount;
         ++TestIndex)
     {
-        u32 Count = 262144/2;
+        u32 Count = 262144;
         for(u32 I = 0; I < Count; ++I)
         {
             polygon *S = Subjects.Polygons + I;
@@ -129,9 +135,12 @@ int main()
 
             u64 TotalCPUElapsed = GlobalProfiler.EndTSC - GlobalProfiler.StartTSC;
             PrintAnchorData(TotalCPUElapsed);
+
+            RecordMinMax(I);
         }
     }
 
+    PrintMinMax();
     EndAndPrintProfile();
 
     return(0);

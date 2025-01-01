@@ -110,9 +110,5 @@ struct polygon_set
     polygon *Polygons;
 };
 
-#define PRINT_OUT_RESULT 0
-#define PROFILER 1
-#include "profiler.cpp"
-
 #define MAIN_H
 #endif
