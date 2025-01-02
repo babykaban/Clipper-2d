@@ -79,8 +79,6 @@ ReadPolies(polygon_set *Subjects, polygon_set *Clips, char *FileName)
 
 int main()
 {
-    BeginProfile();
-
     if(check_avx2_support())
     {
         AVX2_SUPPORTED = true;
@@ -114,34 +112,58 @@ int main()
     polygon_set Subjects = {};
     polygon_set Clips = {};
 
-    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
-//    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
+//    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
+    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
-    u32  TestCount = 1;
+    
+    u32  TestCount = 4;
     for(u32 TestIndex = 0;
         TestIndex < TestCount;
         ++TestIndex)
     {
-        u32 Count = 262144;
+        BeginProfile();
+
+        clock_record Original = {};
+        Original.Label = "TESTTwoPoliesOriginal";
+        Original.Min = INT_MAX;
+        Original.Max = 0;
+
+        clock_record New = {};
+        New.Label = "TESTTwoPolies";
+        New.Min = INT_MAX;
+        New.Max = 0;
+
+        u32 Count = 262144 / 8;
+//        u32 Count = 1024;
         for(u32 I = 0; I < Count; ++I)
         {
             polygon *S = Subjects.Polygons + I;
             polygon *C = Clips.Polygons + I;
-        
+
+            u64 StartTSC = ReadCPUTimer();
             TESTTwoPoliesOriginal(S, C, I);
+            u64 Elapsed = ReadCPUTimer() - StartTSC;
+
+//            printf("(%d)Elapsed for Original [%llu cyc]\n", I, Elapsed);
+            RecordMinMax(&Original, Elapsed, I);
+
+            StartTSC = ReadCPUTimer();
             TESTTwoPolies(S, C, I);
+             Elapsed = ReadCPUTimer() - StartTSC;
+//            printf("(%d)Elapsed for New [%llu cyc]\n", I, Elapsed);
+
+            RecordMinMax(&New, Elapsed, I);
 
             Assert(MemoryAllocated == 0);
-
-            u64 TotalCPUElapsed = GlobalProfiler.EndTSC - GlobalProfiler.StartTSC;
-            PrintAnchorData(TotalCPUElapsed);
-
-            RecordMinMax(I);
         }
-    }
 
-    PrintMinMax();
-    EndAndPrintProfile();
+        printf("\n\n");
+        PrintMinMax(&Original);
+        PrintMinMax(&New);
+        printf("\n\n");
+
+        EndAndPrintProfile();
+    }
 
     return(0);
 }

@@ -38,18 +38,30 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 
     paths_f64 Solution = {};
 
-    BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-    FreePaths(&Solution);
+    {
+        TimeBlock("Difference");
+        BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+        FreePaths(&Solution);
+    }
 
-#if 0
-    BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-    FreePaths(&Solution);
-
-    BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-    FreePaths(&Solution);
-
-    BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-    FreePaths(&Solution);
+#if 1
+    {
+        TimeBlock("Intersection");
+        BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+        FreePaths(&Solution);
+    }
+    
+    {
+        TimeBlock("Union");
+        BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+        FreePaths(&Solution);
+    }
+    
+    {
+        TimeBlock("Xor");
+        BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
+        FreePaths(&Solution);
+    }
 #endif
     
 #if PRINT_OUT_RESULT

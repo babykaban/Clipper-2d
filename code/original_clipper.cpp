@@ -37,13 +37,25 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
     }
     clip.push_back(tmp1);
 
-    solution = Difference(subject, clip, FillRule::EvenOdd);
-#if 0
-    solution = Intersect(subject, clip, FillRule::EvenOdd);
+    {
+        TimeBlock("Difference");
+        solution = Difference(subject, clip, FillRule::EvenOdd);
+    }
+#if 1
+    {
+        TimeBlock("Intersection");
+        solution = Intersect(subject, clip, FillRule::EvenOdd);
+    }
+    
+    {
+        TimeBlock("Union");
+        solution = Union(subject, clip, FillRule::EvenOdd);
+    }
 
-    solution = Union(subject, clip, FillRule::EvenOdd);
-
-    solution = Xor(subject, clip, FillRule::EvenOdd);
+    {
+        TimeBlock("Xor");
+        solution = Xor(subject, clip, FillRule::EvenOdd);
+    }    
 #endif
     
 #if PRINT_OUT_RESULT

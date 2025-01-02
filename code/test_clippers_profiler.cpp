@@ -5,74 +5,41 @@
    $Creator: BabyKaban $
    $Notice:  $
    ======================================================================== */
-
-struct test_clock
-{
-    char const *Label;
-    f64 Cicles;
-
-    u32 Index;
-};
-
-global_variable test_clock Max[4096];
-global_variable test_clock Min[4096];
+#include "test_clippers_profiler.h"
 
 internal void
-RecordMinMax(u32 OperationIndex)
+RecordMinMax(clock_record *Record, u64 Elapsed, u32 OpIndex)
 {
-    for(u32 AnchorIndex = 0; AnchorIndex < ArrayCount(GlobalProfilerAnchors); ++AnchorIndex)
+    if(Record->Min > Elapsed)
     {
-        profile_anchor *Anchor = GlobalProfilerAnchors + AnchorIndex;
-        if(Anchor->TSCElapsedInclusive)
-        {
-            f64 Average = (f64)Anchor->TSCElapsedExclusive / (f64)Anchor->HitCount;
-
-            if(Max[AnchorIndex].Label)
-            {
-                if(Max[AnchorIndex].Cicles < Average)
-                {
-                    Max[AnchorIndex].Cicles = Average;            
-                    Max[AnchorIndex].Index = OperationIndex;            
-                }
-            }
-            else
-            {
-                Max[AnchorIndex].Label = Anchor->Label;
-                Max[AnchorIndex].Cicles = Average;            
-                Max[AnchorIndex].Index = OperationIndex;            
-            }
-
-            if(Min[AnchorIndex].Label)
-            {
-                if(Min[AnchorIndex].Cicles > Average)
-                {
-                    Min[AnchorIndex].Cicles = Average;            
-                    Min[AnchorIndex].Index = OperationIndex;            
-                }
-            }
-            else
-            {
-                Min[AnchorIndex].Label = Anchor->Label;
-                Min[AnchorIndex].Cicles = Average;            
-                Min[AnchorIndex].Index = OperationIndex;            
-            }
-        }
+        Record->Min = Elapsed;
+        Record->MinIndex = OpIndex;
     }
+
+    if(Record->Max < Elapsed)
+    {
+        Record->Max = Elapsed;
+        Record->MaxIndex = OpIndex;
+    }
+
+    ++Record->Count;
+    Record->Average += Elapsed;
 }
 
 internal void
-PrintMinMax(void)
+PrintMinMax(clock_record *Record)
 {
-    for(u32 I = 0; I < ArrayCount(GlobalProfilerAnchors); ++I)
-    {
-        if(Min[I].Label)
-        {
-            printf("MIN[%d]: %s, %.2f\n", Min[I].Index, Min[I].Label, Min[I].Cicles);
-        }
+    u64 CPUFreq = EstimateCPUTimerFreq();
 
-        if(Max[I].Label)
-        {
-            printf("MAX[%d]: %s, %.2f\n", Max[I].Index, Max[I].Label, Max[I].Cicles);
-        }
-    }
+    f64 Ave = (f64)Record->Average / (f64)Record->Count;
+    
+    f64 MinMs = 1000.0 * ((f64)Record->Min / (f64)CPUFreq);
+    f64 MaxMs = 1000.0 * ((f64)Record->Max / (f64)CPUFreq);
+    f64 AveMs = 1000.0 * ((f64)Ave / (f64)CPUFreq);
+
+    printf("MIN[%d]: %s, %llu cyc, %.2f ms\n", Record->MinIndex, Record->Label,
+           Record->Min, MinMs);
+    printf("MAX[%d]: %s, %llu cyc, %.2f ms\n", Record->MaxIndex, Record->Label,
+           Record->Max, MaxMs);
+    printf("AVERAGE: %s, %.2f cyc, %.2f ms\n", Record->Label, Ave, AveMs);
 }
