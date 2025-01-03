@@ -16,6 +16,7 @@
 enum clip_type
 {
     ClipType_NoClip,
+
     ClipType_Intersection,
     ClipType_Union,
     ClipType_Difference,

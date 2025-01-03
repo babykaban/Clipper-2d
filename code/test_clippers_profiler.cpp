@@ -7,6 +7,7 @@
    ======================================================================== */
 #include "test_clippers_profiler.h"
 
+#if 0
 internal void
 RecordMinMax(clock_record *Record, u64 Elapsed, u32 OpIndex)
 {
@@ -42,4 +43,39 @@ PrintMinMax(clock_record *Record)
     printf("MAX[%d]: %s, %llu cyc, %.2f ms\n", Record->MaxIndex, Record->Label,
            Record->Max, MaxMs);
     printf("AVERAGE: %s, %.2f cyc, %.2f ms\n", Record->Label, Ave, AveMs);
+}
+#endif
+
+inline clock_record
+InitClockRecord(void)
+{
+    clock_record Result {};
+    Result.Min = INT_MAX;
+
+    return(Result);
+}
+
+internal void
+SetUpHashTables(void)
+{
+    char *FunctionsToTest[2] =
+        {
+            "ExecuteInternal",
+            "BuildPathsD"
+        };
+
+    InitHashTables();
+    
+    for(u32 I = 0; I < 5; ++I)
+    {
+        for(u32 J = 0; J < 4; ++J)
+        {
+            record_hash_table *Table = &OperationTables[I][J];
+            clock_record Record = InitClockRecord();
+            for(u32 F = 0; F < 2; ++F)
+            {
+                Insert(Table, FunctionsToTest[F], Record);
+            }
+        }
+    }
 }

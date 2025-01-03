@@ -79,6 +79,8 @@ ReadPolies(polygon_set *Subjects, polygon_set *Clips, char *FileName)
 
 int main()
 {
+    SetUpHashTables();
+    
     if(check_avx2_support())
     {
         AVX2_SUPPORTED = true;
@@ -123,47 +125,29 @@ int main()
     {
         BeginProfile();
 
-        clock_record Original = {};
-        Original.Label = "TESTTwoPoliesOriginal";
-        Original.Min = INT_MAX;
-        Original.Max = 0;
-
-        clock_record New = {};
-        New.Label = "TESTTwoPolies";
-        New.Min = INT_MAX;
-        New.Max = 0;
-
-        u32 Count = 262144 / 8;
-//        u32 Count = 1024;
+//        u32 Count = 262144 / 8;
+        u32 Count = 1024;
         for(u32 I = 0; I < Count; ++I)
         {
+            CurrentOperationIndex = I;
+
             polygon *S = Subjects.Polygons + I;
             polygon *C = Clips.Polygons + I;
 
-            u64 StartTSC = ReadCPUTimer();
             TESTTwoPoliesOriginal(S, C, I);
-            u64 Elapsed = ReadCPUTimer() - StartTSC;
 
-//            printf("(%d)Elapsed for Original [%llu cyc]\n", I, Elapsed);
-            RecordMinMax(&Original, Elapsed, I);
-
-            StartTSC = ReadCPUTimer();
             TESTTwoPolies(S, C, I);
-             Elapsed = ReadCPUTimer() - StartTSC;
-//            printf("(%d)Elapsed for New [%llu cyc]\n", I, Elapsed);
-
-            RecordMinMax(&New, Elapsed, I);
 
             Assert(MemoryAllocated == 0);
         }
 
-        printf("\n\n");
-        PrintMinMax(&Original);
-        PrintMinMax(&New);
-        printf("\n\n");
-
         EndAndPrintProfile();
     }
+
+    clock_record *Record = Get(&OperationTables[ClipType_Difference][FillRule_EvenOdd], "ExecuteInternal");
+    Record = Get(&OperationTables[ClipType_Intersection][FillRule_EvenOdd], "ExecuteInternal");
+    Record = Get(&OperationTables[ClipType_Union][FillRule_EvenOdd], "ExecuteInternal");
+    Record = Get(&OperationTables[ClipType_Xor][FillRule_EvenOdd], "ExecuteInternal");
 
     return(0);
 }

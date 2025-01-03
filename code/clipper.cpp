@@ -2551,6 +2551,7 @@ ProcessHorzJoins(clipper *Clipper)
 internal b32
 ExecuteInternal(clipper *Clipper, clip_type ClipType, fill_rule FillRule)
 {
+    
     Clipper->ClipType = ClipType;
     Clipper->FillRule = FillRule;
 

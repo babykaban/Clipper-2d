@@ -62,6 +62,7 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
         BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
         FreePaths(&Solution);
     }
+
 #endif
     
 #if PRINT_OUT_RESULT
