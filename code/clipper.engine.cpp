@@ -2128,7 +2128,7 @@ namespace Clipper2Lib {
 
   bool ClipperBase::ExecuteInternal(ClipType ct, FillRule fillrule, bool use_polytrees)
   {
-      RecordFunction((u32)ct, (u32)fillrule);
+//      RecordFunction((u32)ct, (u32)fillrule);
 
       cliptype_ = ct;
     fillrule_ = fillrule;

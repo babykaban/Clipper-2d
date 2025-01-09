@@ -18,9 +18,12 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
     TimeFunction;
     using namespace Clipper2Lib;
 
+    test_result Result = {};
+
     Assert((S->Count > 0) && (C->Count > 0));
 
-    PathsD subject, clip, solution;
+    PathsD subject, clip;
+    PathsD solution[4];
 
     PathD tmp0;
     for(u32 I = 0; I < S->Count; ++I)
@@ -39,22 +42,22 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 
     {
         TimeBlock("Difference");
-        solution = Difference(subject, clip, FillRule::EvenOdd);
+        solution[0] = Difference(subject, clip, FillRule::EvenOdd);
     }
 #if 1
     {
         TimeBlock("Intersection");
-        solution = Intersect(subject, clip, FillRule::EvenOdd);
+        solution[1] = Intersect(subject, clip, FillRule::EvenOdd);
     }
     
     {
         TimeBlock("Union");
-        solution = Union(subject, clip, FillRule::EvenOdd);
+        solution[2] = Union(subject, clip, FillRule::EvenOdd);
     }
 
     {
         TimeBlock("Xor");
-        solution = Xor(subject, clip, FillRule::EvenOdd);
+        solution[3] = Xor(subject, clip, FillRule::EvenOdd);
     }    
 #endif
     
@@ -70,4 +73,6 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 
     printf("\n");
 #endif
+
+    
 }

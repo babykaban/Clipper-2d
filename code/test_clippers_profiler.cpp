@@ -55,14 +55,22 @@ InitClockRecord(void)
     return(Result);
 }
 
+global_variable char *FunctionsToTest[8] =
+{
+    "ExecuteInternal",
+    "BuildPathsD",
+
+    "InsertLocalMinimaIntoAEL",
+    "DoHorizontal",
+    "BuildIntersectList",
+    "ProcessIntersectList",
+    "DoTopOfScanbeam",
+    "ProcessHorzJoins"
+};
+
 internal void
 SetUpHashTables(void)
 {
-    char *FunctionsToTest[2] =
-        {
-            "ExecuteInternal",
-            "BuildPathsD"
-        };
 
     InitHashTables();
     
@@ -72,7 +80,7 @@ SetUpHashTables(void)
         {
             record_hash_table *Table = &OperationTables[I][J];
             clock_record Record = InitClockRecord();
-            for(u32 F = 0; F < 2; ++F)
+            for(u32 F = 0; F < ArrayCount(FunctionsToTest); ++F)
             {
                 Insert(Table, FunctionsToTest[F], Record);
             }

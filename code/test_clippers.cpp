@@ -77,8 +77,15 @@ ReadPolies(polygon_set *Subjects, polygon_set *Clips, char *FileName)
     fclose(In);
 }
 
+internal void
+ApproveResults()
+{
+}
+
 int main()
 {
+    BeginProfile();
+
     SetUpHashTables();
     
     if(check_avx2_support())
@@ -118,15 +125,13 @@ int main()
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
     
-    u32  TestCount = 4;
+    u32  TestCount = 1;
     for(u32 TestIndex = 0;
         TestIndex < TestCount;
         ++TestIndex)
     {
-        BeginProfile();
-
-//        u32 Count = 262144 / 8;
-        u32 Count = 1024;
+        u32 Count = 262144 / 8;
+//        u32 Count = 1024;
         for(u32 I = 0; I < Count; ++I)
         {
             CurrentOperationIndex = I;
@@ -140,14 +145,57 @@ int main()
 
             Assert(MemoryAllocated == 0);
         }
-
-        EndAndPrintProfile();
     }
 
-    clock_record *Record = Get(&OperationTables[ClipType_Difference][FillRule_EvenOdd], "ExecuteInternal");
-    Record = Get(&OperationTables[ClipType_Intersection][FillRule_EvenOdd], "ExecuteInternal");
-    Record = Get(&OperationTables[ClipType_Union][FillRule_EvenOdd], "ExecuteInternal");
-    Record = Get(&OperationTables[ClipType_Xor][FillRule_EvenOdd], "ExecuteInternal");
+    char *SlowestKey = 0;
+    f64 SlowestAverage = 0;
+    u32 ct = 0;
+    u32 fr = 0;
+    for(u32 ClipType = 1;
+        ClipType < ClipType_Count;
+        ++ClipType)
+    {
+        printf("<===%s===\n", ClipTypes[ClipType]);
+        printf("    ");
 
+        for(u32 FillRule = 0;
+            FillRule < FillRule_Count;
+            ++FillRule)
+        {
+            printf(">===%s===\n", FillRules[FillRule]);
+            printf("    ");
+            for(u32 I = 0;
+                I < ArrayCount(FunctionsToTest);
+                ++I)
+            {
+                clock_record *Record =
+                    Get(&OperationTables[ClipType_Difference][FillRule_EvenOdd],
+                        FunctionsToTest[I]);
+
+                PrintRecord(FunctionsToTest[I], Record);
+                printf("\n");
+
+                f64 Ave = (f64)Record->Average / (f64)Record->Count;
+                if(Ave > SlowestAverage)
+                {
+                    SlowestAverage = Ave;
+                    SlowestKey = FunctionsToTest[I]; 
+                    ct = ClipType;
+                    fr = FillRule;
+                }
+            }
+
+            printf("==============<\n\n");
+        }
+
+        printf("==============>\n\n");
+    }
+
+    printf("<===%s===\n", ClipTypes[ct]);
+    printf(">===%s===\n", FillRules[fr]);
+    clock_record *Record = Get(&OperationTables[ct][fr], SlowestKey);
+    PrintRecord(SlowestKey, Record);
+
+    EndAndPrintProfile();
     return(0);
 }

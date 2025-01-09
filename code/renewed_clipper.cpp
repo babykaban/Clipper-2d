@@ -10,10 +10,12 @@
 #include "clipper_sort.cpp"
 #include "clipper.cpp"
 
-inline void
+inline paths_f64 *
 TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 {
     TimeFunction;
+
+    test_result Result = {};
     
     Assert((S->Count > 0) && (C->Count > 0));
 
@@ -36,31 +38,35 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
         Clip.Paths[0].Points[I] = V2F64(C->Points[I]);        
     }
 
-    paths_f64 Solution = {};
+    paths_f64 *Solution = (paths_f64 *)malloc(4*sizeof(paths_f64));
 
     {
         TimeBlock("Difference");
-        BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-        FreePaths(&Solution);
+        BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip,
+                   Solution + 0, 0, true, false);
+//        FreePaths(&Solution);
     }
 
 #if 1
     {
         TimeBlock("Intersection");
-        BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-        FreePaths(&Solution);
+        BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip,
+                   Solution + 1, 0, true, false);
+//        FreePaths(&Solution);
     }
     
     {
         TimeBlock("Union");
-        BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-        FreePaths(&Solution);
+        BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip,
+                   Solution + 2, 0, true, false);
+//        FreePaths(&Solution);
     }
     
     {
         TimeBlock("Xor");
-        BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip, &Solution, 0, true, false);
-        FreePaths(&Solution);
+        BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip,
+                   Solution + 3, 0, true, false);
+//        FreePaths(&Solution);
     }
 
 #endif
@@ -89,4 +95,6 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 
     FreePaths(&Subject);
     FreePaths(&Clip);
+
+    return(Solution);
 }

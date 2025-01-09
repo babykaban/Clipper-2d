@@ -110,5 +110,19 @@ struct polygon_set
     polygon *Polygons;
 };
 
+struct test_result
+{
+    polygon_set Inter;
+    polygon_set Dif;
+    polygon_set Union;
+    polygon_set Xor;
+};
+
+inline void
+RecordResult(test_result *Result, u32 Ct)
+{
+    
+}
+
 #define MAIN_H
 #endif

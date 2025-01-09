@@ -19,6 +19,28 @@ struct clock_record
     u64 Average;
 };
 
+inline void
+PrintRecord(char *Key, clock_record *Record)
+{
+    u64 CPUFreq = EstimateCPUTimerFreq();
+
+    f64 Ave = (f64)Record->Average / (f64)Record->Count;
+    
+    f64 MinMs = 1000.0 * ((f64)Record->Min / (f64)CPUFreq);
+    f64 MaxMs = 1000.0 * ((f64)Record->Max / (f64)CPUFreq);
+    f64 AveMs = 1000.0 * ((f64)Ave / (f64)CPUFreq);
+
+
+    printf("%s\n", Key);
+    printf("    ");
+    printf("MIN[%d]: %llu cyc, %.2f ms\n", Record->MinIndex, Record->Min, MinMs);
+    printf("    ");
+    printf("MAX[%d]: %llu cyc, %.2f ms\n", Record->MaxIndex, Record->Max, MaxMs);
+    printf("    ");
+    printf("AVERAGE: %.2f cyc, %.2f ms\n", Ave, AveMs);
+    printf("    ");
+}
+
 struct record_entry
 {
     char *Key;
