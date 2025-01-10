@@ -10,7 +10,7 @@
 #include "clipper_sort.cpp"
 #include "clipper.cpp"
 
-inline paths_f64 *
+inline test_result
 TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 {
     TimeFunction;
@@ -38,38 +38,220 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
         Clip.Paths[0].Points[I] = V2F64(C->Points[I]);        
     }
 
-    paths_f64 *Solution = (paths_f64 *)malloc(4*sizeof(paths_f64));
+    paths_f64 Solution = {};
 
     {
         TimeBlock("Difference");
         BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip,
-                   Solution + 0, 0, true, false);
-//        FreePaths(&Solution);
+                   &Solution, 0, true, false);
     }
 
+    Result.Dif.PolyCount = Solution.PathCount;
+    Result.Dif.Polygons = (polygon *)malloc(Result.Dif.PolyCount*sizeof(polygon));
+    
+    for(s32 PolyIndex = 0;
+        PolyIndex < Solution.PathCount;
+        ++PolyIndex)
+    {
+        path_f64 *Path = Solution.Paths + PolyIndex;
+
+        polygon *Poly = Result.Dif.Polygons + PolyIndex;
+        Poly->Count = Path->Count;
+        Poly->Points = (v2_f32 *)malloc(Poly->Count*sizeof(v2_f32));
+
+        for(s32 PointIndex = 0;
+            PointIndex < Path->Count;
+            ++PointIndex)
+        {
+            Poly->Points[PointIndex] =
+                {
+                    (f32)Path->Points[PointIndex].x,
+                    (f32)Path->Points[PointIndex].y
+                };
+        }
+    }
+
+    FreePaths(&Solution);
+    
 #if 1
     {
         TimeBlock("Intersection");
         BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip,
-                   Solution + 1, 0, true, false);
+                   &Solution, 0, true, false);
 //        FreePaths(&Solution);
     }
+
+    Result.Inter.PolyCount = Solution.PathCount;
+    Result.Inter.Polygons = (polygon *)malloc(Result.Inter.PolyCount*sizeof(polygon));
+    
+    for(s32 PolyIndex = 0;
+        PolyIndex < Solution.PathCount;
+        ++PolyIndex)
+    {
+        path_f64 *Path = Solution.Paths + PolyIndex;
+
+        polygon *Poly = Result.Inter.Polygons + PolyIndex;
+        Poly->Count = Path->Count;
+        Poly->Points = (v2_f32 *)malloc(Poly->Count*sizeof(v2_f32));
+
+        for(s32 PointIndex = 0;
+            PointIndex < Path->Count;
+            ++PointIndex)
+        {
+            Poly->Points[PointIndex] =
+                {
+                    (f32)Path->Points[PointIndex].x,
+                    (f32)Path->Points[PointIndex].y
+                };
+        }
+    }
+
+    FreePaths(&Solution);
     
     {
         TimeBlock("Union");
         BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip,
-                   Solution + 2, 0, true, false);
+                   &Solution, 0, true, false);
 //        FreePaths(&Solution);
     }
+
+    Result.Union.PolyCount = Solution.PathCount;
+    Result.Union.Polygons = (polygon *)malloc(Result.Union.PolyCount*sizeof(polygon));
+    
+    for(s32 PolyIndex = 0;
+        PolyIndex < Solution.PathCount;
+        ++PolyIndex)
+    {
+        path_f64 *Path = Solution.Paths + PolyIndex;
+
+        polygon *Poly = Result.Union.Polygons + PolyIndex;
+        Poly->Count = Path->Count;
+        Poly->Points = (v2_f32 *)malloc(Poly->Count*sizeof(v2_f32));
+
+        for(s32 PointIndex = 0;
+            PointIndex < Path->Count;
+            ++PointIndex)
+        {
+            Poly->Points[PointIndex] =
+                {
+                    (f32)Path->Points[PointIndex].x,
+                    (f32)Path->Points[PointIndex].y
+                };
+        }
+    }
+
+    FreePaths(&Solution);
     
     {
         TimeBlock("Xor");
         BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip,
-                   Solution + 3, 0, true, false);
+                   &Solution, 0, true, false);
 //        FreePaths(&Solution);
     }
 
+    Result.Xor.PolyCount = Solution.PathCount;
+    Result.Xor.Polygons = (polygon *)malloc(Result.Xor.PolyCount*sizeof(polygon));
+    
+    for(s32 PolyIndex = 0;
+        PolyIndex < Solution.PathCount;
+        ++PolyIndex)
+    {
+        path_f64 *Path = Solution.Paths + PolyIndex;
+
+        polygon *Poly = Result.Xor.Polygons + PolyIndex;
+        Poly->Count = Path->Count;
+        Poly->Points = (v2_f32 *)malloc(Poly->Count*sizeof(v2_f32));
+
+        for(s32 PointIndex = 0;
+            PointIndex < Path->Count;
+            ++PointIndex)
+        {
+            Poly->Points[PointIndex] =
+                {
+                    (f32)Path->Points[PointIndex].x,
+                    (f32)Path->Points[PointIndex].y
+                };
+        }
+    }
+
+    FreePaths(&Solution);
+
 #endif
+
+#if 1
+    printf("Diff\n");
+    for(u32 polyi = 0;
+        polyi < Result.Dif.PolyCount;
+        ++polyi)
+    {
+        polygon *Poly = Result.Dif.Polygons + polyi;
+        printf("%d. ", polyi);
+        for(u32 pi = 0;
+            pi < Poly->Count;
+            ++pi)
+        {
+            printf("(%.4f, %.4f), ", Poly->Points[pi].x, Poly->Points[pi].y);
+        }
+
+        printf("\n");
+    }
+    printf("\n");
+
+    printf("Inter\n");
+    for(u32 polyi = 0;
+        polyi < Result.Inter.PolyCount;
+        ++polyi)
+    {
+        polygon *Poly = Result.Inter.Polygons + polyi;
+        printf("%d. ", polyi);
+        for(u32 pi = 0;
+            pi < Poly->Count;
+            ++pi)
+        {
+            printf("(%.4f, %.4f), ", Poly->Points[pi].x, Poly->Points[pi].y);
+        }
+
+        printf("\n");
+    }
+    printf("\n");
+
+    printf("Union\n");
+    for(u32 polyi = 0;
+        polyi < Result.Union.PolyCount;
+        ++polyi)
+    {
+        polygon *Poly = Result.Union.Polygons + polyi;
+        printf("%d. ", polyi);
+        for(u32 pi = 0;
+            pi < Poly->Count;
+            ++pi)
+        {
+            printf("(%.4f, %.4f), ", Poly->Points[pi].x, Poly->Points[pi].y);
+        }
+
+        printf("\n");
+    }
+    printf("\n");
+
+    printf("Xor\n");
+    for(u32 polyi = 0;
+        polyi < Result.Xor.PolyCount;
+        ++polyi)
+    {
+        polygon *Poly = Result.Xor.Polygons + polyi;
+        printf("%d. ", polyi);
+        for(u32 pi = 0;
+            pi < Poly->Count;
+            ++pi)
+        {
+            printf("(%.4f, %.4f), ", Poly->Points[pi].x, Poly->Points[pi].y);
+        }
+
+        printf("\n");
+    }
+    printf("\n");
+
+#endif    
     
 #if PRINT_OUT_RESULT
     printf("\nTest[%d]: %s, %s", Index, ClipTypes[ClipType_Intersection], FillRules[FillRule_EvenOdd]);
@@ -96,5 +278,5 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
     FreePaths(&Subject);
     FreePaths(&Clip);
 
-    return(Solution);
+    return(Result);
 }

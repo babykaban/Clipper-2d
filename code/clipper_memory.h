@@ -161,7 +161,7 @@ Malloc(umm Size)
     return(Result);
 }
 
-#define MallocArray(Count, type) (type *)Malloc(sizeof(type)*(Count)) 
+#define MallocArray(Count, type) (type *)Malloc(sizeof(type)*(Count)); 
 #define MallocStruct(type) (type *)Malloc(sizeof(type)) 
 
 #if RECORD_MEMORY_USEAGE

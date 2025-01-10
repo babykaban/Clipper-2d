@@ -78,8 +78,111 @@ ReadPolies(polygon_set *Subjects, polygon_set *Clips, char *FileName)
 }
 
 internal void
-ApproveResults()
+ApproveResults(test_result *Original, test_result *New, f32 Epsilon = 0.001f)
 {
+    Assert(Original->Dif.PolyCount == New->Dif.PolyCount);
+    for(u32 PolyIndex = 0;
+        PolyIndex < Original->Dif.PolyCount;
+        ++PolyIndex)
+    {
+        polygon *OriginalPoly = Original->Dif.Polygons + PolyIndex;
+        polygon *NewPoly = New->Dif.Polygons + PolyIndex;
+
+        Assert(OriginalPoly->Count == NewPoly->Count);
+        for(u32 PointIndex = 0;
+            PointIndex < OriginalPoly->Count;
+            ++PointIndex)
+        {
+            v2_f32 OP = OriginalPoly->Points[PointIndex];
+            v2_f32 NP = NewPoly->Points[PointIndex];
+            v2_f32 Diff = {OP.x - NP.x, OP.y - NP.y};
+
+            Assert((Diff.x < Epsilon) && (Diff.y < Epsilon));
+        }
+
+        free(OriginalPoly->Points);
+        free(NewPoly->Points);
+    }
+    free(Original->Dif.Polygons);
+    free(New->Dif.Polygons);
+    
+    Assert(Original->Inter.PolyCount == New->Inter.PolyCount);
+    for(u32 PolyIndex = 0;
+        PolyIndex < Original->Inter.PolyCount;
+        ++PolyIndex)
+    {
+        polygon *OriginalPoly = Original->Inter.Polygons + PolyIndex;
+        polygon *NewPoly = New->Inter.Polygons + PolyIndex;
+
+        Assert(OriginalPoly->Count == NewPoly->Count);
+        for(u32 PointIndex = 0;
+            PointIndex < OriginalPoly->Count;
+            ++PointIndex)
+        {
+            v2_f32 OP = OriginalPoly->Points[PointIndex];
+            v2_f32 NP = NewPoly->Points[PointIndex];
+            v2_f32 Diff = {OP.x - NP.x, OP.y - NP.y};
+
+            Assert((Diff.x < Epsilon) && (Diff.y < Epsilon));
+        }
+
+        free(OriginalPoly->Points);
+        free(NewPoly->Points);
+    }
+    free(Original->Inter.Polygons);
+    free(New->Inter.Polygons);
+
+    Assert(Original->Union.PolyCount == New->Union.PolyCount);
+    for(u32 PolyIndex = 0;
+        PolyIndex < Original->Union.PolyCount;
+        ++PolyIndex)
+    {
+        polygon *OriginalPoly = Original->Union.Polygons + PolyIndex;
+        polygon *NewPoly = New->Union.Polygons + PolyIndex;
+
+        Assert(OriginalPoly->Count == NewPoly->Count);
+        for(u32 PointIndex = 0;
+            PointIndex < OriginalPoly->Count;
+            ++PointIndex)
+        {
+            v2_f32 OP = OriginalPoly->Points[PointIndex];
+            v2_f32 NP = NewPoly->Points[PointIndex];
+            v2_f32 Diff = {OP.x - NP.x, OP.y - NP.y};
+
+            Assert((Diff.x < Epsilon) && (Diff.y < Epsilon));
+        }
+
+        free(OriginalPoly->Points);
+        free(NewPoly->Points);
+    }
+    free(Original->Union.Polygons);
+    free(New->Union.Polygons);
+
+    Assert(Original->Xor.PolyCount == New->Xor.PolyCount);
+    for(u32 PolyIndex = 0;
+        PolyIndex < Original->Xor.PolyCount;
+        ++PolyIndex)
+    {
+        polygon *OriginalPoly = Original->Xor.Polygons + PolyIndex;
+        polygon *NewPoly = New->Xor.Polygons + PolyIndex;
+
+        Assert(OriginalPoly->Count == NewPoly->Count);
+        for(u32 PointIndex = 0;
+            PointIndex < OriginalPoly->Count;
+            ++PointIndex)
+        {
+            v2_f32 OP = OriginalPoly->Points[PointIndex];
+            v2_f32 NP = NewPoly->Points[PointIndex];
+            v2_f32 Diff = {OP.x - NP.x, OP.y - NP.y};
+
+            Assert((Diff.x < Epsilon) && (Diff.y < Epsilon));
+        }
+
+        free(OriginalPoly->Points);
+        free(NewPoly->Points);
+    }
+    free(Original->Xor.Polygons);
+    free(New->Xor.Polygons);
 }
 
 int main()
@@ -139,9 +242,11 @@ int main()
             polygon *S = Subjects.Polygons + I;
             polygon *C = Clips.Polygons + I;
 
-            TESTTwoPoliesOriginal(S, C, I);
+            test_result Original = TESTTwoPoliesOriginal(S, C, I);
 
-            TESTTwoPolies(S, C, I);
+            test_result New = TESTTwoPolies(S, C, I);
+
+            ApproveResults(&Original, &New);
 
             Assert(MemoryAllocated == 0);
         }
