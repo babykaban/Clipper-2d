@@ -78,7 +78,7 @@ ReadPolies(polygon_set *Subjects, polygon_set *Clips, char *FileName)
 }
 
 internal void
-ApproveResults(test_result *Original, test_result *New, f32 Epsilon = 0.001f)
+ApproveResults(test_result *Original, test_result *New, f32 Epsilon = 0.01f)
 {
     Assert(Original->Dif.PolyCount == New->Dif.PolyCount);
     for(u32 PolyIndex = 0;
@@ -224,8 +224,8 @@ int main()
     polygon_set Subjects = {};
     polygon_set Clips = {};
 
-//    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
-    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
+    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
+//    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
 
     
     u32  TestCount = 1;

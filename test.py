@@ -70,7 +70,9 @@ def view_polygons(json_file, index=None):
 # Example usage:
 # To view a specif
 # ic polygon pair (e.g., index 5):
-view_polygons('c:/Paul/Clipper-2d/output/polygons.json', index=0)
+#view_polygons('c:/Paul/Clipper-2d/output/polygons.json', index=0)
+#view_polygons('d:/Clipper-2d/output/polygons.json', index=0)
 
 # To view all polygons with interactive scrolling:
-#view_polygons('d:/Clipper-2d/output/polygons.json')
+view_polygons('d:/Clipper-2d/output/polygons.json')
+##view_polygons('c:/Paul/Clipper-2d/output/polygons.json')

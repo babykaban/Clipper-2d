@@ -518,22 +518,29 @@ GetSegmentIntersectPt(v2_s64 a, v2_s64 b, v2_s64 c, v2_s64 d, v2_s64 *p)
     {
         f64 bb0minx = CC_MIN(a.x, b.x);
         f64 bb0miny = CC_MIN(a.y, b.y);
+
         f64 bb0maxx = CC_MAX(a.x, b.x);
         f64 bb0maxy = CC_MAX(a.y, b.y);
+
         f64 bb1minx = CC_MIN(c.x, d.x);
         f64 bb1miny = CC_MIN(c.y, d.y);
+
         f64 bb1maxx = CC_MAX(c.x, d.x);
         f64 bb1maxy = CC_MAX(c.y, d.y);
 
         f64 originx = (CC_MIN(bb0maxx, bb1maxx) + CC_MAX(bb0minx, bb1minx)) / 2.0;
         f64 originy = (CC_MIN(bb0maxy, bb1maxy) + CC_MAX(bb0miny, bb1miny)) / 2.0;
+
         f64 ln0c = (ln1dy * (a.x - originx)) + (ln1dx * (a.y - originy));
         f64 ln1c = (ln2dy * (c.x - originx)) + (ln2dx * (c.y - originy));
+
         f64 hitx = ((ln1dx * ln1c) - (ln2dx * ln0c)) / det;
         f64 hity = ((ln2dy * ln0c) - (ln1dy * ln1c)) / det;
 
+        // TODO(babykaban): The problem might be here
         p->x = originx + hitx;
         p->y = originy + hity;
+
         Result = true;
     }
 
@@ -547,6 +554,7 @@ GetSegmentIntersectPt(v2_s64 a, v2_s64 b, v2_s64 c, v2_s64 d, v2_s64 *p)
 {
     // https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
 
+    // TODO(babykaban): The problem might be here
     b32 Result = false;
     
     v2_s64 ab = b - a;
