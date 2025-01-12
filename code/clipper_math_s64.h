@@ -557,8 +557,8 @@ GetSegmentIntersectPt(v2_s64 a, v2_s64 b, v2_s64 c, v2_s64 d, v2_s64 *p)
     // TODO(babykaban): The problem might be here
     b32 Result = false;
     
-    v2_s64 ab = b - a;
-    v2_s64 cd = d - c;
+    v2_f64 ab = V2F64(b - a);
+    v2_f64 cd = V2F64(d - c);
 
     f64 det = Cross(cd, ab);
     if(det != 0.0)
@@ -568,7 +568,7 @@ GetSegmentIntersectPt(v2_s64 a, v2_s64 b, v2_s64 c, v2_s64 d, v2_s64 *p)
         else if(t >= 1.0) *p = b;
         else
         {
-            *p = a + t*ab;
+            *p = {(s64)(a.x + t*ab.x), (s64)(a.y + t*ab.y)};
         }
     }
 

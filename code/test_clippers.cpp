@@ -77,112 +77,123 @@ ReadPolies(polygon_set *Subjects, polygon_set *Clips, char *FileName)
     fclose(In);
 }
 
+inline b32
+CheckPoints(polygon *N, polygon *O)
+{
+    b32 Result = true; 
+
+    u32 Count = 0;
+    while(!PointsAreEqual(O->Points[0], N->Points[0]))
+    {
+        v2_f32 First = N->Points[0];
+        for(u32 I = 0;
+            I < (N->Count - 1);
+            ++I)
+        {
+            N->Points[I] = N->Points[I + 1];
+        }
+        N->Points[N->Count - 1] = First;
+
+        ++Count;
+        if(Count > N->Count)
+        {
+            break;
+        }
+    }
+
+    for(u32 I = 0;
+        I < N->Count;
+        ++I)
+    {
+        v2_f32 NP = N->Points[I];
+        v2_f32 OP = O->Points[I];
+        v2_f32 Diff = {OP.x - NP.x, OP.y - NP.y};
+
+        if(!((Diff.x == 0.0) && (Diff.y  == 0.0)))
+        {
+            Result = false;
+            break;
+        }
+    }
+
+    return(Result);
+}
+
+inline b32
+CheckPoly(polygon *N, polygon_set *Os)
+{
+    b32 Result = false;
+
+    for(u32 OPolyIndex = 0;
+        OPolyIndex < Os->PolyCount;
+        ++OPolyIndex)
+    {
+        polygon *OldPoly = Os->Polygons + OPolyIndex;
+        if(OldPoly->Count == N->Count)
+        {
+            Result = CheckPoints(N, OldPoly);
+            if(Result)
+            {
+                break;
+            }
+        }
+        else
+        {
+            Result = false;
+        }
+    }
+
+    return(Result);
+}
+
+internal void
+ApproveResults(polygon_set *New, polygon_set *Old)
+{
+    Assert(New->PolyCount == Old->PolyCount);
+
+    b32 PolyFound = true;
+    for(u32 NPolyIndex = 0;
+        NPolyIndex < New->PolyCount;
+        ++NPolyIndex)
+    {
+        polygon *NewPoly = New->Polygons + NPolyIndex;
+        if(!CheckPoly(NewPoly, Old))
+        {
+            Assert("FATAL");
+        }
+    }
+
+    for(u32 PolyIndex = 0;
+        PolyIndex < New->PolyCount;
+        ++PolyIndex)
+    {
+        polygon *OriginalPoly = Old->Polygons + PolyIndex;
+        polygon *NewPoly = New->Polygons + PolyIndex;
+
+        free(OriginalPoly->Points);
+        free(NewPoly->Points);
+    }
+
+    free(Old->Polygons);
+    free(New->Polygons);
+}
+
 internal void
 ApproveResults(test_result *Original, test_result *New, f32 Epsilon = 0.01f)
 {
+    TimeFunction;
+    
     Assert(Original->Dif.PolyCount == New->Dif.PolyCount);
-    for(u32 PolyIndex = 0;
-        PolyIndex < Original->Dif.PolyCount;
-        ++PolyIndex)
-    {
-        polygon *OriginalPoly = Original->Dif.Polygons + PolyIndex;
-        polygon *NewPoly = New->Dif.Polygons + PolyIndex;
-
-        Assert(OriginalPoly->Count == NewPoly->Count);
-        for(u32 PointIndex = 0;
-            PointIndex < OriginalPoly->Count;
-            ++PointIndex)
-        {
-            v2_f32 OP = OriginalPoly->Points[PointIndex];
-            v2_f32 NP = NewPoly->Points[PointIndex];
-            v2_f32 Diff = {OP.x - NP.x, OP.y - NP.y};
-
-            Assert((Diff.x < Epsilon) && (Diff.y < Epsilon));
-        }
-
-        free(OriginalPoly->Points);
-        free(NewPoly->Points);
-    }
-    free(Original->Dif.Polygons);
-    free(New->Dif.Polygons);
+    ApproveResults(&New->Dif, &Original->Dif);
     
     Assert(Original->Inter.PolyCount == New->Inter.PolyCount);
-    for(u32 PolyIndex = 0;
-        PolyIndex < Original->Inter.PolyCount;
-        ++PolyIndex)
-    {
-        polygon *OriginalPoly = Original->Inter.Polygons + PolyIndex;
-        polygon *NewPoly = New->Inter.Polygons + PolyIndex;
-
-        Assert(OriginalPoly->Count == NewPoly->Count);
-        for(u32 PointIndex = 0;
-            PointIndex < OriginalPoly->Count;
-            ++PointIndex)
-        {
-            v2_f32 OP = OriginalPoly->Points[PointIndex];
-            v2_f32 NP = NewPoly->Points[PointIndex];
-            v2_f32 Diff = {OP.x - NP.x, OP.y - NP.y};
-
-            Assert((Diff.x < Epsilon) && (Diff.y < Epsilon));
-        }
-
-        free(OriginalPoly->Points);
-        free(NewPoly->Points);
-    }
-    free(Original->Inter.Polygons);
-    free(New->Inter.Polygons);
-
+    ApproveResults(&New->Inter, &Original->Inter);
+    
     Assert(Original->Union.PolyCount == New->Union.PolyCount);
-    for(u32 PolyIndex = 0;
-        PolyIndex < Original->Union.PolyCount;
-        ++PolyIndex)
-    {
-        polygon *OriginalPoly = Original->Union.Polygons + PolyIndex;
-        polygon *NewPoly = New->Union.Polygons + PolyIndex;
-
-        Assert(OriginalPoly->Count == NewPoly->Count);
-        for(u32 PointIndex = 0;
-            PointIndex < OriginalPoly->Count;
-            ++PointIndex)
-        {
-            v2_f32 OP = OriginalPoly->Points[PointIndex];
-            v2_f32 NP = NewPoly->Points[PointIndex];
-            v2_f32 Diff = {OP.x - NP.x, OP.y - NP.y};
-
-            Assert((Diff.x < Epsilon) && (Diff.y < Epsilon));
-        }
-
-        free(OriginalPoly->Points);
-        free(NewPoly->Points);
-    }
-    free(Original->Union.Polygons);
-    free(New->Union.Polygons);
+    ApproveResults(&New->Union, &Original->Union);
 
     Assert(Original->Xor.PolyCount == New->Xor.PolyCount);
-    for(u32 PolyIndex = 0;
-        PolyIndex < Original->Xor.PolyCount;
-        ++PolyIndex)
-    {
-        polygon *OriginalPoly = Original->Xor.Polygons + PolyIndex;
-        polygon *NewPoly = New->Xor.Polygons + PolyIndex;
-
-        Assert(OriginalPoly->Count == NewPoly->Count);
-        for(u32 PointIndex = 0;
-            PointIndex < OriginalPoly->Count;
-            ++PointIndex)
-        {
-            v2_f32 OP = OriginalPoly->Points[PointIndex];
-            v2_f32 NP = NewPoly->Points[PointIndex];
-            v2_f32 Diff = {OP.x - NP.x, OP.y - NP.y};
-
-            Assert((Diff.x < Epsilon) && (Diff.y < Epsilon));
-        }
-
-        free(OriginalPoly->Points);
-        free(NewPoly->Points);
-    }
-    free(Original->Xor.Polygons);
-    free(New->Xor.Polygons);
+    ApproveResults(&New->Xor, &Original->Xor);
 }
 
 int main()
@@ -226,14 +237,14 @@ int main()
 
     ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
 //    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
-
+    printf("Avaliable to test %d\n", Subjects.PolyCount);
     
     u32  TestCount = 1;
     for(u32 TestIndex = 0;
         TestIndex < TestCount;
         ++TestIndex)
     {
-        u32 Count = 262144 / 8;
+        u32 Count = 262144;
 //        u32 Count = 1024;
         for(u32 I = 0; I < Count; ++I)
         {
@@ -252,6 +263,7 @@ int main()
         }
     }
 
+#if 0
     char *SlowestKey = 0;
     f64 SlowestAverage = 0;
     u32 ct = 0;
@@ -300,7 +312,7 @@ int main()
     printf(">===%s===\n", FillRules[fr]);
     clock_record *Record = Get(&OperationTables[ct][fr], SlowestKey);
     PrintRecord(SlowestKey, Record);
-
+#endif
     EndAndPrintProfile();
     return(0);
 }

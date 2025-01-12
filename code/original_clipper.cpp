@@ -138,7 +138,7 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 
 #endif
 
-#if 1
+#if 0
     printf("Diff\n");
     for(u32 polyi = 0;
         polyi < Result.Dif.PolyCount;
