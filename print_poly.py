@@ -16,4 +16,5 @@ def printPoly(file, index):
     for point in points2:
         print(f"({point[0]}, {point[1]}), ")
 
-printPoly('d:/Clipper-2d/output/polygons.json', 46572)
+#printPoly('d:/Clipper-2d/output/polygons.json', 131233)
+printPoly('c:/Paul/Clipper-2d/output/polygons.json', 131232)

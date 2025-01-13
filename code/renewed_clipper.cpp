@@ -196,7 +196,9 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
         printf("\n");
     }
     printf("\n");
+#endif
 
+#if 0
     printf("Inter\n");
     for(u32 polyi = 0;
         polyi < Result.Inter.PolyCount;
@@ -214,7 +216,9 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
         printf("\n");
     }
     printf("\n");
+#endif
 
+#if 1
     printf("Union\n");
     for(u32 polyi = 0;
         polyi < Result.Union.PolyCount;
@@ -232,7 +236,8 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
         printf("\n");
     }
     printf("\n");
-
+#endif
+#if 0
     printf("Xor\n");
     for(u32 polyi = 0;
         polyi < Result.Xor.PolyCount;

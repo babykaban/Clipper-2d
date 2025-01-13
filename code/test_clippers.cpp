@@ -235,8 +235,8 @@ int main()
     polygon_set Subjects = {};
     polygon_set Clips = {};
 
-    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
-//    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
+//    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
+    ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
     printf("Avaliable to test %d\n", Subjects.PolyCount);
     
     u32  TestCount = 1;
@@ -260,6 +260,7 @@ int main()
             ApproveResults(&Original, &New);
 
             Assert(MemoryAllocated == 0);
+            printf("Pair [%d] Tested", CurrentOperationIndex);
         }
     }
 
