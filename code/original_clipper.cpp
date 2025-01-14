@@ -6,7 +6,7 @@
    $Notice:  $
    ======================================================================== */
 
-#define USINGZ 0
+//#define USINGZ 0
 
 
 #include "clipper2.h"

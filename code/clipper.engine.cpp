@@ -441,16 +441,18 @@ namespace Clipper2Lib {
 
   inline bool PtsReallyClose(const Point64& pt1, const Point64& pt2)
   {
-    return (std::llabs(pt1.x - pt2.x) < 2) && (std::llabs(pt1.y - pt2.y) < 2);
+      bool result = (std::llabs(pt1.x - pt2.x) < 2) && (std::llabs(pt1.y - pt2.y) < 2);
+      return(result);
   }
 
-  inline bool IsVerySmallTriangle(const OutPt& op)
-  {
-    return op.next->next == op.prev &&
-      (PtsReallyClose(op.prev->pt, op.next->pt) ||
-        PtsReallyClose(op.pt, op.next->pt) ||
-        PtsReallyClose(op.pt, op.prev->pt));
-  }
+    inline bool IsVerySmallTriangle(const OutPt& op)
+    {
+        bool result = (op.next->next == op.prev &&
+                       (PtsReallyClose(op.prev->pt, op.next->pt) ||
+                        PtsReallyClose(op.pt, op.next->pt) ||
+                        PtsReallyClose(op.pt, op.prev->pt)));
+        return(result);
+    }
 
   inline bool IsValidClosedPath(const OutPt* op)
   {

@@ -2604,18 +2604,18 @@ ExecuteInternal(clipper *Clipper, clip_type ClipType, fill_rule FillRule)
 inline b32
 PtsReallyClose(v2_s64 pt1, v2_s64 pt2)
 {
-    return (llabs(pt1.x - pt2.x) < 2) && (llabs(pt1.y - pt2.y) < 2);
+    b32 Result = (llabs(pt1.x - pt2.x) < 2) && (llabs(pt1.y - pt2.y) < 2);
+    return(Result);
 }
 
 inline b32
 IsVerySmallTriangle(output_point *op)
 {
-     
-
-    return op->Next->Next == op->Prev &&
-        (PtsReallyClose(op->Prev->P, op->Next->P) ||
-         PtsReallyClose(op->P, op->Next->P) ||
-         PtsReallyClose(op->P, op->Prev->P));
+    b32 Result = ( op->Next->Next == op->Prev &&
+                   (PtsReallyClose(op->Prev->P, op->Next->P) ||
+                    PtsReallyClose(op->P, op->Next->P) ||
+                    PtsReallyClose(op->P, op->Prev->P)));
+    return(Result);
 }
 
 internal b32

@@ -32,7 +32,7 @@ V2S64(s64 X, s64 Y)
 inline v2_s64
 V2S64(f64 X, f64 Y)
 {
-    v2_s64 Result = {nearbyint(X), nearbyint(Y)}; 
+    v2_s64 Result = {(s64)round(X), (s64)round(Y)}; 
 
     return(Result);
 }

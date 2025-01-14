@@ -250,8 +250,10 @@ int main()
         {
             CurrentOperationIndex = I;
 
-            polygon *S = Subjects.Polygons + I;
-            polygon *C = Clips.Polygons + I;
+//            polygon *S = Subjects.Polygons + I;
+//            polygon *C = Clips.Polygons + I;
+            polygon *S = Subjects.Polygons + 131233;
+            polygon *C = Clips.Polygons + 131233;
 
             test_result Original = TESTTwoPoliesOriginal(S, C, I);
 
