@@ -17,6 +17,37 @@
 global_variable u32 IntersectCountMAX = 0;
 #define PRINT_READ 0
 
+#define TEST_INTERSECT 1
+#define TEST_DIFFERENCE 1
+#define TEST_UNION 1
+#define TEST_XOR 1
+
+#define PRINT_INTERSECT 0
+#define PRINT_DIFFERENCE 0
+#define PRINT_UNION 0
+#define PRINT_XOR 0
+
+inline void
+PrintPolygons(u32 Count, polygon *Polygons)
+{
+    for(u32 polyi = 0;
+        polyi < Count;
+        ++polyi)
+    {
+        polygon *Poly = Polygons + polyi;
+        printf("%d. ", polyi);
+        for(u32 pi = 0;
+            pi < (Poly->Count - 1);
+            ++pi)
+        {
+            printf("(%.4f, %.4f), ", Poly->Points[pi].x, Poly->Points[pi].y);
+        }
+
+        printf("(%.4f, %.4f)\n", Poly->Points[Poly->Count - 1].x,
+               Poly->Points[Poly->Count - 1].y);
+    }
+}
+
 #include "original_clipper.cpp"
 #include "renewed_clipper.cpp"
 
@@ -200,6 +231,8 @@ int main()
 {
     BeginProfile();
 
+    srand((u32)time(0)); // Seed for randomness
+
     SetUpHashTables();
     
     if(check_avx2_support())
@@ -239,21 +272,52 @@ int main()
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
     printf("Avaliable to test %d\n", Subjects.PolyCount);
     
-    u32  TestCount = 1;
+    u32  TestCount = 16;
     for(u32 TestIndex = 0;
         TestIndex < TestCount;
         ++TestIndex)
     {
-        u32 Count = 262144;
-//        u32 Count = 1024;
-        for(u32 I = 0; I < Count; ++I)
+        f32 MaxYf32 = 1000;
+        f32 MaxXf32 = 1000;
+
+        s32 PolygonCount = 4096;
+        s32 numVertices = 8;
+
+        polygon_set SubjectSet = {};
+        SubjectSet.PolyCount = PolygonCount;
+        SubjectSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
+    
+        u32 Count = 0;
+        for(s32 I = 0;
+            I < PolygonCount;
+            ++I)
+        {
+            polygon *Poly = SubjectSet.Polygons + I;
+            Poly->Count = rand() % (16 - 3 + 1)  + 3;
+            Poly->Points = GenerateRandomPolygonF32(Poly->Count, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32, Count++);
+        }
+
+        polygon_set ClipSet = {};
+        ClipSet.PolyCount = PolygonCount;
+        ClipSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
+
+        for(s32 I = 0;
+            I < PolygonCount;
+            ++I)
+        {
+            polygon *Poly = ClipSet.Polygons + I;
+            Poly->Count = rand() % (16 - 3 + 1)  + 3;
+            Poly->Points = GenerateRandomPolygonF32(Poly->Count, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32, Count++);
+        }
+
+        for(u32 I = 0; I < PolygonCount; ++I)
         {
             CurrentOperationIndex = I;
 
-//            polygon *S = Subjects.Polygons + I;
-//            polygon *C = Clips.Polygons + I;
-            polygon *S = Subjects.Polygons + 131233;
-            polygon *C = Clips.Polygons + 131233;
+            polygon *S = Subjects.Polygons + I;
+            polygon *C = Clips.Polygons + I;
+//            polygon *S = Subjects.Polygons + 131233;
+//            polygon *C = Clips.Polygons + 131233;
 
             test_result Original = TESTTwoPoliesOriginal(S, C, I);
 
@@ -262,7 +326,8 @@ int main()
             ApproveResults(&Original, &New);
 
             Assert(MemoryAllocated == 0);
-            printf("Pair [%d] Tested", CurrentOperationIndex);
+            fprintf(stdout, "Pair [%d][%d] Tested\n", TestIndex,
+                    CurrentOperationIndex);
         }
     }
 

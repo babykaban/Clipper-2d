@@ -15,7 +15,7 @@
 inline test_result
 TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 {
-    TimeFunction;
+//    TimeFunction;
     using namespace Clipper2Lib;
 
     test_result Result = {};
@@ -39,14 +39,16 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
     }
     clip.push_back(tmp1);
 
+    u32 PolyIndex = 0;
+#if TEST_DIFFERENCE
     {
-        TimeBlock("Difference");
+        TimeBlock("Original Difference");
         solution = Difference(subject, clip, FillRule::EvenOdd);
     }
 
     Result.Dif.PolyCount = (u32)solution.size();
     Result.Dif.Polygons = (polygon *)malloc(Result.Dif.PolyCount*sizeof(polygon));
-    u32 PolyIndex = 0;
+    PolyIndex = 0;
     for(PathD path : solution)
     {
         polygon *Poly = Result.Dif.Polygons + PolyIndex;
@@ -62,10 +64,11 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 
         ++PolyIndex;
     }
+#endif
     
-#if 1
+#if TEST_INTERSECT
     {
-        TimeBlock("Intersection");
+        TimeBlock("Original Intersection");
         solution = Intersect(subject, clip, FillRule::EvenOdd);
     }
 
@@ -87,9 +90,11 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 
         ++PolyIndex;
     }
+#endif
     
+#if TEST_UNION
     {
-        TimeBlock("Union");
+        TimeBlock("Original Union");
         solution = Union(subject, clip, FillRule::EvenOdd);
     }
 
@@ -111,9 +116,11 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 
         ++PolyIndex;
     }
+#endif
 
+#if TEST_XOR
     {
-        TimeBlock("Xor");
+        TimeBlock("Original Xor");
         solution = Xor(subject, clip, FillRule::EvenOdd);
     }    
 
@@ -135,104 +142,31 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 
         ++PolyIndex;
     }
-
 #endif
 
-#if 0
-    printf("Diff\n");
-    for(u32 polyi = 0;
-        polyi < Result.Dif.PolyCount;
-        ++polyi)
-    {
-        polygon *Poly = Result.Dif.Polygons + polyi;
-        printf("%d. ", polyi);
-        for(u32 pi = 0;
-            pi < Poly->Count;
-            ++pi)
-        {
-            printf("(%.4f, %.4f), ", Poly->Points[pi].x, Poly->Points[pi].y);
-        }
-
-        printf("\n");
-    }
+#if PRINT_DIFFERENCE
+    printf("Original Difference\n");
+    PrintPolygons(Result.Dif.PolyCount, Result.Dif.Polygons);
     printf("\n");
 #endif
 
-#if 0
-    printf("Inter\n");
-    for(u32 polyi = 0;
-        polyi < Result.Inter.PolyCount;
-        ++polyi)
-    {
-        polygon *Poly = Result.Inter.Polygons + polyi;
-        printf("%d. ", polyi);
-        for(u32 pi = 0;
-            pi < Poly->Count;
-            ++pi)
-        {
-            printf("(%.4f, %.4f), ", Poly->Points[pi].x, Poly->Points[pi].y);
-        }
-
-        printf("\n");
-    }
+#if PRINT_INTERSECT
+    printf("Original Intersect\n");
+    PrintPolygons(Result.Inter.PolyCount, Result.Inter.Polygons);
     printf("\n");
 #endif
 
-#if 1
-    printf("Union\n");
-    for(u32 polyi = 0;
-        polyi < Result.Union.PolyCount;
-        ++polyi)
-    {
-        polygon *Poly = Result.Union.Polygons + polyi;
-        printf("%d. ", polyi);
-        for(u32 pi = 0;
-            pi < Poly->Count;
-            ++pi)
-        {
-            printf("(%.4f, %.4f), ", Poly->Points[pi].x, Poly->Points[pi].y);
-        }
-
-        printf("\n");
-    }
+#if PRINT_UNION
+    printf("Original Union\n");
+    PrintPolygons(Result.Union.PolyCount, Result.Union.Polygons);
     printf("\n");
 #endif
 
-#if 0
-    printf("Xor\n");
-    for(u32 polyi = 0;
-        polyi < Result.Xor.PolyCount;
-        ++polyi)
-    {
-        polygon *Poly = Result.Xor.Polygons + polyi;
-        printf("%d. ", polyi);
-        for(u32 pi = 0;
-            pi < Poly->Count;
-            ++pi)
-        {
-            printf("(%.4f, %.4f), ", Poly->Points[pi].x, Poly->Points[pi].y);
-        }
-
-        printf("\n");
-    }
+#if PRINT_XOR
+    printf("Original Xor\n");
+    PrintPolygons(Result.Xor.PolyCount, Result.Xor.Polygons);
     printf("\n");
-
 #endif    
-
-    int a = 0;
-    
-#if PRINT_OUT_RESULT
-    printf("\nTest[%d]: %s, %s", Index, ClipTypes[1], FillRules[0]);
-
-    for (const PathD& path : solution) {
-        for (const PointD& pt : path) {
-            std::cout << "(" << pt.x << ", " << pt.y << "),";
-        }
-        std::cout << std::endl;
-    }
-
-    printf("\n");
-#endif
 
     return(Result);
 }
