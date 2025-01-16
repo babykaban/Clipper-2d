@@ -37,7 +37,7 @@ RecordResult(polygon_set *Dest, u32 Count, path_f64 *Paths)
 }
 
 inline test_result
-TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
+TESTTwoPolies(polygon *S, polygon *C, u32 FillRule, u32 Index = 0)
 {
 //    TimeFunction;
 
@@ -69,7 +69,7 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 #if TEST_DIFFERENCE
     {
         TimeBlock("New Difference");
-        BooleanOpD(ClipType_Difference, FillRule_EvenOdd, &Subject, 0, &Clip,
+        BooleanOpD(ClipType_Difference, FillRule, &Subject, 0, &Clip,
                    &Solution, 0, true, false);
     }
 
@@ -84,7 +84,7 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 #if TEST_INTERSECT
     {
         TimeBlock("New Intersection");
-        BooleanOpD(ClipType_Intersection, FillRule_EvenOdd, &Subject, 0, &Clip,
+        BooleanOpD(ClipType_Intersection, FillRule, &Subject, 0, &Clip,
                    &Solution, 0, true, false);
     }
 
@@ -99,7 +99,7 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 #if TEST_UNION
     {
         TimeBlock("New Union");
-        BooleanOpD(ClipType_Union, FillRule_EvenOdd, &Subject, 0, &Clip,
+        BooleanOpD(ClipType_Union, FillRule, &Subject, 0, &Clip,
                    &Solution, 0, true, false);
     }
 
@@ -114,7 +114,7 @@ TESTTwoPolies(polygon *S, polygon *C, u32 Index = 0)
 #if TEST_XOR
     {
         TimeBlock("New Xor");
-        BooleanOpD(ClipType_Xor, FillRule_EvenOdd, &Subject, 0, &Clip,
+        BooleanOpD(ClipType_Xor, FillRule, &Subject, 0, &Clip,
                    &Solution, 0, true, false);
     }
 

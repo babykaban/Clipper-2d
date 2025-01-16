@@ -13,7 +13,7 @@
 #include "clipper.engine.cpp"
 
 inline test_result
-TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
+TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 fillRule, u32 Index = 0)
 {
 //    TimeFunction;
     using namespace Clipper2Lib;
@@ -43,7 +43,7 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 #if TEST_DIFFERENCE
     {
         TimeBlock("Original Difference");
-        solution = Difference(subject, clip, FillRule::EvenOdd);
+        solution = Difference(subject, clip, (FillRule)fillRule);
     }
 
     Result.Dif.PolyCount = (u32)solution.size();
@@ -69,7 +69,7 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 #if TEST_INTERSECT
     {
         TimeBlock("Original Intersection");
-        solution = Intersect(subject, clip, FillRule::EvenOdd);
+        solution = Intersect(subject, clip, (FillRule)fillRule);
     }
 
     Result.Inter.PolyCount = (u32)solution.size();
@@ -95,7 +95,7 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 #if TEST_UNION
     {
         TimeBlock("Original Union");
-        solution = Union(subject, clip, FillRule::EvenOdd);
+        solution = Union(subject, clip, (FillRule)fillRule);
     }
 
     Result.Union.PolyCount = (u32)solution.size();
@@ -121,7 +121,7 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 Index = 0)
 #if TEST_XOR
     {
         TimeBlock("Original Xor");
-        solution = Xor(subject, clip, FillRule::EvenOdd);
+        solution = Xor(subject, clip, (FillRule)fillRule);
     }    
 
     Result.Xor.PolyCount = (u32)solution.size();

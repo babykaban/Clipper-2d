@@ -74,15 +74,18 @@ SetUpHashTables(void)
 
     InitHashTables();
     
-    for(u32 I = 0; I < 5; ++I)
+    for(u32 K = 0; K < 2; ++K)
     {
-        for(u32 J = 0; J < 4; ++J)
+        for(u32 I = 0; I < 5; ++I)
         {
-            record_hash_table *Table = &OperationTables[I][J];
-            clock_record Record = InitClockRecord();
-            for(u32 F = 0; F < ArrayCount(FunctionsToTest); ++F)
+            for(u32 J = 0; J < 4; ++J)
             {
-                Insert(Table, FunctionsToTest[F], Record);
+                record_hash_table *Table = &OperationTables[K][I][J];
+                clock_record Record = InitClockRecord();
+                for(u32 F = 0; F < ArrayCount(FunctionsToTest); ++F)
+                {
+                    Insert(Table, FunctionsToTest[F], Record);
+                }
             }
         }
     }

@@ -195,8 +195,6 @@ namespace Clipper2Lib {
 
     class ClipperBase {
     private:
-        ClipType cliptype_ = ClipType::NoClip;
-        FillRule fillrule_ = FillRule::EvenOdd;
         FillRule fillpos = FillRule::Positive;
         int64_t bot_y_ = 0;
         bool minima_list_sorted_ = false;
@@ -280,6 +278,8 @@ namespace Clipper2Lib {
         void AddPaths(const Paths64& paths, PathType polytype, bool is_open);
     public:
         virtual ~ClipperBase();
+        ClipType cliptype_ = ClipType::NoClip;
+        FillRule fillrule_ = FillRule::EvenOdd;
         int ErrorCode() const { return error_code_; };
         void PreserveCollinear(bool val) { preserve_collinear_ = val; };
         bool PreserveCollinear() const { return preserve_collinear_;};

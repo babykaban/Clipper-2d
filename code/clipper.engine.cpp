@@ -1210,6 +1210,8 @@ namespace Clipper2Lib {
 
   void ClipperBase::InsertLocalMinimaIntoAEL(int64_t bot_y)
   {
+      RecordFunction(1, (u32)cliptype_, (u32)fillrule_);
+
       LocalMinima* local_minima;
     Active* left_bound, * right_bound;
     //Add any local minima (if any) at BotY ...
@@ -2130,7 +2132,6 @@ namespace Clipper2Lib {
 
   bool ClipperBase::ExecuteInternal(ClipType ct, FillRule fillrule, bool use_polytrees)
   {
-//      RecordFunction((u32)ct, (u32)fillrule);
 
       cliptype_ = ct;
     fillrule_ = fillrule;
@@ -2283,6 +2284,7 @@ namespace Clipper2Lib {
 
   void ClipperBase::ProcessHorzJoins()
   {
+      RecordFunction(1, (u32)cliptype_, (u32)fillrule_);
 
       for (const HorzJoin& j : horz_join_list_)
     {
@@ -2394,6 +2396,8 @@ namespace Clipper2Lib {
 
   bool ClipperBase::BuildIntersectList(const int64_t top_y)
   {
+      RecordFunction(1, (u32)cliptype_, (u32)fillrule_);
+
       if (!actives_ || !actives_->next_in_ael) return false;
 
     //Calculate edge positions at the top of the current scanbeam, and from this
@@ -2555,6 +2559,8 @@ namespace Clipper2Lib {
         *         /              |        /       |       /                            *
         *******************************************************************************/
   {
+      RecordFunction(1, (u32)cliptype_, (u32)fillrule_);
+
       Point64 pt;
     bool horzIsOpen = IsOpen(horz);
     int64_t y = horz.bot.y;
@@ -2712,6 +2718,7 @@ namespace Clipper2Lib {
 
   void ClipperBase::DoTopOfScanbeam(const int64_t y)
   {
+      RecordFunction(1, (u32)cliptype_, (u32)fillrule_);
 
       sel_ = nullptr;  // sel_ is reused to flag horizontals (see PushHorz below)
     Active* e = actives_;
@@ -3105,6 +3112,7 @@ namespace Clipper2Lib {
 
   void ClipperD::BuildPathsD(PathsD& solutionClosed, PathsD* solutionOpen)
   {
+      RecordFunction(1, (u32)cliptype_, (u32)fillrule_);
 
       solutionClosed.resize(0);
     solutionClosed.reserve(outrec_list_.size());

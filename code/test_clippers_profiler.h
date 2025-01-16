@@ -22,23 +22,26 @@ struct clock_record
 inline void
 PrintRecord(char *Key, clock_record *Record)
 {
-    u64 CPUFreq = EstimateCPUTimerFreq();
+    if(Record->Max != 0)
+    {
+        u64 CPUFreq = EstimateCPUTimerFreq();
 
-    f64 Ave = (f64)Record->Average / (f64)Record->Count;
+        f64 Ave = (f64)Record->Average / (f64)Record->Count;
     
-    f64 MinMs = 1000.0 * ((f64)Record->Min / (f64)CPUFreq);
-    f64 MaxMs = 1000.0 * ((f64)Record->Max / (f64)CPUFreq);
-    f64 AveMs = 1000.0 * ((f64)Ave / (f64)CPUFreq);
+        f64 MinMs = 1000.0 * ((f64)Record->Min / (f64)CPUFreq);
+        f64 MaxMs = 1000.0 * ((f64)Record->Max / (f64)CPUFreq);
+        f64 AveMs = 1000.0 * ((f64)Ave / (f64)CPUFreq);
 
 
-    printf("%s\n", Key);
-    printf("    ");
-    printf("MIN[%d]: %llu cyc, %.2f ms\n", Record->MinIndex, Record->Min, MinMs);
-    printf("    ");
-    printf("MAX[%d]: %llu cyc, %.2f ms\n", Record->MaxIndex, Record->Max, MaxMs);
-    printf("    ");
-    printf("AVERAGE: %.2f cyc, %.2f ms\n", Ave, AveMs);
-    printf("    ");
+        printf("%s\n", Key);
+        printf("    ");
+        printf("MIN[%d]: %llu cyc, %.2f ms\n", Record->MinIndex, Record->Min, MinMs);
+        printf("    ");
+        printf("MAX[%d]: %llu cyc, %.2f ms\n", Record->MaxIndex, Record->Max, MaxMs);
+        printf("    ");
+        printf("AVERAGE: %.2f cyc, %.2f ms\n", Ave, AveMs);
+        printf("    ");
+    }
 }
 
 struct record_entry
@@ -58,18 +61,21 @@ struct record_hash_table
 
 #define TABLE_SIZE 4096
 global_variable u32 CurrentOperationIndex = 0;
-global_variable record_hash_table OperationTables[5][4] = {};
+global_variable record_hash_table OperationTables[2][5][4] = {};
 
 inline void
 InitHashTables(void)
 {
-    for(u32 I = 0; I < 5; ++I)
+    for(u32 K = 0; K < 2; ++K)
     {
-        for(u32 J = 0; J < 4; ++J)
+        for(u32 I = 0; I < 5; ++I)
         {
-            record_hash_table *Table = &OperationTables[I][J];
-            Table->Entries = (record_entry **)calloc(TABLE_SIZE, sizeof(record_entry *));
-            Table->Size = 0;
+            for(u32 J = 0; J < 4; ++J)
+            {
+                record_hash_table *Table = &OperationTables[K][I][J];
+                Table->Entries = (record_entry **)calloc(TABLE_SIZE, sizeof(record_entry *));
+                Table->Size = 0;
+            }
         }
     }
 }
@@ -173,11 +179,12 @@ Get(record_hash_table *Table, char *key)
 
 struct record_block
 {
-    record_block(char *Key_, u32 ClipType_, u32 FillRule_)
+    record_block(char *Key_, u32 ClipperID_, u32 ClipType_, u32 FillRule_)
     {
         Key = Key_;
         ClipType = ClipType_;
         FillRule = FillRule_;
+        ClipperID = ClipperID_;
 
         StartTSC = ReadCPUTimer();
     }
@@ -185,7 +192,7 @@ struct record_block
     ~record_block(void)
     {
         u64 Elapsed = ReadCPUTimer() - StartTSC;
-        clock_record *Record = Get(&OperationTables[ClipType][FillRule], Key);
+        clock_record *Record = Get(&OperationTables[ClipperID][ClipType][FillRule], Key);
 
         if(Record->Min > Elapsed)
         {
@@ -205,12 +212,18 @@ struct record_block
     
     char *Key;
     u32 ClipType;
+    u32 ClipperID;
     u32 FillRule;
     u64 StartTSC;
 };
 
-#define RecordBlock(Name, Clip, Fill) record_block NameConcat(Block, __LINE__)(Name, Clip, Fill);
-#define RecordFunction(Clip, Fill) RecordBlock(__func__, Clip, Fill)
+#if RECORD_BLOCKS
+#define RecordBlock(Name, ID, Clip, Fill) record_block NameConcat(Block, __LINE__)(Name, ID, Clip, Fill);
+#define RecordFunction(ID, Clip, Fill) RecordBlock(__func__, ID, Clip, Fill)
+#else
+#define RecordBlock(...)
+#define RecordFunction(...)
+#endif
 
 #define TEST_CLIPPERS_PROFILER_H
 #endif
