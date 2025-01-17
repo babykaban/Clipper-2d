@@ -19,6 +19,15 @@ struct clock_record
     u64 Average;
 };
 
+struct block_record
+{
+    u64 Cycles;
+
+    u32 OpIndex;
+    u32 CT;
+    u32 FR;
+};
+
 inline void
 PrintRecord(char *Key, clock_record *Record)
 {
@@ -44,12 +53,17 @@ PrintRecord(char *Key, clock_record *Record)
     }
 }
 
+#define BLOCK_RECORDS_PER_ENTRY 2097152
+
 struct record_entry
 {
     char *Key;
 
     clock_record Record;
 
+    u32 BlockIndex;
+    block_record *BlockRecords;
+    
     record_entry *Next;
 };
 
@@ -134,6 +148,8 @@ Insert(record_hash_table *Table, char *key, clock_record Record)
 {
     u32 Index = Hash(key) % TABLE_SIZE;
     record_entry *Entry = CreateEntry(key, Record); 
+    Entry->BlockIndex = 0;
+    Entry->BlockRecords = (block_record *)calloc(BLOCK_RECORDS_PER_ENTRY, sizeof(block_record));
     Entry->Next = Table->Entries[Index];
     Table->Entries[Index] = Entry;
     Table->Size++;
@@ -158,23 +174,28 @@ StringsAreEqual(char *A, char *B)
     return(Result);
 }
 
-inline clock_record *
+struct get_res
+{
+    clock_record *Record;
+
+    u32 *BlockIndex;
+    block_record *BlockRecords;
+};
+
+inline record_entry *
 Get(record_hash_table *Table, char *key)
 {
-    clock_record *Result = 0;
-
     u32 Index = Hash(key) % TABLE_SIZE;
     record_entry *Entry = Table->Entries[Index]; 
     while(Entry)
     {
         if(StringsAreEqual(Entry->Key, key))
         {
-            Result = &Entry->Record;
             break;
         }
     }
 
-    return(Result);
+    return(Entry);
 }
 
 struct record_block
@@ -192,8 +213,16 @@ struct record_block
     ~record_block(void)
     {
         u64 Elapsed = ReadCPUTimer() - StartTSC;
-        clock_record *Record = Get(&OperationTables[ClipperID][ClipType][FillRule], Key);
-
+        record_entry *Entry = Get(&OperationTables[ClipperID][ClipType][FillRule], Key);
+        clock_record *Record = &Entry->Record;
+        
+        block_record *BlockRecord = Entry->BlockRecords + Entry->BlockIndex;
+        BlockRecord->Cycles = Elapsed;
+        BlockRecord->OpIndex = CurrentOperationIndex;
+        BlockRecord->CT = ClipType;
+        BlockRecord->FR = FillRule;
+        ++Entry->BlockIndex;
+        
         if(Record->Min > Elapsed)
         {
             Record->Min = Elapsed;

@@ -3067,7 +3067,7 @@ BooleanOp(clip_type ClipType, fill_rule FillRule,
 
 
 internal s32
-BooleanOpD(uint8_t cliptype, uint8_t fillrule, paths_f64 *subjects, paths_f64 *subjects_open,
+BooleanOpD(u32 cliptype, u32 fillrule, paths_f64 *subjects, paths_f64 *subjects_open,
            paths_f64 *clips, paths_f64 *solution, paths_f64 *solution_open,
            b32 preserve_collinear, b32 reverse_solution)
 {

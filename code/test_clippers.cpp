@@ -273,8 +273,10 @@ int main()
 //    ReadPolies(&Subjects, &Clips, "d:/Clipper-2d/output/polygons_b.bin");
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
     printf("Avaliable to test %d\n", Subjects.PolyCount);
+
+    FILE *file = fopen("records.txt", "w");
     
-    u32  TestCount = 8;
+    u32  TestCount = 4;
     for(u32 TestIndex = 0;
         TestIndex < TestCount;
         ++TestIndex)
@@ -282,8 +284,8 @@ int main()
         f32 MaxYf32 = 1000;
         f32 MaxXf32 = 1000;
 
-        s32 PolygonCount = 4096;
-        s32 numVertices = 8;
+        s32 PolygonCount = 2048;
+        s32 numVertices = 12;
 
         polygon_set SubjectSet = {};
         SubjectSet.PolyCount = PolygonCount;
@@ -312,7 +314,7 @@ int main()
             Poly->Points = GenerateRandomPolygonF32(Poly->Count, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32, Count++);
         }
 
-        for(u32 I = 0; I < PolygonCount; ++I)
+        for(s32 I = 0; I < PolygonCount; ++I)
         {
             CurrentOperationIndex = I;
             for(u32 FillRule = 0;
@@ -332,6 +334,9 @@ int main()
 
                 Assert(MemoryAllocated == 0);
             }
+
+            fprintf(file, "Pair [%d][%d] Tested\n", TestIndex,
+                    CurrentOperationIndex);
 
             fprintf(stdout, "Pair [%d][%d] Tested\n", TestIndex,
                     CurrentOperationIndex);
@@ -358,30 +363,47 @@ int main()
         }
         
         for(u32 ClipType = 1;
-            ClipType < 2;
+            ClipType < ClipType_Count;
             ++ClipType)
         {
-//            printf("<===%s===\n", ClipTypes[ClipType]);
+            printf("%s: \n", ClipTypes[ClipType]);
+            fprintf(file, "%s: \n", ClipTypes[ClipType]);
 //            printf("    ");
 
             for(u32 FillRule = 0;
                 FillRule < 1;
                 ++FillRule)
             {
-//                printf(">===%s===\n", FillRules[FillRule]);
+                printf("%s: \n", FillRules[FillRule]);
+                fprintf(file, "%s: \n", FillRules[FillRule]);
 //                printf("    ");
                 for(u32 I = 0;
                     I < ArrayCount(FunctionsToTest);
                     ++I)
                 {
-                    clock_record *Record =
+                    record_entry *Entry =
                         Get(&OperationTables[ClipperID][ClipType_Difference][FillRule_EvenOdd],
                             FunctionsToTest[I]);
 
-                    if(Record->Count)
+                    if(Entry->Record.Count)
                     {
-                        f64 Ave = (f64)Record->Average / (f64)Record->Count;
+                        f64 Ave = (f64)Entry->Record.Average / (f64)Entry->Record.Count;
+
                         printf("%s, %f, %d, %d\n", FunctionsToTest[I], Ave, ClipType, FillRule);
+                        fprintf(file, "%s, %f, %d, %d\n", FunctionsToTest[I], Ave, ClipType, FillRule);
+
+                        printf("Cyc, OPI, CT, FR\n");
+                        fprintf(file, "Cyc, OPI, CT, FR\n");
+                        for(u32 BIndex = 0;
+                            BIndex < (Entry->BlockIndex + 1);
+                            ++BIndex)
+                        {
+                            block_record *BRecord = Entry->BlockRecords + BIndex;
+                            printf("%llu, %u, %u, %u\n", BRecord->Cycles,
+                                   BRecord->OpIndex, BRecord->CT, BRecord->FR);
+                            fprintf(file, "%llu, %u, %u, %u\n", BRecord->Cycles,
+                                   BRecord->OpIndex, BRecord->CT, BRecord->FR);
+                        }
                     }
 #if 0
                     PrintRecord(FunctionsToTest[I], Record);
@@ -405,11 +427,13 @@ int main()
         }
     }
     
-    printf("<===%s===\n", ClipTypes[ct]);
-    printf(">===%s===\n", FillRules[fr]);
-    clock_record *Record = Get(&OperationTables[0][ct][fr], SlowestKey);
-    PrintRecord(SlowestKey, Record);
+//    printf("<===%s===\n", ClipTypes[ct]);
+//    printf(">===%s===\n", FillRules[fr]);
+//    get_res GetRes = Get(&OperationTables[0][ct][fr], SlowestKey);
+//    PrintRecord(SlowestKey, GetRes.Record);
 #endif
+    fclose(file);
     EndAndPrintProfile();
+
     return(0);
 }
