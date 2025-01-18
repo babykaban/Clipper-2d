@@ -20,9 +20,9 @@ global_variable u32 IntersectCountMAX = 0;
 #define PRINT_READ 0
 
 #define TEST_INTERSECT 1
-#define TEST_DIFFERENCE 1
-#define TEST_UNION 1
-#define TEST_XOR 1
+#define TEST_DIFFERENCE 0
+#define TEST_UNION 0
+#define TEST_XOR 0
 
 #define PRINT_INTERSECT 0
 #define PRINT_DIFFERENCE 0
@@ -274,9 +274,9 @@ int main()
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
     printf("Avaliable to test %d\n", Subjects.PolyCount);
 
-    FILE *file = fopen("records.txt", "w");
+    FILE *file = fopen("records.csv", "w");
     
-    u32  TestCount = 4;
+    u32  TestCount = 1;
     for(u32 TestIndex = 0;
         TestIndex < TestCount;
         ++TestIndex)
@@ -284,7 +284,7 @@ int main()
         f32 MaxYf32 = 1000;
         f32 MaxXf32 = 1000;
 
-        s32 PolygonCount = 2048;
+        s32 PolygonCount = 256;
         s32 numVertices = 12;
 
         polygon_set SubjectSet = {};
@@ -335,103 +335,72 @@ int main()
                 Assert(MemoryAllocated == 0);
             }
 
-            fprintf(file, "Pair [%d][%d] Tested\n", TestIndex,
-                    CurrentOperationIndex);
-
             fprintf(stdout, "Pair [%d][%d] Tested\n", TestIndex,
                     CurrentOperationIndex);
         }
     }
 
 #if 1
-    char *SlowestKey = 0;
-    f64 SlowestAverage = 0;
-    u32 ct = 0;
-    u32 fr = 0;
-    for(u32 ClipperID = 0;
-        ClipperID < 2;
-        ++ClipperID)
+    for(u32 ClipType = 1;
+        ClipType < ClipType_Count;
+        ++ClipType)
     {
-        if(ClipperID == 0)
+        for(u32 FillRule = 0;
+            FillRule < FillRule_Count;
+            ++FillRule)
         {
-            printf("New Clipper Records:\n");
-            printf("FuncName, Cyc, CT, FR\n");
-        }
-        else
-        {
-            printf("Original Clipper Records:\n");
-        }
-        
-        for(u32 ClipType = 1;
-            ClipType < ClipType_Count;
-            ++ClipType)
-        {
-            printf("%s: \n", ClipTypes[ClipType]);
-            fprintf(file, "%s: \n", ClipTypes[ClipType]);
-//            printf("    ");
-
-            for(u32 FillRule = 0;
-                FillRule < 1;
-                ++FillRule)
+            for(u32 I = 0;
+                I < ArrayCount(FunctionsToTest);
+                ++I)
             {
-                printf("%s: \n", FillRules[FillRule]);
-                fprintf(file, "%s: \n", FillRules[FillRule]);
-//                printf("    ");
-                for(u32 I = 0;
-                    I < ArrayCount(FunctionsToTest);
-                    ++I)
+                record_entry *EntryN =
+                    Get(&OperationTables[0][ClipType][FillRule],
+                        FunctionsToTest[I]);
+
+                record_entry *EntryO =
+                    Get(&OperationTables[1][ClipType][FillRule],
+                        FunctionsToTest[I]);
+
+                if(EntryN->Record.Count)
                 {
-                    record_entry *Entry =
-                        Get(&OperationTables[ClipperID][ClipType_Difference][FillRule_EvenOdd],
-                            FunctionsToTest[I]);
+                    f64 AveN = (f64)EntryN->Record.Average / (f64)EntryN->Record.Count;
+                    f64 AveO = (f64)EntryO->Record.Average / (f64)EntryO->Record.Count;
 
-                    if(Entry->Record.Count)
+                    printf("%s, %f, %d, %d\n", FunctionsToTest[I], AveN, ClipType, FillRule);
+                    printf("%s, %f, %d, %d\n", FunctionsToTest[I], AveO, ClipType, FillRule);
+
+                    printf("NCyc,OCyc,OPI,CT,FR,NVS,NVC\n");
+                    fprintf(file, "NCyc,OCyc,OPI,CT,FR,NVS,NVC\n");
+                    for(u32 BIndex = 0;
+                        BIndex < EntryN->BlockIndex;
+                        ++BIndex)
                     {
-                        f64 Ave = (f64)Entry->Record.Average / (f64)Entry->Record.Count;
+                        block_record *BRecord = EntryN->BlockRecords + BIndex;
+                        block_record *BRecordO = EntryO->BlockRecords + BIndex;
+                        printf("%.4f,%.4f,%u,%u,%u,%d,%d\n",
+                               (f64)BRecord->Cycles / 10000.0,
+                               (f64)BRecordO->Cycles / 10000.0,
+                               BRecord->OpIndex,
+                               BRecord->CT,
+                               BRecord->FR,
+                               Subjects.Polygons[BRecord->OpIndex].Count,
+                               Clips.Polygons[BRecord->OpIndex].Count);
 
-                        printf("%s, %f, %d, %d\n", FunctionsToTest[I], Ave, ClipType, FillRule);
-                        fprintf(file, "%s, %f, %d, %d\n", FunctionsToTest[I], Ave, ClipType, FillRule);
-
-                        printf("Cyc, OPI, CT, FR\n");
-                        fprintf(file, "Cyc, OPI, CT, FR\n");
-                        for(u32 BIndex = 0;
-                            BIndex < (Entry->BlockIndex + 1);
-                            ++BIndex)
-                        {
-                            block_record *BRecord = Entry->BlockRecords + BIndex;
-                            printf("%llu, %u, %u, %u\n", BRecord->Cycles,
-                                   BRecord->OpIndex, BRecord->CT, BRecord->FR);
-                            fprintf(file, "%llu, %u, %u, %u\n", BRecord->Cycles,
-                                   BRecord->OpIndex, BRecord->CT, BRecord->FR);
-                        }
+                        fprintf(file, "%.4f,%.4f,%u,%u,%u,%d,%d\n",
+                                (f64)BRecord->Cycles / 10000.0,
+                                (f64)BRecordO->Cycles / 10000.0,
+                                BRecord->OpIndex,
+                                BRecord->CT,
+                                BRecord->FR,
+                                Subjects.Polygons[BRecord->OpIndex].Count,
+                                Clips.Polygons[BRecord->OpIndex].Count);
                     }
-#if 0
-                    PrintRecord(FunctionsToTest[I], Record);
-                    printf("\n");
-
-                    f64 Ave = (f64)Record->Average / (f64)Record->Count;
-                    if(Ave > SlowestAverage)
-                    {
-                        SlowestAverage = Ave;
-                        SlowestKey = FunctionsToTest[I]; 
-                        ct = ClipType;
-                        fr = FillRule;
-                    }
-#endif
                 }
-
-//                printf("==============<\n\n");
             }
-
-//            printf("==============>\n\n");
         }
     }
-    
-//    printf("<===%s===\n", ClipTypes[ct]);
-//    printf(">===%s===\n", FillRules[fr]);
-//    get_res GetRes = Get(&OperationTables[0][ct][fr], SlowestKey);
-//    PrintRecord(SlowestKey, GetRes.Record);
 #endif
+
     fclose(file);
     EndAndPrintProfile();
 

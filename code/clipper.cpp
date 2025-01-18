@@ -1474,7 +1474,7 @@ InsertScanline(clipper *Clipper, s64 y)
 inline void
 InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
 {
-    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
+//    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
     
     local_minima *Minima = 0;
     active *left_bound;
@@ -1813,7 +1813,7 @@ DoHorizontal(clipper *Clipper, active *horz)
  *         /              |        /       |       /                            *
  *******************************************************************************/
 {
-    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
+//    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
     
     v2_s64 pt;
     b32 horzIsOpen = IsOpen(horz);
@@ -2239,7 +2239,7 @@ Insert1Before2InSEL(active *ae1, active *ae2)
 internal b32
 BuildIntersectList(clipper *Clipper, s64 top_y)
 {
-    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
+//    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
 
     if (!Clipper->ActiveEdgeList || !Clipper->ActiveEdgeList->next_in_ael)
         return false;
@@ -2321,7 +2321,7 @@ EdgesAdjacentInAEL(intersect_node *inode)
 inline void
 ProcessIntersectList(clipper *Clipper)
 {
-    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
+//    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
 
     //We now have a list of intersections required so that edges will be
     //correctly positioned at the top of the scanbeam. However, it's important
@@ -2470,7 +2470,7 @@ DoMaxima(clipper *Clipper, active *e)
 inline void
 DoTopOfScanbeam(clipper *Clipper, s64 y)
 {
-    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
+//    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
 
     Clipper->StoredEdgeList = 0;  // StoredEdgeList is reused to flag horizontals (see PushHorz below)
     active *e = Clipper->ActiveEdgeList;
@@ -2517,7 +2517,7 @@ FixOutRecPts(output_rectangle *outrec)
 inline void
 ProcessHorzJoins(clipper *Clipper)
 {
-    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
+//    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
 
     for(u32 I = 0;
         I < Clipper->JointCount;
@@ -2560,6 +2560,8 @@ ProcessHorzJoins(clipper *Clipper)
 internal b32
 ExecuteInternal(clipper *Clipper, clip_type ClipType, fill_rule FillRule)
 {
+    RecordFunction(0, ClipType, FillRule);
+
     Clipper->ClipType = ClipType;
     Clipper->FillRule = FillRule;
 
@@ -2904,7 +2906,7 @@ CountPathCount(clipper *Clipper)
 internal void
 BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen)
 {
-    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
+//    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
 
     *solutionClosed = GetPathsF64(CountPathCount(Clipper));
     if(solutionOpen)

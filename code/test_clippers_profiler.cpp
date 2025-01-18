@@ -16,17 +16,18 @@ InitClockRecord(void)
     return(Result);
 }
 
-global_variable char *FunctionsToTest[8] =
+global_variable char *FunctionsToTest[2] =
 {
     "ExecuteInternal",
     "BuildPathsD",
-
+#if 0
     "InsertLocalMinimaIntoAEL",
     "DoHorizontal",
     "BuildIntersectList",
     "ProcessIntersectList",
     "DoTopOfScanbeam",
     "ProcessHorzJoins"
+#endif
 };
 
 internal void
