@@ -9,7 +9,7 @@
 #include "generate_polygon_file.h"
 
 #define TIME_GENERATE 0
-#define TIME_PRINTS 1
+#define TIME_PRINTS 0
 #define PRINT 0
 
 // NOTE(babykaban): TRIANGLES =====================================================
@@ -307,7 +307,7 @@ GenerateRandomPolygonF32(s32 VertexCount, f32 MinX, f32 MaxX, f32 MinY, f32 MaxY
     
     b32 hasIntersection = 0;
     {
-        TimeBlock("CheckIntersect");
+//        TimeBlock("CheckIntersect");
         for(int i = 0; i < VertexCount - 1; i++)
         {
             for(int j = i + 2; j < VertexCount; j++)

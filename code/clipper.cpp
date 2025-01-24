@@ -274,7 +274,7 @@ ResetClipper(clipper *Clipper)
 inline b32
 PopScanline(clipper *Clipper, s64 *y)
 {
-     
+    TimeFunction;
 
     if(Clipper->ScanLineMaxHeap.Size == 0)
         return false;
@@ -1474,6 +1474,7 @@ InsertScanline(clipper *Clipper, s64 y)
 inline void
 InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
 {
+    TimeFunction;
 //    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
     
     local_minima *Minima = 0;
@@ -1813,6 +1814,7 @@ DoHorizontal(clipper *Clipper, active *horz)
  *         /              |        /       |       /                            *
  *******************************************************************************/
 {
+    TimeFunction;
 //    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
     
     v2_s64 pt;
@@ -2071,6 +2073,8 @@ DuplicateOp(output_point *op, b32 insert_after)
 inline void
 ConvertHorzSegsToJoins(clipper *Clipper)
 {
+    TimeFunction;
+    
     u32 J = 0;
     for(u32 I = 0;
         I < Clipper->HorzCount;
@@ -2378,6 +2382,7 @@ ProcessIntersectList(clipper *Clipper)
 inline void
 DoIntersections(clipper *Clipper, s64 top_y)
 {
+    TimeFunction;
     if(BuildIntersectList(Clipper, top_y))
     {
         ProcessIntersectList(Clipper);
@@ -2470,6 +2475,7 @@ DoMaxima(clipper *Clipper, active *e)
 inline void
 DoTopOfScanbeam(clipper *Clipper, s64 y)
 {
+    TimeFunction;
 //    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
 
     Clipper->StoredEdgeList = 0;  // StoredEdgeList is reused to flag horizontals (see PushHorz below)
@@ -2517,6 +2523,7 @@ FixOutRecPts(output_rectangle *outrec)
 inline void
 ProcessHorzJoins(clipper *Clipper)
 {
+    TimeFunction;
 //    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
 
     for(u32 I = 0;
@@ -2906,6 +2913,7 @@ CountPathCount(clipper *Clipper)
 internal void
 BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen)
 {
+    TimeFunction;
 //    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
 
     *solutionClosed = GetPathsF64(CountPathCount(Clipper));
@@ -2991,7 +2999,8 @@ DisposeAllOutRecs(clipper *Clipper)
 void
 CleanUp(clipper *Clipper)
 {
-
+    TimeFunction;
+    
     DeleteEdges(Clipper->ActiveEdgeList);
 #if RECORD_MEMORY_USEAGE
     Free(Clipper->ScanLineMaxHeap.Nodes, Clipper->ScanLineMaxHeap.MaxSize*sizeof(sort_entry));

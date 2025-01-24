@@ -12,7 +12,7 @@
 #define PROFILER 1
 #include "profiler.cpp"
 
-#define RECORD_BLOCKS 1
+#define RECORD_BLOCKS 0
 #include "test_clippers_profiler.cpp"
 
 global_variable u32 IntersectCountMAX = 0;
@@ -20,9 +20,9 @@ global_variable u32 IntersectCountMAX = 0;
 #define PRINT_READ 0
 
 #define TEST_INTERSECT 1
-#define TEST_DIFFERENCE 0
-#define TEST_UNION 0
-#define TEST_XOR 0
+#define TEST_DIFFERENCE 1
+#define TEST_UNION 1
+#define TEST_XOR 1
 
 #define PRINT_INTERSECT 0
 #define PRINT_DIFFERENCE 0
@@ -276,7 +276,7 @@ int main()
 
     FILE *file = fopen("records.csv", "w");
     
-    u32  TestCount = 1;
+    u32  TestCount = 4;
     for(u32 TestIndex = 0;
         TestIndex < TestCount;
         ++TestIndex)
@@ -284,7 +284,7 @@ int main()
         f32 MaxYf32 = 1000;
         f32 MaxXf32 = 1000;
 
-        s32 PolygonCount = 256;
+        s32 PolygonCount = 1024;
         s32 numVertices = 12;
 
         polygon_set SubjectSet = {};
@@ -340,7 +340,7 @@ int main()
         }
     }
 
-#if 1
+#if 0
     for(u32 ClipType = 1;
         ClipType < ClipType_Count;
         ++ClipType)

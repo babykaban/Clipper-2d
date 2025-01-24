@@ -772,7 +772,7 @@ namespace Clipper2Lib {
 
   void ClipperBase::CleanUp()
   {
-
+      TimeFunction;
       DeleteEdges(actives_);
     scanline_list_ = std::priority_queue<int64_t>();
     intersect_nodes_.clear();
@@ -873,7 +873,8 @@ namespace Clipper2Lib {
 
   bool ClipperBase::PopScanline(int64_t& y)
   {
-    if (scanline_list_.empty()) return false;
+      TimeFunction;
+      if (scanline_list_.empty()) return false;
     y = scanline_list_.top();
     scanline_list_.pop();
     while (!scanline_list_.empty() && y == scanline_list_.top())
@@ -1210,6 +1211,7 @@ namespace Clipper2Lib {
 
   void ClipperBase::InsertLocalMinimaIntoAEL(int64_t bot_y)
   {
+      TimeFunction;
 //      RecordFunction(1, (u32)cliptype_, (u32)fillrule_);
 
       LocalMinima* local_minima;
@@ -1337,7 +1339,7 @@ namespace Clipper2Lib {
 
   inline bool ClipperBase::PopHorz(Active*& e)
   {
-    e = sel_;
+      e = sel_;
     if (!e) return false;
     sel_ = sel_->next_in_sel;
     return true;
@@ -2223,6 +2225,7 @@ namespace Clipper2Lib {
 
   void ClipperBase::ConvertHorzSegsToJoins()
   {
+      TimeFunction;
     auto j = std::count_if(horz_seg_list_.begin(),
       horz_seg_list_.end(),
       [](HorzSegment& hs) { return UpdateHorzSegment(hs); });
@@ -2285,6 +2288,7 @@ namespace Clipper2Lib {
 
   void ClipperBase::ProcessHorzJoins()
   {
+      TimeFunction;
 //      RecordFunction(1, (u32)cliptype_, (u32)fillrule_);
 
       for (const HorzJoin& j : horz_join_list_)
@@ -2354,6 +2358,7 @@ namespace Clipper2Lib {
 
   void ClipperBase::DoIntersections(const int64_t top_y)
   {
+      TimeFunction;
       if (BuildIntersectList(top_y))
     {
       ProcessIntersectList();
@@ -2560,6 +2565,7 @@ namespace Clipper2Lib {
         *         /              |        /       |       /                            *
         *******************************************************************************/
   {
+    TimeFunction;
 //      RecordFunction(1, (u32)cliptype_, (u32)fillrule_);
 
       Point64 pt;
@@ -2719,6 +2725,7 @@ namespace Clipper2Lib {
 
   void ClipperBase::DoTopOfScanbeam(const int64_t y)
   {
+    TimeFunction;
 //      RecordFunction(1, (u32)cliptype_, (u32)fillrule_);
 
       sel_ = nullptr;  // sel_ is reused to flag horizontals (see PushHorz below)
@@ -3113,6 +3120,7 @@ namespace Clipper2Lib {
 
   void ClipperD::BuildPathsD(PathsD& solutionClosed, PathsD* solutionOpen)
   {
+      TimeFunction;
 //      RecordFunction(1, (u32)cliptype_, (u32)fillrule_);
 
       solutionClosed.resize(0);
