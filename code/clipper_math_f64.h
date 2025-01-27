@@ -234,8 +234,8 @@ Inner(v2_f64 A, v2_f64 B, v2_f64 C)
 inline f64
 Cross(v2_f64 A, v2_f64 B)
 {
-//    f64 Result = A.x*B.y - A.y*B.x;
-
+    f64 Result = A.x*B.y - A.y*B.x;
+#if 0
     // Shuffle A and B to get {A.y, A.x} and {B.y, B.x}
     __m128d AyAx = _mm_shuffle_pd(A.W, A.W, 1); // Swaps A.x and A.y
     __m128d ByBx = _mm_shuffle_pd(B.W, B.W, 1); // Swaps B.x and B.y
@@ -248,6 +248,7 @@ Cross(v2_f64 A, v2_f64 B)
     __m128d result = _mm_sub_sd(prod1, prod2);
 
     f64 Result = _mm_cvtsd_f64(result);;
+#endif
 
     return(Result);
 }

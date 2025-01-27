@@ -38,6 +38,14 @@ V2S64(f64 X, f64 Y)
 }
 
 inline v2_s64
+CastV2S64(v2_f64 A)
+{
+    v2_s64 Result = {(s64)A.x, (s64)A.y}; 
+
+    return(Result);
+}
+
+inline v2_s64
 V2S64(v2_f64 A)
 {
     v2_s64 Result = V2S64(A.x, A.y);
@@ -48,7 +56,7 @@ inline v2_s64
 operator*(f64 A, v2_s64 B)
 {
     v2_s64 Result;
-    Result = V2S64((f64)B.x*A, (f64)B.y*A);
+    Result = V2S64(V2F64(B)*A);
     return(Result);
 }
 
@@ -83,8 +91,7 @@ operator+(v2_s64 A, v2_s64 B)
 {
     v2_s64 Result;
 
-    Result.x = A.x + B.x;
-    Result.y = A.y + B.y;
+    Result.W = _mm_add_epi64(A.W, B.W);
 
     return(Result);
 }
@@ -102,8 +109,7 @@ operator-(v2_s64 A, v2_s64 B)
 {
     v2_s64 Result;
 
-    Result.x = A.x - B.x;
-    Result.y = A.y - B.y;
+    Result.W = _mm_sub_epi64(A.W, B.W);
 
     return(Result);
 }
@@ -119,7 +125,7 @@ operator-=(v2_s64 &A, v2_s64 B)
 inline f64
 Inner(v2_s64 A, v2_s64 B)
 {
-    f64 Result = (f64)A.x*(f64)B.x + (f64)A.y*(f64)B.y;
+    f64 Result = Inner(V2F64(A), V2F64(B));
 
     return(Result);
 }
@@ -137,7 +143,7 @@ Inner(v2_s64 A, v2_s64 B, v2_s64 C)
 inline f64
 Cross(v2_s64 A, v2_s64 B)
 {
-    f64 Result = (f64)A.x*(f64)B.y - (f64)A.y*(f64)B.x;
+    f64 Result = Cross(V2F64(A), V2F64(B));
 
     return(Result);
 }
@@ -552,20 +558,24 @@ GetSegmentIntersectPt(v2_s64 a, v2_s64 b, v2_s64 c, v2_s64 d, v2_s64 *p)
 inline b32
 GetSegmentIntersectPt(v2_s64 a, v2_s64 b, v2_s64 c, v2_s64 d, v2_s64 *p)
 {
+    TimeFunction;
     // https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
 
-    // TODO(babykaban): The problem might be here
     b32 Result = false;
     
     v2_f64 ab = V2F64(b - a);
     v2_f64 cd = V2F64(d - c);
 
-    f64 det = Cross(cd, ab);
+//    f64 det = Cross(cd, ab);
+    f64 det = cd.x*ab.y - cd.y*ab.x;
     if(det != 0.0)
     {
         f64 t = ((a.x - c.x) * cd.y - (a.y - c.y) * cd.x) / det;
-        if(t <= 0.0) *p = a;
-        else if(t >= 1.0) *p = b;
+
+        if(t <= 0.0)
+            *p = a;
+        else if(t >= 1.0)
+            *p = b;
         else
         {
             *p = {(s64)(a.x + t*ab.x), (s64)(a.y + t*ab.y)};

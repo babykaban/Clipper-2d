@@ -39,8 +39,10 @@ RecordResult(polygon_set *Dest, u32 Count, path_f64 *Paths)
 inline test_result
 TESTTwoPolies(polygon *S, polygon *C, u32 FillRule, u32 Index = 0)
 {
-//    TimeFunction;
-
+#if TIME_NEW
+    TimeFunction;
+#endif
+    
     test_result Result = {};
     
     Assert((S->Count > 0) && (C->Count > 0));

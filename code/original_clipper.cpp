@@ -15,7 +15,9 @@
 inline test_result
 TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 fillRule, u32 Index = 0)
 {
-//    TimeFunction;
+#if TIME_ORIGINAL
+    TimeFunction;
+#endif
     using namespace Clipper2Lib;
 
     test_result Result = {};

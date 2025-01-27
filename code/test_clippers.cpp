@@ -29,6 +29,9 @@ global_variable u32 IntersectCountMAX = 0;
 #define PRINT_UNION 0
 #define PRINT_XOR 0
 
+#define TIME_ORIGINAL 1
+#define TIME_NEW 1
+
 inline void
 PrintPolygons(u32 Count, polygon *Polygons)
 {
@@ -274,7 +277,8 @@ int main()
     ReadPolies(&Subjects, &Clips, "c:/Paul/Clipper-2d/output/polygons_b.bin");
     printf("Avaliable to test %d\n", Subjects.PolyCount);
 
-    FILE *file = fopen("records.csv", "w");
+    FILE *file;
+    fopen_s(&file, "records.csv", "w");
     
     u32  TestCount = 4;
     for(u32 TestIndex = 0;
@@ -286,7 +290,7 @@ int main()
 
         s32 PolygonCount = 1024;
         s32 numVertices = 12;
-
+#if 0
         polygon_set SubjectSet = {};
         SubjectSet.PolyCount = PolygonCount;
         SubjectSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
@@ -313,7 +317,7 @@ int main()
             Poly->Count = rand() % (16 - 3 + 1)  + 3;
             Poly->Points = GenerateRandomPolygonF32(Poly->Count, -MaxXf32, MaxXf32, -MaxYf32, MaxYf32, Count++);
         }
-
+#endif
         for(s32 I = 0; I < PolygonCount; ++I)
         {
             CurrentOperationIndex = I;
@@ -332,7 +336,9 @@ int main()
 
                 ApproveResults(&Original, &New);
 
+#if RECORD_MEMORY_USEAGE
                 Assert(MemoryAllocated == 0);
+#endif
             }
 
             fprintf(stdout, "Pair [%d][%d] Tested\n", TestIndex,

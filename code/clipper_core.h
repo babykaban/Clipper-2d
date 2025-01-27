@@ -116,7 +116,9 @@ IncreasePathF64(path_f64 *Path)
                      Path->Count + BASIC_ALLOCATE_COUNT, v2_f64);
     Path->AllocateCount = Path->Count + BASIC_ALLOCATE_COUNT;
 
+#if RECORD_MEMORY_USEAGE
     PathMemoryUsed += BASIC_ALLOCATE_COUNT*sizeof(v2_f64);
+#endif
 }
 
 inline void
@@ -126,7 +128,10 @@ IncreasePathS64(path_s64 *Path)
         ReallocArray(Path->Points, Path->Count,
                      Path->Count + BASIC_ALLOCATE_COUNT, v2_s64);
     Path->AllocateCount = Path->Count + BASIC_ALLOCATE_COUNT;
+
+#if RECORD_MEMORY_USEAGE
     PathMemoryUsed += BASIC_ALLOCATE_COUNT*sizeof(v2_f64);
+#endif
 }
 
 inline void
