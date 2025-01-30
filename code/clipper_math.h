@@ -7,6 +7,16 @@
    $Notice: $
    ======================================================================== */
 
+// https://github.com/AngusJohnson/Clipper2/discussions/334
+// #discussioncomment-4248602
+#if defined(_MSC_VER) && ( defined(_M_AMD64) || defined(_M_X64) )
+#include <xmmintrin.h>
+#include <emmintrin.h>
+#define fmin(a,b) _mm_cvtsd_f64(_mm_min_sd(_mm_set_sd(a),_mm_set_sd(b)))
+#define fmax(a,b) _mm_cvtsd_f64(_mm_max_sd(_mm_set_sd(a),_mm_set_sd(b)))
+#define nearbyint(a) _mm_cvtsd_si64(_mm_set_sd(a)) /* Note: expression type is (int64_t) */
+#endif
+
 union v2_s64
 {
     struct
@@ -168,6 +178,101 @@ ProductsAreEqual(s64 a, s64 b, s64 c, s64 d)
     s32 Result = (AreMulsEqual(abs_ab, abs_cd) && (sign_ab == sign_cd));
     
     return(Result);
+}
+
+
+struct cp_v
+{
+    v2_s64 A;
+    v2_s64 B;
+};
+
+struct cp_entry
+{
+    cp_v Key;
+    f64 Result;
+
+    cp_entry *Next;
+};
+
+struct cp_hash_table
+{
+    cp_entry **Entries;
+    u32 Size;
+};
+
+global_variable cp_hash_table GlobalCrossTable = {};
+
+inline u64
+Hash(cp_v V)
+{
+    u64 hash = V.A.x + (V.B.x << 6) + (V.A.y << 16) - V.B.y;
+    
+    return hash;
+}
+
+inline cp_entry *
+CreateEntry(cp_v Key, f64 Value)
+{
+    cp_entry *Entry = (cp_entry *)malloc(sizeof(cp_entry));
+    Entry->Key = Key;
+    Entry->Result = Value;
+    Entry->Next = 0;
+
+    return(Entry);
+}
+
+#define TABLE_SIZE 4096
+
+inline void
+Insert(cp_hash_table *Table, cp_v key, f64 Value)
+{
+    u32 Index = Hash(key) % TABLE_SIZE;
+    cp_entry *Entry = CreateEntry(key, Value); 
+    Entry->Next = Table->Entries[Index];
+    Table->Entries[Index] = Entry;
+    Table->Size++;
+}
+
+inline b32
+PointsAreEqual_(v2_s64 A, v2_s64 B)
+{
+    b32 Result = ((A.x == B.x) && (A.y == B.y));
+    return(Result);
+}
+
+inline cp_entry *
+Get(cp_hash_table *Table, cp_v key)
+{
+    u32 Index = Hash(key) % TABLE_SIZE;
+    cp_entry *Entry = Table->Entries[Index]; 
+    while(Entry)
+    {
+        if(PointsAreEqual_(Entry->Key.A, key.A) &&
+           PointsAreEqual_(Entry->Key.B, key.B))
+        {
+            break;
+        }
+
+        Entry = Entry->Next;
+    }
+
+    return(Entry);
+}
+
+internal void
+ClearCPTable(cp_hash_table *Table)
+{
+    for(int i = 0; i < TABLE_SIZE; i++)
+    {
+        cp_entry *node = Table->Entries[i];
+        while(node)
+        {
+            cp_entry *tmp = node;
+            node = node->Next;
+            free(tmp);
+        }
+    }
 }
 
 #define CLIPPER_MATH_H

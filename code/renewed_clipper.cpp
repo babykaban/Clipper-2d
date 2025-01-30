@@ -42,6 +42,9 @@ TESTTwoPolies(polygon *S, polygon *C, u32 FillRule, u32 Index = 0)
 #if TIME_NEW
     TimeFunction;
 #endif
+
+    GlobalCrossTable = {};
+    GlobalCrossTable.Entries = (cp_entry **)calloc(TABLE_SIZE, sizeof(cp_entry *));
     
     test_result Result = {};
     
@@ -160,6 +163,8 @@ TESTTwoPolies(polygon *S, polygon *C, u32 FillRule, u32 Index = 0)
 
     FreePaths(&Subject);
     FreePaths(&Clip);
+
+    ClearCPTable(&GlobalCrossTable);
 
     return(Result);
 }

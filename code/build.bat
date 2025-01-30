@@ -14,12 +14,12 @@ pushd %BuildPath%\build
 REM 64-bit build
 
 REM RENEWED CLIPPER
-cl %CommonCompilerFlagsO% /std:c++17 ..\code\test_clippers.cpp -Fmtest_clippers.map /link %CommonLinkerFlags%
+cl %CommonCompilerFlagsD% /std:c++17 ..\code\test_clippers.cpp -Fmtest_clippers.map /link %CommonLinkerFlags%
 
 REM ORIGINAL CLIPPER
 REM cl %CommonCompilerFlagsO% /std:c++17 ..\code\test_clipper2.cpp -Fmtest_clipper2.map /link %CommonLinkerFlags2% 
 
-REM cl %CommonCompilerFlagsD% ..\code\test_arena.cpp /link %CommonLinkerFlags%
+cl %CommonCompilerFlagsD% ..\code\test_arena.cpp /link %CommonLinkerFlags%
 
 REM cl %CommonCompilerFlagsO% ..\code\generate_polygon_file.cpp -Fmmain.map /link %CommonLinkerFlags%
 

@@ -7,16 +7,6 @@
    $Notice: $
    ======================================================================== */
 
-// https://github.com/AngusJohnson/Clipper2/discussions/334
-// #discussioncomment-4248602
-#if defined(_MSC_VER) && ( defined(_M_AMD64) || defined(_M_X64) )
-#include <xmmintrin.h>
-#include <emmintrin.h>
-#define fmin(a,b) _mm_cvtsd_f64(_mm_min_sd(_mm_set_sd(a),_mm_set_sd(b)))
-#define fmax(a,b) _mm_cvtsd_f64(_mm_max_sd(_mm_set_sd(a),_mm_set_sd(b)))
-#define nearbyint(a) _mm_cvtsd_si64(_mm_set_sd(a)) /* Note: expression type is (int64_t) */
-#endif
-
 typedef __m128d f64_2x;
 
 union f64_4x

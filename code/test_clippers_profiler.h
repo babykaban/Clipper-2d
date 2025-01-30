@@ -108,22 +108,6 @@ Hash(char *str)
     return hash;
 }
 
-inline u64
-Hash(v2_f64 A, v2_f64 B)
-{
-    u64 hash = 0;
-
-    s64 Hash0 = nearbyint(A.x);
-    s64 Hash1 = nearbyint(A.y);
-    s64 Hash2 = nearbyint(B.x);
-    s64 Hash3 = nearbyint(B.y);
-
-
-    hash = Hash0 + (hash1 << 6) + (hash2 << 16) - hash3;
-
-    return hash;
-}
-
 inline char *
 DublicateString(char *Source)
 {
