@@ -5,16 +5,10 @@
    $Creator: BabyKaban $
    $Notice:  $
    ======================================================================== */
+#include "main.h"
+#include "clipper_memory.h"
 
 #define PROFILER 1
-#include "main.h"
-
-#include "profiler.cpp"
-
-#include "clipper_memory.h"
-#include "clipper_math.h"
-#include "clipper_math_f64.h"
-#include "clipper_math_s64.h"
 
 #if 1
 struct point 
@@ -203,7 +197,50 @@ InsertionSort(s32 Count, intersect_node *Nodes)
 int main()
 {
     BeginProfile();
+
+    sort_entry points[COUNT] = {};
+    intersect_node nodes[COUNT] = {};
+
+    for(s32 i = 0; i < COUNT; ++i)
+    {
+        points[i].pt = generateRandomPoint(MIN, MAX);
+    }
+
+    for(s32 i = 0; i < COUNT; ++i)
+    {
+        nodes[i].pt = points[i].pt;
+    }
+
     
+    // Calculate SortKeys (with shifting)
+    s64 minX = INT_MAX, minY = INT_MAX;
+    for (s32 i = 0; i < COUNT; ++i)
+    {
+        minX = Minimum(minX, points[i].pt.x);
+        minY = Minimum(minY, points[i].pt.y);
+    }
+    
+    for (s32 i = 0; i < COUNT; ++i) 
+    {
+        points[i].SortKey = SortKeyToU64(points[i].pt);
+    }
+
+    sort_entry temp[COUNT]; 
+    RadixSort(COUNT, points, temp); 
+
+    MergeSort(COUNT, nodes);
+
+    // Print the sorted points
+    for (s32 i = 0; i < COUNT; ++i) {
+        printf("(%lld, %lld) ", points[i].pt.x, points[i].pt.y);
+    }
+    printf("\n\n");
+
+    for (s32 i = 0; i < COUNT; ++i) {
+        printf("(%lld, %lld) ", nodes[i].pt.x, nodes[i].pt.y);
+    }
+    printf("\n");
+
     EndAndPrintProfile();
 
     return 0;

@@ -234,29 +234,7 @@ Inner(v2_f64 A, v2_f64 B, v2_f64 C)
 inline f64
 Cross(v2_f64 A, v2_f64 B)
 {
-    TimeBlock("Cross FF");
-    
-    f64 Result = 0.0;
-#if 0
-    cp_v E = {};
-    E.A = {nearbyint(A.x), nearbyint(A.y)};
-    E.B = {nearbyint(B.x), nearbyint(B.y)};
-
-    cp_entry *Ent = Get(&GlobalCrossTable, E);
-    if(Ent)
-    {
-        Result = Ent->Result;
-    }
-    else
-    {
-    
-        Result = A.x*B.y - A.y*B.x;
-        Insert(&GlobalCrossTable, E, Result);
-    }
-#else
-    Result = A.x*B.y - A.y*B.x;
-#endif
-    
+    f64 Result = A.x*B.y - A.y*B.x;
 #if 0
     // Shuffle A and B to get {A.y, A.x} and {B.y, B.x}
     __m128d AyAx = _mm_shuffle_pd(A.W, A.W, 1); // Swaps A.x and A.y
@@ -572,7 +550,6 @@ PerpDistFromLineSq(v2_f64 p, v2_f64 a, v2_f64 b)
 inline f64
 Area(path_f64 *Path)
 {
-    TimeFunction;
     f64 Result = 0.0;
 
     s32 Count = Path->Count;
@@ -695,7 +672,6 @@ GetSegmentIntersectPt(v2_f64 a, v2_f64 b, v2_f64 c, v2_f64 d, v2_f64 *p)
 inline b32
 GetSegmentIntersectPt(v2_f64 a, v2_f64 b, v2_f64 c, v2_f64 d, v2_f64 *p)
 {
-    TimeFunction;
     // https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
 
     b32 Result = false;
@@ -749,7 +725,6 @@ GetSign(f64 Val)
 inline v2_f64
 GetClosestPointOnSegment(v2_f64 offPt, v2_f64 seg1, v2_f64 seg2)
 {
-    TimeFunction;
     v2_f64 Result = {};
     
     if(PointsAreEqual(seg1, seg2))

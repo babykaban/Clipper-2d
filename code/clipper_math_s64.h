@@ -543,6 +543,7 @@ GetSegmentIntersectPt(v2_s64 a, v2_s64 b, v2_s64 c, v2_s64 d, v2_s64 *p)
         f64 hitx = ((ln1dx * ln1c) - (ln2dx * ln0c)) / det;
         f64 hity = ((ln2dy * ln0c) - (ln1dy * ln1c)) / det;
 
+        // TODO(babykaban): The problem might be here
         p->x = originx + hitx;
         p->y = originy + hity;
 
@@ -557,16 +558,16 @@ GetSegmentIntersectPt(v2_s64 a, v2_s64 b, v2_s64 c, v2_s64 d, v2_s64 *p)
 inline b32
 GetSegmentIntersectPt(v2_s64 a, v2_s64 b, v2_s64 c, v2_s64 d, v2_s64 *p)
 {
-    // https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
     TimeFunction;
+    // https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
 
     b32 Result = false;
     
     v2_f64 ab = V2F64(b - a);
     v2_f64 cd = V2F64(d - c);
 
-    f64 det = Cross(cd, ab);
-//    f64 det = cd.x*ab.y - cd.y*ab.x;
+//    f64 det = Cross(cd, ab);
+    f64 det = cd.x*ab.y - cd.y*ab.x;
     if(det != 0.0)
     {
         f64 t = ((a.x - c.x) * cd.y - (a.y - c.y) * cd.x) / det;
@@ -615,7 +616,6 @@ GetSign(s64 Val)
 inline bool
 SegmentsIntersect(v2_s64 seg1a, v2_s64 seg1b, v2_s64 seg2a, v2_s64 seg2b, b32 inclusive = false)
 {
-    TimeFunction;
     b32 Result = false;
 
     if(inclusive)
@@ -644,8 +644,6 @@ SegmentsIntersect(v2_s64 seg1a, v2_s64 seg1b, v2_s64 seg2a, v2_s64 seg2b, b32 in
 inline v2_s64
 GetClosestPointOnSegment(v2_s64 offPt, v2_s64 seg1, v2_s64 seg2)
 {
-    TimeFunction;
-
     v2_s64 Result = {};
     
     if(PointsAreEqual(seg1, seg2))
