@@ -153,6 +153,7 @@ MultiplyU64(u64 a, u64 b) // #834, #835
 inline b32
 ProductsAreEqual(s64 a, s64 b, s64 c, s64 d)
 {
+    TimeFunction;
     // nb: unsigned values needed for calculating overflow carry
     u64 abs_a = (u64)abs(a);
     u64 abs_b = (u64)abs(b);

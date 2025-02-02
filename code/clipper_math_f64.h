@@ -231,24 +231,38 @@ Inner(v2_f64 A, v2_f64 B, v2_f64 C)
     return(Result);
 }
 
+inline double
+cross_product_2d(__m128d A, __m128d B)
+{
+    __m128d A_swapped = _mm_shuffle_pd(A, A, 0b01); // Swap (Ax, Ay) -> (Ay, Ax)
+    __m128d B_swapped = _mm_shuffle_pd(B, B, 0b01); // Swap (Bx, By) -> (By, Bx)
+
+    __m128d prod1 = _mm_mul_pd(A, B_swapped); // Ax * By, Ay * Bx
+    __m128d prod2 = _mm_mul_pd(A_swapped, B); // Ay * Bx, Ax * By
+
+    __m128d cross = _mm_sub_pd(prod1, prod2); // (Ax * By) - (Ay * Bx)
+
+    return _mm_cvtsd_f64(cross); // Extract the first (lower) double as result
+}
+
+__m256d
+cross_product_2x2d(__m256d A, __m256d B)
+{
+    __m256d A_swapped = _mm256_permute4x64_pd(A, _MM_SHUFFLE(2, 3, 0, 1)); // Swap (Ax, Ay) <-> (Ay, Ax)
+    __m256d B_swapped = _mm256_permute4x64_pd(B, _MM_SHUFFLE(2, 3, 0, 1)); // Swap (Bx, By) <-> (By, Bx)
+
+    __m256d prod1 = _mm256_mul_pd(A, B_swapped); // Ax * By, Ay * Bx (for two vectors)
+    __m256d prod2 = _mm256_mul_pd(A_swapped, B); // Ay * Bx, Ax * By (for two vectors)
+
+    return _mm256_sub_pd(prod1, prod2); // (Ax * By) - (Ay * Bx) for both vectors
+}
+
 inline f64
 Cross(v2_f64 A, v2_f64 B)
 {
+    TimeFunction;
+
     f64 Result = A.x*B.y - A.y*B.x;
-#if 0
-    // Shuffle A and B to get {A.y, A.x} and {B.y, B.x}
-    __m128d AyAx = _mm_shuffle_pd(A.W, A.W, 1); // Swaps A.x and A.y
-    __m128d ByBx = _mm_shuffle_pd(B.W, B.W, 1); // Swaps B.x and B.y
-
-    // Compute A.x * B.y and A.y * B.x
-    __m128d prod1 = _mm_mul_pd(A.W, ByBx); // {A.x * B.y, A.y * B.x}
-    __m128d prod2 = _mm_mul_pd(AyAx, B.W); // {A.y * B.x, A.x * B.y}
-
-    // Subtract the results to get A.x * B.y - A.y * B.x in the lower lane
-    __m128d result = _mm_sub_sd(prod1, prod2);
-
-    f64 Result = _mm_cvtsd_f64(result);;
-#endif
 
     return(Result);
 }
@@ -281,6 +295,7 @@ Length(v2_f64 A)
 inline b32
 PointsAreEqual(v2_f64 A, v2_f64 B)
 {
+    TimeFunction;
     b32 Result = ((A.x == B.x) && (A.y == B.y));
     return(Result);
 }
@@ -550,6 +565,8 @@ PerpDistFromLineSq(v2_f64 p, v2_f64 a, v2_f64 b)
 inline f64
 Area(path_f64 *Path)
 {
+    TimeFunction;
+
     f64 Result = 0.0;
 
     s32 Count = Path->Count;

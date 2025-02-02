@@ -176,6 +176,11 @@ Length(v2_s64 A)
 inline b32
 PointsAreEqual(v2_s64 A, v2_s64 B)
 {
+    TimeFunction;
+
+    __m128i R = _mm_cmpeq_epi64(A.W, B.W);
+    int Rs = _mm_movemask_epi8(R);
+    
     b32 Result = ((A.x == B.x) && (A.y == B.y));
     return(Result);
 }
