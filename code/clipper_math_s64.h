@@ -32,8 +32,16 @@ V2S64(s64 X, s64 Y)
 inline v2_s64
 V2S64(f64 X, f64 Y)
 {
-    v2_s64 Result = {(s64)round(X), (s64)round(Y)}; 
-
+    TimeFunction;
+    v2_s64 Result = {};
+#if 1
+    Result.W = _mm_cvtpd_epi64(_mm_round_pd(_mm_set_pd(X, Y),
+                                            _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+#else
+    Result.x = (s64)round(X);
+    Result.y = (s64)round(Y);
+#endif
+    
     return(Result);
 }
 
@@ -91,8 +99,12 @@ operator+(v2_s64 A, v2_s64 B)
 {
     v2_s64 Result;
 
+#if MATH_SIMD
     Result.W = _mm_add_epi64(A.W, B.W);
-
+#else
+    Result.x = A.x + B.x;
+    Result.y = A.y + B.y;
+#endif
     return(Result);
 }
 
@@ -109,8 +121,12 @@ operator-(v2_s64 A, v2_s64 B)
 {
     v2_s64 Result;
 
+#if MATH_SIMD
     Result.W = _mm_sub_epi64(A.W, B.W);
-
+#else
+    Result.x = A.x - B.x;
+    Result.y = A.y - B.y;
+#endif
     return(Result);
 }
 
@@ -177,9 +193,6 @@ inline b32
 PointsAreEqual(v2_s64 A, v2_s64 B)
 {
     TimeFunction;
-
-    __m128i R = _mm_cmpeq_epi64(A.W, B.W);
-    int Rs = _mm_movemask_epi8(R);
     
     b32 Result = ((A.x == B.x) && (A.y == B.y));
     return(Result);
@@ -496,6 +509,8 @@ IsPositive(path_s64 *Poly)
 inline b32
 IsCollinear(v2_s64 p1, v2_s64 SharedP, v2_s64 p2) // #777
 {
+    TimeFunction;
+
     s64 a = SharedP.x - p1.x;
     s64 b = p2.y - SharedP.y;
     s64 c = SharedP.y - p1.y;

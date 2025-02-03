@@ -125,10 +125,13 @@ operator*(f64 A, v2_f64 B)
 {
     v2_f64 Result;
 
+#if MATH_SIMD
     Result.W = _mm_mul_pd(B.W, _mm_set1_pd(A));
-//    Result.x = A*B.x;
-//    Result.y = A*B.y;
-
+#else
+    Result.x = A*B.x;
+    Result.y = A*B.y;
+#endif
+    
     return(Result);
 }
  
@@ -137,10 +140,12 @@ operator*(v2_f64 A, v2_f64 B)
 {
     v2_f64 Result;
 
+#if MATH_SIMD
     Result.W = _mm_mul_pd(B.W, A.W);
-//    Result.x = A*B.x;
-//    Result.y = A*B.y;
-
+#else
+    Result.x = A.x*B.x;
+    Result.y = A.y*B.y;
+#endif
     return(Result);
 }
 
@@ -164,9 +169,12 @@ operator-(v2_f64 A)
 {
     v2_f64 Result;
 
+#if MATH_SIMD
     Result.W = _mm_xor_pd(A.W, _mm_set1_pd(-0.0));
-//    Result.x = -A.x;
-//    Result.y = -A.y;
+#else
+    Result.x = -A.x;
+    Result.y = -A.y;
+#endif
 
     return(Result);
 }
@@ -176,10 +184,12 @@ operator+(v2_f64 A, v2_f64 B)
 {
     v2_f64 Result;
 
+#if MATH_SIMD
     Result.W = _mm_add_pd(A.W, B.W);
-//    Result.x = A.x + B.x;
-//    Result.y = A.y + B.y;
-
+#else
+    Result.x = A.x + B.x;
+    Result.y = A.y + B.y;
+#endif
     return(Result);
 }
 
@@ -196,10 +206,12 @@ operator-(v2_f64 A, v2_f64 B)
 {
     v2_f64 Result;
 
+#if MATH_SIMD
     Result.W = _mm_sub_pd(A.W, B.W);
-//    Result.x = A.x - B.x;
-//    Result.y = A.y - B.y;
-
+#else
+    Result.x = A.x - B.x;
+    Result.y = A.y - B.y;
+#endif
     return(Result);
 }
 
@@ -214,9 +226,12 @@ operator-=(v2_f64 &A, v2_f64 B)
 inline f64
 Inner(v2_f64 A, v2_f64 B)
 {
+#if MATH_SIMD
     v2_f64 Mul = A*B;
     f64 Result = _mm_cvtsd_f64(_mm_hadd_pd(Mul.W, Mul.W));
-//    f64 Result = A.x*B.x + A.y*B.y;
+#else
+    f64 Result = A.x*B.x + A.y*B.y;
+#endif
 
     return(Result);
 }
@@ -629,12 +644,24 @@ IsPositive(path_f64 *Poly)
 inline b32
 IsCollinear(v2_f64 p1, v2_f64 SharedP, v2_f64 p2) // #777
 {
+    TimeFunction;
+#if 0
+    s64 Vals[4] = {};
+    v2_s64 A = {};
+    A.W = _mm_cvtpd_epi64(_mm_round_pd(_mm_set_pd(SharedP.x - p1.x, p2.y - SharedP.y),
+                                       _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+    v2_s64 B = {};
+    B.W = _mm_cvtpd_epi64(_mm_round_pd(_mm_set_pd(SharedP.y - p1.y, p2.x - SharedP.x),
+                                       _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+    b32 Result = ProductsAreEqual(A.x, A.y, B.x, B.y);
+#endif    
     s64 a = RoundF64ToInt64(SharedP.x - p1.x);
     s64 b = RoundF64ToInt64(p2.y - SharedP.y);
     s64 c = RoundF64ToInt64(SharedP.y - p1.y);
     s64 d = RoundF64ToInt64(p2.x - SharedP.x);
     // When checking for collinearity with very large coordinate values
     // then ProductsAreEqual is more accurate than using CrossProduct.
+
     b32 Result = ProductsAreEqual(a, b, c, d);
     return(Result);
 }

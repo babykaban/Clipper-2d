@@ -6,6 +6,8 @@
    $Creator: BabyKaban $
    $Notice: $
    ======================================================================== */
+#define MATH_SIMD 1
+
 
 union v2_s64
 {
@@ -14,7 +16,9 @@ union v2_s64
         s64 x, y;
     };
 
+#if MATH_SIMD
     __m128i W;
+#endif
     s64 E[2];
 };
 
@@ -41,7 +45,9 @@ union v2_f64
         f64 x, y;
     };
 
+#if MATH_SIMD
     __m128d W;
+#endif
     f64 E[2];
 };
 

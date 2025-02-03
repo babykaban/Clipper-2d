@@ -238,6 +238,7 @@ ScaleConvertPathToF64(path_s64 *Source, v2_f64 Scale)
 inline path_s64
 ScaleConvertPathToS64(path_f64 *Source, v2_f64 Scale)
 {
+    TimeFunction;
     // TODO(babykaban): Error Handling
 
     path_s64 Result = GetPathS64(Source->Count);
@@ -252,6 +253,17 @@ ScaleConvertPathToS64(path_f64 *Source, v2_f64 Scale)
         if(Scale.y == 0)
             Scale.y = 1.0;
     }
+
+    __m256d A = _mm256_load_pd((f64 *)Source->Points);
+    __m256d B = _mm256_set_m128d(Scale.W, Scale.W);
+    A = _mm256_mul_pd(A, B);
+    __m128i Ax = _mm_cvtpd_epi64(_mm_round_pd(_mm256_extractf128_pd(A, 0),
+                                              _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+    __m128i Bx = _mm_cvtpd_epi64(_mm_round_pd(_mm256_extractf128_pd(A, 1),
+                                              _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+
+    _mm_store_si128((__m128i *)Result.Points, Ax);
+    _mm_store_si128((__m128i *)((s64 *)Result.Points + 2), Bx);
     
     for(s32 I = 0;
         I < Source->Count;
@@ -260,6 +272,15 @@ ScaleConvertPathToS64(path_f64 *Source, v2_f64 Scale)
         Result.Points[I] = V2S64(Scale*Source->Points[I]);
     }
 
+#if 0
+    for(s32 I = 0;
+        I < Source->Count;
+        I += 2)
+    {
+        Result.Points[I] = _mm256_mul_pd(_mm_set1_m128d(Scale.W),
+                                         );
+    }
+#endif    
     return(Result);
 }
 
