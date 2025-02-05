@@ -224,21 +224,48 @@ ScaleConvertPathToF64(path_s64 *Source, v2_f64 Scale)
         if(Scale.y == 0)
             Scale.y = 1.0;
     }
-    
+
+#if 0
+    // TODO: NOTE(babykaban): Not used right now, has to  be tested
+    // avaliable only with AVX+ instruction sets
+    v2_s64 *SourcePtr = Source->Points;
+    v2_f64 *DestPtr = Result.Points;
+    b32 OneLeft = Source->Count % 2;
+    u32 LoopCount = OneLeft ? (Source->Count - 1) : Source->Count;
+    for(u32 I = 0;
+        I < LoopCount;
+        I += 2)
+    {
+        __m256i TwoP = _mm256_load_si256((__m256i *)SourcePtr);
+        __m256d Scale_2x = _mm256_set_m128d(Scale.W, Scale.W);
+        __m256d TwoP_f64 = _mm256_mul_pd(_mm256_castsi256_pd(TwoP), Scale_2x);
+
+        _mm256_store_pd((f64 *)DestPtr, TwoP_f64);
+
+        SourcePtr += 2;
+        DestPtr += 2;
+    }
+
+    if(OneLeft)
+    {
+        v2_s64 Point = *SourcePtr;
+        __m128d Point_f64 = _mm_mul_pd(_mm_castsi128_pd(Point.W), Scale.W);
+        _mm_store_pd((f64 *)DestPtr, Point_f64);
+    }
+#else    
     for(s32 I = 0;
         I < Source->Count;
         ++I)
     {
         Result.Points[I] = Scale*V2F64(Source->Points[I]);
     }
-
+#endif
     return(Result);
 }
 
 inline path_s64
 ScaleConvertPathToS64(path_f64 *Source, v2_f64 Scale)
 {
-    TimeFunction;
     // TODO(babykaban): Error Handling
 
     path_s64 Result = GetPathS64(Source->Count);
@@ -254,32 +281,50 @@ ScaleConvertPathToS64(path_f64 *Source, v2_f64 Scale)
             Scale.y = 1.0;
     }
 
-    __m256d A = _mm256_load_pd((f64 *)Source->Points);
-    __m256d B = _mm256_set_m128d(Scale.W, Scale.W);
-    A = _mm256_mul_pd(A, B);
-    __m128i Ax = _mm_cvtpd_epi64(_mm_round_pd(_mm256_extractf128_pd(A, 0),
-                                              _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-    __m128i Bx = _mm_cvtpd_epi64(_mm_round_pd(_mm256_extractf128_pd(A, 1),
-                                              _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-
-    _mm_store_si128((__m128i *)Result.Points, Ax);
-    _mm_store_si128((__m128i *)((s64 *)Result.Points + 2), Bx);
-    
+#if 0
+// 461.81
     for(s32 I = 0;
         I < Source->Count;
         ++I)
     {
         Result.Points[I] = V2S64(Scale*Source->Points[I]);
     }
-
-#if 0
-    for(s32 I = 0;
-        I < Source->Count;
+#else
+    // TODO: NOTE(babykaban): Only avaliable with AVX+ set of instructions
+    // 272.57
+    v2_f64 *SourcePtr = Source->Points;
+    v2_s64 *DestPtr = Result.Points;
+    b32 OneLeft = Source->Count % 2;
+    u32 LoopCount = OneLeft ? (Source->Count - 1) : Source->Count;
+    for(u32 I = 0;
+        I < LoopCount;
         I += 2)
     {
-        Result.Points[I] = _mm256_mul_pd(_mm_set1_m128d(Scale.W),
-                                         );
+        __m256d TwoP = _mm256_load_pd((f64 *)SourcePtr);
+        __m256d Scale_2x = _mm256_set_m128d(Scale.W, Scale.W);
+        TwoP = _mm256_mul_pd(TwoP, Scale_2x);
+
+        __m128i FirstP_s64 = _mm_cvtpd_epi64(_mm_round_pd(_mm256_extractf128_pd(TwoP, 0),
+                                                          _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+        __m128i SecondP_s64 = _mm_cvtpd_epi64(_mm_round_pd(_mm256_extractf128_pd(TwoP, 1),
+                                                           _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+
+        _mm_store_si128((__m128i *)DestPtr, FirstP_s64);
+        _mm_store_si128((__m128i *)((s64 *)DestPtr + 2), SecondP_s64);
+
+        SourcePtr += 2;
+        DestPtr += 2;
     }
+
+    if(OneLeft)
+    {
+        v2_f64 Point = *SourcePtr;
+        Point.W = _mm_mul_pd(Point.W, Scale.W);
+        __m128i Point_s64 = _mm_cvtpd_epi64(
+            _mm_round_pd(Point.W, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+        _mm_store_si128((__m128i *)DestPtr, Point_s64);
+    }
+
 #endif    
     return(Result);
 }

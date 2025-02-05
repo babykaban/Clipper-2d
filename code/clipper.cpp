@@ -274,8 +274,6 @@ ResetClipper(clipper *Clipper)
 inline b32
 PopScanline(clipper *Clipper, s64 *y)
 {
-//    TimeFunction;
-
     if(Clipper->ScanLineMaxHeap.Size == 0)
         return false;
 
@@ -1474,7 +1472,6 @@ InsertScanline(clipper *Clipper, s64 y)
 inline void
 InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
 {
-//    TimeFunction;
 //    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
     
     local_minima *Minima = 0;
@@ -2729,8 +2726,6 @@ DisposeOutPt(output_point *op)
 inline f64
 Area(output_point *op)
 {
-    TimeFunction;
-
     //https://en.wikipedia.org/wiki/Shoelace_formula
     f64 result = 0.0;
     output_point *op2 = op;
@@ -2748,7 +2743,6 @@ Area(output_point *op)
 inline f64
 AreaTriangle(v2_s64 pt1, v2_s64 pt2, v2_s64 pt3)
 {
-    TimeFunction;
     return ((f64)(pt3.y + pt1.y) * (f64)(pt3.x - pt1.x) +
             (f64)(pt1.y + pt2.y) * (f64)(pt1.x - pt2.x) +
             (f64)(pt2.y + pt3.y) * (f64)(pt2.x - pt3.x));
@@ -2757,8 +2751,6 @@ AreaTriangle(v2_s64 pt1, v2_s64 pt2, v2_s64 pt3)
 internal void
 DoSplitOp(clipper *Clipper, output_rectangle *outrec, output_point *splitOp)
 {
-    TimeFunction;
-    
     // splitOp.prev -> splitOp &&
     // splitOp.next -> splitOp.next.next are intersecting
     output_point *prevOp = splitOp->Prev;

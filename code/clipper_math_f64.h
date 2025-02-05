@@ -275,8 +275,6 @@ cross_product_2x2d(__m256d A, __m256d B)
 inline f64
 Cross(v2_f64 A, v2_f64 B)
 {
-    TimeFunction;
-
     f64 Result = A.x*B.y - A.y*B.x;
 
     return(Result);
@@ -310,7 +308,6 @@ Length(v2_f64 A)
 inline b32
 PointsAreEqual(v2_f64 A, v2_f64 B)
 {
-    TimeFunction;
     b32 Result = ((A.x == B.x) && (A.y == B.y));
     return(Result);
 }
@@ -580,8 +577,6 @@ PerpDistFromLineSq(v2_f64 p, v2_f64 a, v2_f64 b)
 inline f64
 Area(path_f64 *Path)
 {
-    TimeFunction;
-
     f64 Result = 0.0;
 
     s32 Count = Path->Count;
@@ -644,7 +639,6 @@ IsPositive(path_f64 *Poly)
 inline b32
 IsCollinear(v2_f64 p1, v2_f64 SharedP, v2_f64 p2) // #777
 {
-    TimeFunction;
 #if 0
     s64 Vals[4] = {};
     v2_s64 A = {};

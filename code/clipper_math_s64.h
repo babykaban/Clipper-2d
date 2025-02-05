@@ -32,7 +32,6 @@ V2S64(s64 X, s64 Y)
 inline v2_s64
 V2S64(f64 X, f64 Y)
 {
-    TimeFunction;
     v2_s64 Result = {};
 #if 1
     Result.W = _mm_cvtpd_epi64(_mm_round_pd(_mm_set_pd(X, Y),
@@ -192,8 +191,6 @@ Length(v2_s64 A)
 inline b32
 PointsAreEqual(v2_s64 A, v2_s64 B)
 {
-    TimeFunction;
-    
     b32 Result = ((A.x == B.x) && (A.y == B.y));
     return(Result);
 }
@@ -509,8 +506,6 @@ IsPositive(path_s64 *Poly)
 inline b32
 IsCollinear(v2_s64 p1, v2_s64 SharedP, v2_s64 p2) // #777
 {
-    TimeFunction;
-
     s64 a = SharedP.x - p1.x;
     s64 b = p2.y - SharedP.y;
     s64 c = SharedP.y - p1.y;
@@ -578,7 +573,6 @@ GetSegmentIntersectPt(v2_s64 a, v2_s64 b, v2_s64 c, v2_s64 d, v2_s64 *p)
 inline b32
 GetSegmentIntersectPt(v2_s64 a, v2_s64 b, v2_s64 c, v2_s64 d, v2_s64 *p)
 {
-    TimeFunction;
     // https://en.wikipedia.org/wiki/Line%E2%80%93line_intersection
 
     b32 Result = false;

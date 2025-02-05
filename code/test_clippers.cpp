@@ -280,17 +280,17 @@ int main()
     FILE *file;
     fopen_s(&file, "records.csv", "w");
     
-    u32  TestCount = 4;
+    u32 TestCount = 4;
     for(u32 TestIndex = 0;
         TestIndex < TestCount;
         ++TestIndex)
     {
-        f32 MaxYf32 = 1000;
-        f32 MaxXf32 = 1000;
+        f32 MaxYf32 = 10000;
+        f32 MaxXf32 = 10000;
 
-        s32 PolygonCount = 1024;
-        s32 numVertices = 12;
-#if 0
+        s32 PolygonCount = 4096;
+        s32 numVertices = 32;
+#if 1
         polygon_set SubjectSet = {};
         SubjectSet.PolyCount = PolygonCount;
         SubjectSet.Polygons = (polygon *)malloc(sizeof(polygon)*PolygonCount);
@@ -325,8 +325,10 @@ int main()
                 FillRule < 1;
                 ++FillRule)
             {
-                polygon *S = Subjects.Polygons + I;
-                polygon *C = Clips.Polygons + I;
+//                polygon *S = Subjects.Polygons + I;
+//                polygon *C = Clips.Polygons + I;
+                polygon *S = SubjectSet.Polygons + I;
+                polygon *C = ClipSet.Polygons + I;
 //            polygon *S = Subjects.Polygons + 131233;
 //            polygon *C = Clips.Polygons + 131233;
 
