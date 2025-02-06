@@ -272,9 +272,10 @@ cross_product_2x2d(__m256d A, __m256d B)
     return _mm256_sub_pd(prod1, prod2); // (Ax * By) - (Ay * Bx) for both vectors
 }
 
-inline f64
+static inline f64
 Cross(v2_f64 A, v2_f64 B)
 {
+    TimeFunction;
     f64 Result = A.x*B.y - A.y*B.x;
 
     return(Result);

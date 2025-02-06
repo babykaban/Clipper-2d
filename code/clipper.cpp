@@ -245,10 +245,12 @@ ResetClipper(clipper *Clipper)
     {
         if(Clipper->MinimaListCount < 32)
         {
+            TimeBlock("ISort Reset");
             InsertionSort(Clipper->MinimaListCount, Clipper->MinimaList);
         }
         else
         {
+            TimeBlock("MSort Reset");
             MergeSort(Clipper->MinimaListCount, Clipper->MinimaList); //#594
         }
 
@@ -303,8 +305,6 @@ PopLocalMinima(clipper *Clipper, s64 y, local_minima **Minima)
 inline f64
 GetDx(v2_s64 pt1, v2_s64 pt2)
 {
-     
-
     f64 Result = DBL_MAX;
 
     f64 dy = (f64)(pt2.y - pt1.y);
@@ -380,8 +380,6 @@ PrevPrevVertex(active *ae)
 internal b32
 IsValidAelOrder(active *resident, active *newcomer)
 {
-     
-
     b32 Result = false;
     if (newcomer->curr_x != resident->curr_x)
         return newcomer->curr_x > resident->curr_x;

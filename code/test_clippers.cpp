@@ -29,8 +29,8 @@ global_variable u32 IntersectCountMAX = 0;
 #define PRINT_UNION 0
 #define PRINT_XOR 0
 
-#define TIME_ORIGINAL 1
-#define TIME_NEW 1
+#define TIME_ORIGINAL 0
+#define TIME_NEW 0
 
 inline void
 PrintPolygons(u32 Count, polygon *Polygons)
