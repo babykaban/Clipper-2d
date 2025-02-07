@@ -70,7 +70,7 @@ TESTTwoPolies(polygon *S, polygon *C, u32 FillRule, u32 Index = 0)
 
 #if TEST_DIFFERENCE
     {
-        TimeBlock("New Difference");
+//        TimeBlock("New Difference");
         BooleanOpD(ClipType_Difference, FillRule, &Subject, 0, &Clip,
                    &Solution, 0, true, false);
     }
@@ -85,7 +85,7 @@ TESTTwoPolies(polygon *S, polygon *C, u32 FillRule, u32 Index = 0)
     
 #if TEST_INTERSECT
     {
-        TimeBlock("New Intersection");
+//        TimeBlock("New Intersection");
         BooleanOpD(ClipType_Intersection, FillRule, &Subject, 0, &Clip,
                    &Solution, 0, true, false);
     }
@@ -100,7 +100,7 @@ TESTTwoPolies(polygon *S, polygon *C, u32 FillRule, u32 Index = 0)
 
 #if TEST_UNION
     {
-        TimeBlock("New Union");
+//        TimeBlock("New Union");
         BooleanOpD(ClipType_Union, FillRule, &Subject, 0, &Clip,
                    &Solution, 0, true, false);
     }
@@ -115,7 +115,7 @@ TESTTwoPolies(polygon *S, polygon *C, u32 FillRule, u32 Index = 0)
 
 #if TEST_XOR
     {
-        TimeBlock("New Xor");
+//        TimeBlock("New Xor");
         BooleanOpD(ClipType_Xor, FillRule, &Subject, 0, &Clip,
                    &Solution, 0, true, false);
     }

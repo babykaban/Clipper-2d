@@ -245,12 +245,12 @@ ResetClipper(clipper *Clipper)
     {
         if(Clipper->MinimaListCount < 32)
         {
-            TimeBlock("ISort Reset");
+//            TimeBlock("ISort Reset");
             InsertionSort(Clipper->MinimaListCount, Clipper->MinimaList);
         }
         else
         {
-            TimeBlock("MSort Reset");
+//            TimeBlock("MSort Reset");
             MergeSort(Clipper->MinimaListCount, Clipper->MinimaList); //#594
         }
 
@@ -291,8 +291,6 @@ PopScanline(clipper *Clipper, s64 *y)
 inline b32
 PopLocalMinima(clipper *Clipper, s64 y, local_minima **Minima)
 {
-     
-
     if((Clipper->CurrentLocalMinima == (Clipper->MinimaList + Clipper->MinimaListCount)) ||
        (Clipper->CurrentLocalMinima->Vertex->P.y != y))
         return false;
@@ -419,8 +417,6 @@ IsValidAelOrder(active *resident, active *newcomer)
 inline void
 InsertLeftEdge(clipper *Clipper, active *e)
 {
-     
-
     active *e2;
     if(!Clipper->ActiveEdgeList)
     {
@@ -471,8 +467,6 @@ GetPolyType(active *e)
 internal void
 SetWindCountForOpenPathEdge(clipper *Clipper, active *e)
 {
-     
-
     active *e2 = Clipper->ActiveEdgeList;
     if (Clipper->FillRule == FillRule_EvenOdd)
     {
@@ -504,8 +498,6 @@ SetWindCountForOpenPathEdge(clipper *Clipper, active *e)
 inline b32
 IsContributingOpen(clipper *Clipper, active *e)
 {
-     
-
     b32 is_in_clip, is_in_subj;
     switch(Clipper->FillRule)
     {
@@ -536,8 +528,6 @@ IsContributingOpen(clipper *Clipper, active *e)
 internal void
 SetWindCountForClosedPathEdge(clipper *Clipper, active *e)
 {
-     
-
     //Wind counts refer to polygon regions not edges, so here an edge's WindCnt
     //indicates the higher of the wind counts for the two regions touching the
     //edge. (NB Adjacent regions can only ever have their wind counts differ by
@@ -738,8 +728,6 @@ OutrecIsAscending(clipper *Clipper, active *hotEdge)
 internal output_point *
 AddLocalMinPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt, b32 is_new = false)
 {
-     
-
     u32 outrecIndex = NewOutRec(Clipper);
     output_rectangle *outrec = GetOutRec(Clipper, outrecIndex);
     e1->outrecIndex = outrecIndex;
@@ -1470,6 +1458,7 @@ InsertScanline(clipper *Clipper, s64 y)
 inline void
 InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
 {
+    TimeFunction;
 //    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
     
     local_minima *Minima = 0;

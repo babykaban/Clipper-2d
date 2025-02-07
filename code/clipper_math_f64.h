@@ -275,7 +275,7 @@ cross_product_2x2d(__m256d A, __m256d B)
 static inline f64
 Cross(v2_f64 A, v2_f64 B)
 {
-    TimeFunction;
+//    TimeFunction;
     f64 Result = A.x*B.y - A.y*B.x;
 
     return(Result);

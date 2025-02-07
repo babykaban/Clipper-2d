@@ -430,7 +430,42 @@ inline f64
 PerpDistFromLineSq(v2_s64 p, v2_s64 a, v2_s64 b)
 {
     f64 Result = 0.0;
+    // a = p.x - a.x : ap.x
+    // b = b.x - a.x : ab.x
+    // c = p.y - a.y : ap.y
+    // d = b.y - a.y : ab.y
 
+    // c = a*d - c*b
+    // r = c^2 / b*b + d*d
+    // r = (a*d - c*b)^2 / b*b + d*d
+    // r = (a*d - c*b)^2 / b^2 + d^2
+
+    //      (a*d)^2 - 2*(a*d)*(c*b) + (c*b)^2
+    // r =  _________________________________
+    //                 b^2 + d^2
+
+    // sub(a, b, c, d) = _mm256_sub_pd(set(p.x, b.x, p.y, b.y), set(a.x, a.x, a.y, a.y))
+
+    // s[4] = mul(ad(x), bb(z), bc(y), dd(w)) = _mm256_mul_pd(set(a, b, c, d), set(d, b, b, d))
+    
+    //          (x - y)^2
+    // r =     _____________
+    //           z + w
+    
+    // r = (s[0] - s[2])^2 / (s[1] + s[3]);
+
+    f64 buffer[4] = {};
+    __m256d Sub = _mm256_sub_pd(_mm256_set_pd((f64)p.x, (f64)b.x, (f64)p.y, (f64)b.y),
+                                _mm256_set_pd((f64)a.x, (f64)a.x, (f64)a.y, (f64)a.y));
+
+    _mm256_store_pd(buffer, Sub);
+    
+    __m256d Mul = _mm256_mul_pd(Sub, _mm256_set_pd(buffer[1], buffer[3],
+                                                   buffer[3], buffer[1]));
+    _mm256_store_pd(buffer, Mul);
+
+    f64 r = Square(buffer[0] - buffer[2]) / (buffer[1] + buffer[3]);
+    
     v2_f64 ap = V2F64(p - a);
     v2_f64 ab = V2F64(b - a);
     if(!((ab.x == 0) && (ab.y == 0)))
