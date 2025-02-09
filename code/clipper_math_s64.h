@@ -429,7 +429,8 @@ NearEqual(v2_s64 p1, v2_s64 p2, f64 MaxDistSq)
 inline f64
 PerpDistFromLineSq(v2_s64 p, v2_s64 a, v2_s64 b)
 {
-    f64 Result = 0.0;
+    TimeFunction;
+
     // a = p.x - a.x : ap.x
     // b = b.x - a.x : ab.x
     // c = p.y - a.y : ap.y
@@ -453,25 +454,31 @@ PerpDistFromLineSq(v2_s64 p, v2_s64 a, v2_s64 b)
     //           z + w
     
     // r = (s[0] - s[2])^2 / (s[1] + s[3]);
-
-    f64 buffer[4] = {};
-    __m256d Sub = _mm256_sub_pd(_mm256_set_pd((f64)p.x, (f64)b.x, (f64)p.y, (f64)b.y),
-                                _mm256_set_pd((f64)a.x, (f64)a.x, (f64)a.y, (f64)a.y));
-
-    _mm256_store_pd(buffer, Sub);
-    
-    __m256d Mul = _mm256_mul_pd(Sub, _mm256_set_pd(buffer[1], buffer[3],
-                                                   buffer[3], buffer[1]));
-    _mm256_store_pd(buffer, Mul);
-
-    f64 r = Square(buffer[0] - buffer[2]) / (buffer[1] + buffer[3]);
-    
+    f64 Result = 0.0;
+#if 1
     v2_f64 ap = V2F64(p - a);
     v2_f64 ab = V2F64(b - a);
+    
     if(!((ab.x == 0) && (ab.y == 0)))
     {
         Result = Square(Cross(ap, ab)) / Inner(ab, ab);
     }
+#else
+    f64 buf[4] = {};
+    __m256d Sub = _mm256_sub_pd(_mm256_set_pd((f64)p.x, (f64)b.x, (f64)p.y, (f64)b.y),
+                                _mm256_set_pd((f64)a.x, (f64)a.x, (f64)a.y, (f64)a.y));
+
+    _mm256_store_pd(buf, Sub);
+
+    if(!((buf[0] == 0) && (buf[2] == 0)))    
+    {
+        __m256d Sub1 = _mm256_set_pd(buf[0], buf[2], buf[2], buf[0]);
+        __m256d Mul = _mm256_mul_pd(Sub, Sub1);
+        _mm256_store_pd(buf, Mul);
+
+        Result = Square(buf[3] - buf[1]) / (buf[2] + buf[0]);
+    }
+#endif    
 
     return(Result);
 }
