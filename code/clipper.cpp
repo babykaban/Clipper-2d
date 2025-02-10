@@ -780,8 +780,6 @@ IsJoined(active *e)
 internal void
 Split(clipper *Clipper, active *e, v2_s64 pt)
 {
-     
-
     if (e->JoinWith == JoinWith_Right)
     {
         e->JoinWith = JoinWith_NoJoin;
@@ -1106,8 +1104,6 @@ FindEdgeWithMatchingLocMin(active *e)
 inline output_point *
 StartOpenPath(clipper *Clipper, active *e, v2_s64 pt)
 {
-     
-
     u32 outrecIndex = NewOutRec(Clipper);
     output_rectangle *outrec = GetOutRec(Clipper, outrecIndex);
     outrec->IsOpen = true;

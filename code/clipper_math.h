@@ -164,6 +164,7 @@ ProductsAreEqual(s64 a, s64 b, s64 c, s64 d)
     u64 abs_b = (u64)abs(b);
     u64 abs_c = (u64)abs(c);
     u64 abs_d = (u64)abs(d);
+
     mul_u64_res abs_ab = MultiplyU64(abs_a, abs_b);
     mul_u64_res abs_cd = MultiplyU64(abs_c, abs_d);
 
@@ -172,6 +173,14 @@ ProductsAreEqual(s64 a, s64 b, s64 c, s64 d)
     s32 sign_cd = TriSign(c) * TriSign(d);
 
     s32 Result = (AreMulsEqual(abs_ab, abs_cd) && (sign_ab == sign_cd));
+
+    u64 v0 = 100000000000;
+    u64 v1 = 10000000000;
+    u64 x = Low(v0)*High(v1);
+    u64 r0 = ((x + (x >> 32)) << 32) | (x & 0xFFFFFFFF);
+    u64 r1 = x;
+
+    u32 t = 0xFFFFFFFF;
     
     return(Result);
 }
