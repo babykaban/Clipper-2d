@@ -33,7 +33,7 @@ inline v2_s64
 V2S64(f64 X, f64 Y)
 {
     v2_s64 Result = {};
-#if 1
+#if MATH_SIMD
     Result.W = _mm_cvtpd_epi64(_mm_round_pd(_mm_set_pd(X, Y),
                                             _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
 #else

@@ -246,38 +246,19 @@ Inner(v2_f64 A, v2_f64 B, v2_f64 C)
     return(Result);
 }
 
-inline double
-cross_product_2d(__m128d A, __m128d B)
-{
-    __m128d A_swapped = _mm_shuffle_pd(A, A, 0b01); // Swap (Ax, Ay) -> (Ay, Ax)
-    __m128d B_swapped = _mm_shuffle_pd(B, B, 0b01); // Swap (Bx, By) -> (By, Bx)
-
-    __m128d prod1 = _mm_mul_pd(A, B_swapped); // Ax * By, Ay * Bx
-    __m128d prod2 = _mm_mul_pd(A_swapped, B); // Ay * Bx, Ax * By
-
-    __m128d cross = _mm_sub_pd(prod1, prod2); // (Ax * By) - (Ay * Bx)
-
-    return _mm_cvtsd_f64(cross); // Extract the first (lower) double as result
-}
-
-__m256d
-cross_product_2x2d(__m256d A, __m256d B)
-{
-    __m256d A_swapped = _mm256_permute4x64_pd(A, _MM_SHUFFLE(2, 3, 0, 1)); // Swap (Ax, Ay) <-> (Ay, Ax)
-    __m256d B_swapped = _mm256_permute4x64_pd(B, _MM_SHUFFLE(2, 3, 0, 1)); // Swap (Bx, By) <-> (By, Bx)
-
-    __m256d prod1 = _mm256_mul_pd(A, B_swapped); // Ax * By, Ay * Bx (for two vectors)
-    __m256d prod2 = _mm256_mul_pd(A_swapped, B); // Ay * Bx, Ax * By (for two vectors)
-
-    return _mm256_sub_pd(prod1, prod2); // (Ax * By) - (Ay * Bx) for both vectors
-}
-
-static inline f64
+inline f64
 Cross(v2_f64 A, v2_f64 B)
 {
-//    TimeFunction;
-    f64 Result = A.x*B.y - A.y*B.x;
+    TimeFunction;
+#if MATH_SIMD
+    __m128d Ax = _mm_setr_pd(A.x, A.y);
+    __m128d Bx = _mm_set_pd(B.x, B.y);
 
+    __m128d Mul = _mm_mul_pd(Bx, Ax);
+    f64 Result = _mm_cvtsd_f64(_mm_hsub_pd(Mul, Ax));
+#else    
+    f64 Result = A.x*B.y - A.y*B.x;
+#endif
     return(Result);
 }
 

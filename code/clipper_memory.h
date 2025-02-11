@@ -190,6 +190,5 @@ NeedIncrease(u32 Count)
     return(Result);
 }
 
-
 #define CLIPPER_MEMORY_H
 #endif

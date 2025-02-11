@@ -172,15 +172,7 @@ ProductsAreEqual(s64 a, s64 b, s64 c, s64 d)
     s32 sign_ab = TriSign(a) * TriSign(b);
     s32 sign_cd = TriSign(c) * TriSign(d);
 
-    s32 Result = (AreMulsEqual(abs_ab, abs_cd) && (sign_ab == sign_cd));
-
-    u64 v0 = 100000000000;
-    u64 v1 = 10000000000;
-    u64 x = Low(v0)*High(v1);
-    u64 r0 = ((x + (x >> 32)) << 32) | (x & 0xFFFFFFFF);
-    u64 r1 = x;
-
-    u32 t = 0xFFFFFFFF;
+    b32 Result = (AreMulsEqual(abs_ab, abs_cd) && (sign_ab == sign_cd));
     
     return(Result);
 }
