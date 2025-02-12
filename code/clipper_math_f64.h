@@ -249,16 +249,8 @@ Inner(v2_f64 A, v2_f64 B, v2_f64 C)
 inline f64
 Cross(v2_f64 A, v2_f64 B)
 {
-    TimeFunction;
-#if MATH_SIMD
-    __m128d Ax = _mm_setr_pd(A.x, A.y);
-    __m128d Bx = _mm_set_pd(B.x, B.y);
-
-    __m128d Mul = _mm_mul_pd(Bx, Ax);
-    f64 Result = _mm_cvtsd_f64(_mm_hsub_pd(Mul, Ax));
-#else    
     f64 Result = A.x*B.y - A.y*B.x;
-#endif
+
     return(Result);
 }
 

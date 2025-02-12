@@ -455,7 +455,7 @@ PerpDistFromLineSq(v2_s64 p, v2_s64 a, v2_s64 b)
     
     // r = (s[0] - s[2])^2 / (s[1] + s[3]);
     f64 Result = 0.0;
-#if 1
+#if 0
     v2_f64 ap = V2F64(p - a);
     v2_f64 ab = V2F64(b - a);
     

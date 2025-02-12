@@ -333,6 +333,7 @@ InitActive(active *Active)
 inline active *
 GetNewActive(void)
 {
+    TimeFunction;
     active *Result = MallocStruct(active);
     Result->wind_dx = 1;
 

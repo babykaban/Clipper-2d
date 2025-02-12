@@ -325,10 +325,10 @@ int main()
                 FillRule < 1;
                 ++FillRule)
             {
-//                polygon *S = Subjects.Polygons + I;
-//                polygon *C = Clips.Polygons + I;
-                polygon *S = SubjectSet.Polygons + I;
-                polygon *C = ClipSet.Polygons + I;
+                polygon *S = Subjects.Polygons + I;
+                polygon *C = Clips.Polygons + I;
+//                polygon *S = SubjectSet.Polygons + I;
+//                polygon *C = ClipSet.Polygons + I;
 //            polygon *S = Subjects.Polygons + 131233;
 //            polygon *C = Clips.Polygons + 131233;
 

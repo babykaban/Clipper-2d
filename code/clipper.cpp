@@ -321,6 +321,8 @@ GetDx(v2_s64 pt1, v2_s64 pt2)
 inline void
 SetDx(active *e)
 {
+    TimeFunction;
+    
     e->dx = GetDx(e->bot, e->top);
 }
 
@@ -959,8 +961,6 @@ JoinOutrecPaths(clipper *Clipper, active *e1, active *e2)
 internal output_point *
 AddLocalMaxPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt)
 {
-     
-
     if (IsJoined(e1))
         Split(Clipper, e1, pt);
     if (IsJoined(e2))
@@ -1472,13 +1472,17 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
         else
         {
             left_bound = GetNewActive();
-            left_bound->bot = Minima->Vertex->P;
-            left_bound->curr_x = left_bound->bot.x;
-            left_bound->wind_dx = -1;
-            left_bound->vertex_top = Minima->Vertex->Prev;  // ie descending
-            left_bound->top = left_bound->vertex_top->P;
-            left_bound->local_min = Minima;
-            SetDx(left_bound);
+            {
+                TimeBlock("Check for existence Left");
+
+                left_bound->bot = Minima->Vertex->P;
+                left_bound->curr_x = left_bound->bot.x;
+                left_bound->wind_dx = -1;
+                left_bound->vertex_top = Minima->Vertex->Prev;  // ie descending
+                left_bound->top = left_bound->vertex_top->P;
+                left_bound->local_min = Minima;
+                SetDx(left_bound);
+            }
         }
 
         if (IsVertexFlagSet(Minima->Vertex->Flags, VertexFlag_OpenEnd))
@@ -1488,51 +1492,60 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
         else
         {
             right_bound = GetNewActive();
-            right_bound->bot = Minima->Vertex->P;
-            right_bound->curr_x = right_bound->bot.x;
-            right_bound->wind_dx = 1;
-            right_bound->vertex_top = Minima->Vertex->Next;  // ie ascending
-            right_bound->top = right_bound->vertex_top->P;
-            right_bound->local_min = Minima;
-            SetDx(right_bound);
-        }
+            {
+                TimeBlock("Check for existence Right");
 
+                right_bound->bot = Minima->Vertex->P;
+                right_bound->curr_x = right_bound->bot.x;
+                right_bound->wind_dx = 1;
+                right_bound->vertex_top = Minima->Vertex->Next;  // ie ascending
+                right_bound->top = right_bound->vertex_top->P;
+                right_bound->local_min = Minima;
+                SetDx(right_bound);
+            }
+        }
+        
         //Currently LeftB is just the descending bound and RightB is the ascending.
         //Now if the LeftB isn't on the left of RightB then we need swap them.
-        if(left_bound && right_bound)
         {
-            if(IsHorizontal(left_bound))
+            TimeBlock("Swap bounds");
+            if(left_bound && right_bound)
             {
-                if(IsHeadingRightHorz(left_bound))
+                if(IsHorizontal(left_bound))
+                {
+                    if(IsHeadingRightHorz(left_bound))
+                        SwapActives(&left_bound, &right_bound);
+                }
+                else if (IsHorizontal(right_bound))
+                {
+                    if (IsHeadingLeftHorz(right_bound))
+                        SwapActives(&left_bound, &right_bound);
+                }
+                else if (left_bound->dx < right_bound->dx)
                     SwapActives(&left_bound, &right_bound);
             }
-            else if (IsHorizontal(right_bound))
+            else if (!left_bound)
             {
-                if (IsHeadingLeftHorz(right_bound))
-                    SwapActives(&left_bound, &right_bound);
+                left_bound = right_bound;
+                right_bound = 0;
             }
-            else if (left_bound->dx < right_bound->dx)
-                SwapActives(&left_bound, &right_bound);
-        }
-        else if (!left_bound)
-        {
-            left_bound = right_bound;
-            right_bound = 0;
         }
 
         b32 contributing;
         left_bound->IsLeftBound = true;
         InsertLeftEdge(Clipper, left_bound);
-
-        if(IsOpen(left_bound))
         {
-            SetWindCountForOpenPathEdge(Clipper, left_bound);
-            contributing = IsContributingOpen(Clipper, left_bound);
-        }
-        else
-        {
-            SetWindCountForClosedPathEdge(Clipper, left_bound);
-            contributing = IsContributingClosed(Clipper, left_bound);
+            TimeBlock("Check Contribution");
+            if(IsOpen(left_bound))
+            {
+                SetWindCountForOpenPathEdge(Clipper, left_bound);
+                contributing = IsContributingOpen(Clipper, left_bound);
+            }
+            else
+            {
+                SetWindCountForClosedPathEdge(Clipper, left_bound);
+                contributing = IsContributingClosed(Clipper, left_bound);
+            }
         }
 
         if(right_bound)
@@ -1543,6 +1556,7 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
             InsertRightEdge(left_bound, right_bound);  ///////
             if (contributing)
             {
+                TimeBlock("Contribution");
                 AddLocalMinPoly(Clipper, left_bound, right_bound, left_bound->bot, true);
                 if (!IsHorizontal(left_bound))
                     CheckJoinLeft(Clipper, left_bound, left_bound->bot);
@@ -1554,7 +1568,7 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
                 IntersectEdges(Clipper, right_bound, right_bound->next_in_ael, right_bound->bot);
                 SwapPositionsInAEL(Clipper, right_bound, right_bound->next_in_ael);
             }
-
+                
             if(IsHorizontal(right_bound))
                 PushHorz(Clipper, right_bound);
             else
@@ -1567,11 +1581,14 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
         {
             StartOpenPath(Clipper, left_bound, left_bound->bot);
         }
-
-        if (IsHorizontal(left_bound))
-            PushHorz(Clipper, left_bound);
-        else
-            InsertScanline(Clipper, left_bound->top.y);
+        
+        {
+            TimeBlock("Final Check");
+            if (IsHorizontal(left_bound))
+                PushHorz(Clipper, left_bound);
+            else
+                InsertScanline(Clipper, left_bound->top.y);
+        }
     }
 }
 
@@ -2130,8 +2147,6 @@ ConvertHorzSegsToJoins(clipper *Clipper)
 inline void
 AdjustCurrXAndCopyToSEL(clipper *Clipper, s64 top_y)
 {
-     
-
     active *e = Clipper->ActiveEdgeList;
     Clipper->StoredEdgeList = e;
     while(e)
@@ -2151,8 +2166,8 @@ AdjustCurrXAndCopyToSEL(clipper *Clipper, s64 top_y)
 internal void
 AddNewIntersectNode(clipper *Clipper, active *e1, active *e2, s64 top_y)
 {
-     
-
+    TimeFunction;
+    
     v2_s64 ip;
     if(!GetSegmentIntersectPt(e1->bot, e1->top, e2->bot, e2->top, &ip))
         ip = V2S64(e1->curr_x, top_y); //parallel edges

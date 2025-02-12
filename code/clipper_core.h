@@ -266,7 +266,6 @@ ScaleConvertPathToF64(path_s64 *Source, v2_f64 Scale)
 inline path_s64
 ScaleConvertPathToS64(path_f64 *Source, v2_f64 Scale)
 {
-    TimeFunction;
 // TODO(babykaban): Error Handling
 
     path_s64 Result = GetPathS64(Source->Count);
