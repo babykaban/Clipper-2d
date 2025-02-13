@@ -321,7 +321,7 @@ GetDx(v2_s64 pt1, v2_s64 pt2)
 inline void
 SetDx(active *e)
 {
-    TimeFunction;
+//    TimeFunction;
     
     e->dx = GetDx(e->bot, e->top);
 }
@@ -1454,7 +1454,7 @@ InsertScanline(clipper *Clipper, s64 y)
 inline void
 InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
 {
-    TimeFunction;
+//    TimeFunction;
 //    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
     
     local_minima *Minima = 0;
@@ -1471,7 +1471,7 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
         }
         else
         {
-            left_bound = GetNewActive();
+            left_bound = GetNewActive(Clipper);
             {
                 TimeBlock("Check for existence Left");
 
@@ -1491,7 +1491,7 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
         }
         else
         {
-            right_bound = GetNewActive();
+            right_bound = GetNewActive(Clipper);
             {
                 TimeBlock("Check for existence Right");
 
@@ -1756,6 +1756,8 @@ UpdateEdgeIntoAEL(clipper *Clipper, active *e)
 inline void
 DeleteFromAEL(clipper *Clipper, active *e)
 {
+//    TimeFunction;
+
     active *prev = e->prev_in_ael;
     active *next = e->next_in_ael;
     if (!prev && !next && (e != Clipper->ActiveEdgeList))
@@ -1768,7 +1770,8 @@ DeleteFromAEL(clipper *Clipper, active *e)
     if (next)
         next->prev_in_ael = prev;
 
-    Free(e, sizeof(active));
+    FreeActive(Clipper, e);
+//    Free(e, sizeof(active));
 }
 
 inline s64
@@ -2166,7 +2169,7 @@ AdjustCurrXAndCopyToSEL(clipper *Clipper, s64 top_y)
 internal void
 AddNewIntersectNode(clipper *Clipper, active *e1, active *e2, s64 top_y)
 {
-    TimeFunction;
+//    TimeFunction;
     
     v2_s64 ip;
     if(!GetSegmentIntersectPt(e1->bot, e1->top, e2->bot, e2->top, &ip))
@@ -2968,11 +2971,11 @@ BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen
 void
 DeleteEdges(active *e)
 {
-    while (e)
+    while(e)
     {
         active *e2 = e;
         e = e->next_in_ael;
-        Free(e, sizeof(active));
+        Free(e2, sizeof(active));
     }
 }
 
@@ -3001,6 +3004,7 @@ CleanUp(clipper *Clipper)
 //    TimeFunction;
     
     DeleteEdges(Clipper->ActiveEdgeList);
+    DeleteEdges(Clipper->FreeList);
 #if RECORD_MEMORY_USEAGE
     Free(Clipper->ScanLineMaxHeap.Nodes, Clipper->ScanLineMaxHeap.MaxSize*sizeof(sort_entry));
     Free(Clipper->IntersectNodes, ArrayMaxSizes[ArrayType_IntersectNode]*sizeof(intersect_node));

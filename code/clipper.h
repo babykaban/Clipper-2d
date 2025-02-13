@@ -221,7 +221,18 @@ struct clipper
     b32 ReverseSolution;
     b32 HasOpenPaths;
     b32 Succeeded;
+
+    active *FreeList;
 };
+
+inline void
+FreeActive(clipper *Clipper, active *e)
+{
+    ZeroStruct(*e);
+    active *Free = Clipper->FreeList;
+    Clipper->FreeList = e;
+    e->next_in_ael = Free;
+}
 
 inline void
 IncreaseOutRecList(clipper *Clipper)
@@ -331,12 +342,25 @@ InitActive(active *Active)
 }
 
 inline active *
-GetNewActive(void)
+GetNewActive(clipper *Clipper)
 {
-    TimeFunction;
-    active *Result = MallocStruct(active);
-    Result->wind_dx = 1;
+    active *Result = 0;
 
+    if(Clipper->FreeList)
+    {
+        TimeBlock("List");
+        Result = Clipper->FreeList;
+        Clipper->FreeList = Result->next_in_ael;
+        Result->next_in_ael = 0;
+    }
+    else
+    {
+        TimeBlock("Not List");
+        Result = MallocStruct(active);
+    }
+
+    Result->wind_dx = 1;
+    
     return(Result);
 }
 

@@ -429,7 +429,7 @@ NearEqual(v2_s64 p1, v2_s64 p2, f64 MaxDistSq)
 inline f64
 PerpDistFromLineSq(v2_s64 p, v2_s64 a, v2_s64 b)
 {
-    TimeFunction;
+//    TimeFunction;
 
     // a = p.x - a.x : ap.x
     // b = b.x - a.x : ab.x

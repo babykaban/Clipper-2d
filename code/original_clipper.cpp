@@ -44,7 +44,7 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 fillRule, u32 Index = 0)
     u32 PolyIndex = 0;
 #if TEST_DIFFERENCE
     {
-//        TimeBlock("Original Difference");
+        TimeBlock("Original Difference");
         solution = Difference(subject, clip, (FillRule)fillRule);
     }
 
@@ -70,7 +70,7 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 fillRule, u32 Index = 0)
     
 #if TEST_INTERSECT
     {
-//        TimeBlock("Original Intersection");
+        TimeBlock("Original Intersection");
         solution = Intersect(subject, clip, (FillRule)fillRule);
     }
 
@@ -96,7 +96,7 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 fillRule, u32 Index = 0)
     
 #if TEST_UNION
     {
-//        TimeBlock("Original Union");
+        TimeBlock("Original Union");
         solution = Union(subject, clip, (FillRule)fillRule);
     }
 
@@ -122,7 +122,7 @@ TESTTwoPoliesOriginal(polygon *S, polygon *C, u32 fillRule, u32 Index = 0)
 
 #if TEST_XOR
     {
-//        TimeBlock("Original Xor");
+        TimeBlock("Original Xor");
         solution = Xor(subject, clip, (FillRule)fillRule);
     }    
 
