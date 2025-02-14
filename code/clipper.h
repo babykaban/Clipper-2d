@@ -357,6 +357,23 @@ GetNewActive(clipper *Clipper)
     {
         TimeBlock("Not List");
         Result = MallocStruct(active);
+
+#if 0
+        u8 *Mem = (u8 *)Malloc(sizeof(active)*10);
+        active *T = (active *)Mem;
+
+        active *Temp = 0;
+        for(s32 I = 0;
+            I < 10;
+            ++I)
+        {
+            active *A = T + I;
+
+            Temp = Clipper->FreeList;
+            Clipper->FreeList = A;
+            A->next_in_ael = Temp;
+        }
+#endif
     }
 
     Result->wind_dx = 1;
