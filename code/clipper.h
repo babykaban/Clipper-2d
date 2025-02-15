@@ -223,16 +223,10 @@ struct clipper
     b32 Succeeded;
 
     active *FreeList;
-};
+    u32 DeallocCount;
+    void **DeallocActivesList;
 
-inline void
-FreeActive(clipper *Clipper, active *e)
-{
-    ZeroStruct(*e);
-    active *Free = Clipper->FreeList;
-    Clipper->FreeList = e;
-    e->next_in_ael = Free;
-}
+};
 
 inline void
 IncreaseOutRecList(clipper *Clipper)
@@ -306,6 +300,18 @@ IncreaseVertexLists(clipper *Clipper)
 #endif
 }
 
+inline void
+IncreaseDeallocateList(clipper *Clipper)
+{
+    Clipper->DeallocActivesList =
+        ReallocArray(Clipper->DeallocActivesList, Clipper->DeallocCount,
+                     Clipper->DeallocCount + BASIC_ALLOCATE_COUNT, void *);
+
+#if RECORD_MEMORY_USEAGE
+    ArrayMaxSizes[ArrayType_DeallocateList] = Clipper->DeallocCount + BASIC_ALLOCATE_COUNT;
+#endif
+}
+
 inline horz_join
 HorzJoin(output_point *op1, output_point *op2)
 {
@@ -341,6 +347,15 @@ InitActive(active *Active)
     Active->wind_dx = 1;
 }
 
+inline void
+FreeActive(clipper *Clipper, active *e)
+{
+    ZeroStruct(*e);
+    active *Free = Clipper->FreeList;
+    Clipper->FreeList = e;
+    e->next_in_ael = Free;
+}
+
 inline active *
 GetNewActive(clipper *Clipper)
 {
@@ -348,32 +363,33 @@ GetNewActive(clipper *Clipper)
 
     if(Clipper->FreeList)
     {
-        TimeBlock("List");
+//        TimeBlock("List");
         Result = Clipper->FreeList;
         Clipper->FreeList = Result->next_in_ael;
         Result->next_in_ael = 0;
     }
     else
     {
-        TimeBlock("Not List");
-        Result = MallocStruct(active);
+//        TimeBlock("Not List");
+//        Result = MallocStruct(active);
 
-#if 0
-        u8 *Mem = (u8 *)Malloc(sizeof(active)*10);
-        active *T = (active *)Mem;
+#if 1
+        active *Mem = (active *)Malloc(sizeof(active)*10);
+        Clipper->DeallocActivesList[Clipper->DeallocCount++] = Mem;
 
-        active *Temp = 0;
         for(s32 I = 0;
             I < 10;
             ++I)
         {
-            active *A = T + I;
-
-            Temp = Clipper->FreeList;
-            Clipper->FreeList = A;
-            A->next_in_ael = Temp;
+            active *New = Mem + I;
+            active *Free = Clipper->FreeList;
+            Clipper->FreeList = New;
+            New->next_in_ael = Free;
         }
 #endif
+        Result = Clipper->FreeList;
+        Clipper->FreeList = Result->next_in_ael;
+        Result->next_in_ael = 0;
     }
 
     Result->wind_dx = 1;

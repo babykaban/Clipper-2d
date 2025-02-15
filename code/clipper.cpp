@@ -37,7 +37,8 @@ InitClipper(clipper *Clipper, s32 Precision)
     Clipper->IntersectNodes = MallocArray(BASIC_ALLOCATE_COUNT, intersect_node);
 
     Clipper->VertexLists = MallocArray(BASIC_ALLOCATE_COUNT, vertex_list);
-
+    Clipper->DeallocActivesList = MallocArray(BASIC_ALLOCATE_COUNT, void *);
+    
 #if RECORD_MEMORY_USEAGE
     for(u32 I = 0;
         I < ArrayType_Count;
@@ -1473,7 +1474,7 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
         {
             left_bound = GetNewActive(Clipper);
             {
-                TimeBlock("Check for existence Left");
+//                TimeBlock("Check for existence Left");
 
                 left_bound->bot = Minima->Vertex->P;
                 left_bound->curr_x = left_bound->bot.x;
@@ -1493,7 +1494,7 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
         {
             right_bound = GetNewActive(Clipper);
             {
-                TimeBlock("Check for existence Right");
+//                TimeBlock("Check for existence Right");
 
                 right_bound->bot = Minima->Vertex->P;
                 right_bound->curr_x = right_bound->bot.x;
@@ -1508,7 +1509,7 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
         //Currently LeftB is just the descending bound and RightB is the ascending.
         //Now if the LeftB isn't on the left of RightB then we need swap them.
         {
-            TimeBlock("Swap bounds");
+//            TimeBlock("Swap bounds");
             if(left_bound && right_bound)
             {
                 if(IsHorizontal(left_bound))
@@ -1535,7 +1536,7 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
         left_bound->IsLeftBound = true;
         InsertLeftEdge(Clipper, left_bound);
         {
-            TimeBlock("Check Contribution");
+//            TimeBlock("Check Contribution");
             if(IsOpen(left_bound))
             {
                 SetWindCountForOpenPathEdge(Clipper, left_bound);
@@ -1556,7 +1557,7 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
             InsertRightEdge(left_bound, right_bound);  ///////
             if (contributing)
             {
-                TimeBlock("Contribution");
+//                TimeBlock("Contribution");
                 AddLocalMinPoly(Clipper, left_bound, right_bound, left_bound->bot, true);
                 if (!IsHorizontal(left_bound))
                     CheckJoinLeft(Clipper, left_bound, left_bound->bot);
@@ -1583,7 +1584,7 @@ InsertLocalMinimaIntoAEL(clipper *Clipper, s64 bot_y)
         }
         
         {
-            TimeBlock("Final Check");
+//            TimeBlock("Final Check");
             if (IsHorizontal(left_bound))
                 PushHorz(Clipper, left_bound);
             else
@@ -2968,7 +2969,28 @@ BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen
     }
 }
 
-void
+inline void
+DeleteEdges(clipper *Clipper)
+{
+#if 0
+    while(e)
+    {
+        active *e2 = e;
+        e = e->next_in_ael;
+        Free(e2, sizeof(active));
+    }
+#else
+    for(u32 I = 0;
+        I < Clipper->DeallocCount;
+        ++I)
+    {
+        void *Address = Clipper->DeallocActivesList[I];
+        Free(Address, sizeof(active)*10);
+    }
+#endif
+}
+
+inline void
 DeleteEdges(active *e)
 {
     while(e)
@@ -3003,8 +3025,9 @@ CleanUp(clipper *Clipper)
 {
 //    TimeFunction;
     
-    DeleteEdges(Clipper->ActiveEdgeList);
-    DeleteEdges(Clipper->FreeList);
+//    DeleteEdges(Clipper->ActiveEdgeList);
+//    DeleteEdges(Clipper);
+    DeleteEdges(Clipper);
 #if RECORD_MEMORY_USEAGE
     Free(Clipper->ScanLineMaxHeap.Nodes, Clipper->ScanLineMaxHeap.MaxSize*sizeof(sort_entry));
     Free(Clipper->IntersectNodes, ArrayMaxSizes[ArrayType_IntersectNode]*sizeof(intersect_node));
@@ -3024,6 +3047,8 @@ CleanUp(clipper *Clipper)
     }
 
     Free(Clipper->VertexLists, ArrayMaxSizes[ArrayType_VertexLists]*sizeof(vertex_list));
+
+    Free(Clipper->DeallocActivesList, ArrayMaxSizes[ArrayType_DeallocateList]*sizeof(void *));
 #else
     Free(Clipper->ScanLineMaxHeap.Nodes, 0);
     Free(Clipper->IntersectNodes, 0);

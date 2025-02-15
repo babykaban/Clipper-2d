@@ -239,7 +239,7 @@ int main()
     srand((u32)time(0)); // Seed for randomness
 
     SetUpHashTables();
-    
+
     if(check_avx2_support())
     {
         AVX2_SUPPORTED = true;
@@ -409,8 +409,22 @@ int main()
     }
 #endif
 
+#if 0
+    {
+//        TimeBlock("Alloc Small");
+        u8 *Mem0 = (u8 *)Malloc(sizeof(active));
+    }
+
+    {
+//        TimeBlock("Alloc Big");
+        u8 *Mem1 = (u8 *)Malloc(sizeof(active)*4096);
+    }
+#endif
+    
     fclose(file);
     EndAndPrintProfile();
 
+
+    
     return(0);
 }

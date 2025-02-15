@@ -7,7 +7,7 @@
    $Notice: $
    ======================================================================== */
 
-#define RECORD_MEMORY_USEAGE 0
+#define RECORD_MEMORY_USEAGE 1
 
 #if RECORD_MEMORY_USEAGE
 global_variable u64 MemoryAllocated = 0;
@@ -21,6 +21,7 @@ enum array_type
     ArrayType_HorzJoinList,
     ArrayType_IntersectNode,
     ArrayType_VertexLists,
+    ArrayType_DeallocateList,
 
     ArrayType_Count,
 };
@@ -40,6 +41,8 @@ global_variable u32 ArrayMaxSizes[ArrayType_Count] = {};
 inline void
 ZeroSize(umm Size, void *Ptr)
 {
+//    TimeFunction;
+
     u8 *Byte = (u8 *)Ptr;
 
     __m256i Zero_32x = _mm256_set1_epi8(0);
@@ -151,6 +154,8 @@ Realloc(void *Base, umm Size, umm NewSize)
 inline void *
 Malloc(umm Size)
 {
+//    TimeFunction;
+
     void *Result = malloc(Size);
     ZeroSize(Size, Result);
 
