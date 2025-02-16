@@ -98,8 +98,6 @@ struct output_point
 //    output_rectangle *OutRect;
 
     horz_segment *Horz;
-
-    void *Free;
 };
 
 struct horz_segment
@@ -222,9 +220,13 @@ struct clipper
     b32 HasOpenPaths;
     b32 Succeeded;
 
-    active *FreeList;
-    u32 DeallocCount;
+    active *ActivesFreeList;
+    u32 DeallocActivesCount;
     void **DeallocActivesList;
+
+    output_point *OutPtFreeList;
+    u32 DeallocOutPtsCount;
+    void **DeallocOutPtsList;
 
 };
 
@@ -301,14 +303,28 @@ IncreaseVertexLists(clipper *Clipper)
 }
 
 inline void
-IncreaseDeallocateList(clipper *Clipper)
+IncreaseDeallocateActivesList(clipper *Clipper)
 {
     Clipper->DeallocActivesList =
-        ReallocArray(Clipper->DeallocActivesList, Clipper->DeallocCount,
-                     Clipper->DeallocCount + BASIC_ALLOCATE_COUNT, void *);
+        ReallocArray(Clipper->DeallocActivesList, Clipper->DeallocActivesCount,
+                     Clipper->DeallocActivesCount + BASIC_ALLOCATE_COUNT, void *);
 
 #if RECORD_MEMORY_USEAGE
-    ArrayMaxSizes[ArrayType_DeallocateList] = Clipper->DeallocCount + BASIC_ALLOCATE_COUNT;
+    ArrayMaxSizes[ArrayType_DeallocateActivesList] =
+        Clipper->DeallocActivesCount + BASIC_ALLOCATE_COUNT;
+#endif
+}
+
+inline void
+IncreaseDeallocateOutPtsList(clipper *Clipper)
+{
+    Clipper->DeallocOutPtsList =
+        ReallocArray(Clipper->DeallocOutPtsList, Clipper->DeallocOutPtsCount,
+                     Clipper->DeallocOutPtsCount + BASIC_ALLOCATE_COUNT, void *);
+
+#if RECORD_MEMORY_USEAGE
+    ArrayMaxSizes[ArrayType_DeallocateOutPtsList] =
+        Clipper->DeallocOutPtsCount + BASIC_ALLOCATE_COUNT;
 #endif
 }
 
@@ -325,6 +341,7 @@ HorzJoin(output_point *op1, output_point *op2)
 inline horz_segment *
 GetHorzSegment(output_point *Point)
 {
+    TimeFunction;
     horz_segment *Result = MallocStruct(horz_segment);
     Result->left_to_right = true;
     Result->left_op = Point;
@@ -351,8 +368,9 @@ inline void
 FreeActive(clipper *Clipper, active *e)
 {
     ZeroStruct(*e);
-    active *Free = Clipper->FreeList;
-    Clipper->FreeList = e;
+
+    active *Free = Clipper->ActivesFreeList;
+    Clipper->ActivesFreeList = e;
     e->next_in_ael = Free;
 }
 
@@ -361,34 +379,33 @@ GetNewActive(clipper *Clipper)
 {
     active *Result = 0;
 
-    if(Clipper->FreeList)
+    if(Clipper->ActivesFreeList)
     {
 //        TimeBlock("List");
-        Result = Clipper->FreeList;
-        Clipper->FreeList = Result->next_in_ael;
+        Result = Clipper->ActivesFreeList;
+        Clipper->ActivesFreeList = Result->next_in_ael;
         Result->next_in_ael = 0;
     }
     else
     {
 //        TimeBlock("Not List");
-//        Result = MallocStruct(active);
 
-#if 1
-        active *Mem = (active *)Malloc(sizeof(active)*10);
-        Clipper->DeallocActivesList[Clipper->DeallocCount++] = Mem;
-
+        active *Mem = (active *)Malloc(sizeof(active)*BASIC_ALLOCATE_COUNT);
+        Clipper->DeallocActivesList[Clipper->DeallocActivesCount++] = Mem;
+        Assert(Clipper->DeallocActivesCount < BASIC_ALLOCATE_COUNT);
+        
         for(s32 I = 0;
-            I < 10;
+            I < BASIC_ALLOCATE_COUNT;
             ++I)
         {
             active *New = Mem + I;
-            active *Free = Clipper->FreeList;
-            Clipper->FreeList = New;
+            active *Free = Clipper->ActivesFreeList;
+            Clipper->ActivesFreeList = New;
             New->next_in_ael = Free;
         }
-#endif
-        Result = Clipper->FreeList;
-        Clipper->FreeList = Result->next_in_ael;
+
+        Result = Clipper->ActivesFreeList;
+        Clipper->ActivesFreeList = Result->next_in_ael;
         Result->next_in_ael = 0;
     }
 
@@ -397,15 +414,56 @@ GetNewActive(clipper *Clipper)
     return(Result);
 }
 
-inline output_point *
-GetOutPt(v2_s64 P, u32 OutRectIndex)
+inline void
+FreeOutPt(clipper *Clipper, output_point *p)
 {
-    output_point *Result = MallocStruct(output_point);
+    ZeroStruct(*p);
+
+    output_point *Free = Clipper->OutPtFreeList;
+    Clipper->OutPtFreeList = p;
+    p->Next = Free;
+}
+
+inline output_point *
+GetOutPt(clipper *Clipper, v2_s64 P, u32 OutRectIndex)
+{
+//    TimeFunction;
+
+    output_point *Result = 0;//MallocStruct(output_point);
+    if(Clipper->OutPtFreeList)
+    {
+//        TimeBlock("Out List");
+        Result = Clipper->OutPtFreeList;
+        Clipper->OutPtFreeList = Result->Next;
+        Result->Next = 0;
+    }
+    else
+    {
+//        TimeBlock("Out Not List");
+
+        output_point *Mem = MallocArray(BASIC_ALLOCATE_COUNT, output_point);
+        Clipper->DeallocOutPtsList[Clipper->DeallocOutPtsCount++] = Mem;
+        Assert(Clipper->DeallocOutPtsCount < BASIC_ALLOCATE_COUNT);
+        
+        for(s32 I = 0;
+            I < BASIC_ALLOCATE_COUNT;
+            ++I)
+        {
+            output_point *New = Mem + I;
+            output_point *Free = Clipper->OutPtFreeList;
+            Clipper->OutPtFreeList = New;
+            New->Next = Free;
+        }
+
+        Result = Clipper->OutPtFreeList;
+        Clipper->OutPtFreeList = Result->Next;
+        Result->Next = 0;
+    }
+
     Result->P = P;
     Result->OutRectIndex = OutRectIndex;
     Result->Next = Result;
     Result->Prev = Result;
-    Result->Free = Result;
 
     return(Result);
 }
@@ -420,22 +478,6 @@ IntersectNode(active *edge1, active *edge2, v2_s64 pt)
 
     return(Result);
 }
-
-#if 0
-inline output_rectangle *
-NewOutRec(clipper *Clipper)
-{
-    if(NeedIncrease(Clipper->OutputRectCount))
-    {
-        IncreaseOutRecList(Clipper);
-    }
-    
-    output_rectangle *Result = Clipper->OutRecList + Clipper->OutputRectCount;
-    Result->Index = Clipper->OutputRectCount++;
-
-    return Result;
-}
-#endif
 
 inline u32
 NewOutRec(clipper *Clipper)

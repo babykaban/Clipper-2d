@@ -67,6 +67,7 @@ typedef intptr_t  smm;
 #define Tau32 6.28318530717958647692f
 
 #define Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
+
 #define InvalidCodePath Assert(!"InvalidCodePath")
 #define InvalidDefaultCase default: {InvalidCodePath;} break
 

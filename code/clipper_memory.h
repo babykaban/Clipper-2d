@@ -7,7 +7,7 @@
    $Notice: $
    ======================================================================== */
 
-#define RECORD_MEMORY_USEAGE 1
+#define RECORD_MEMORY_USEAGE 0
 
 #if RECORD_MEMORY_USEAGE
 global_variable u64 MemoryAllocated = 0;
@@ -21,7 +21,8 @@ enum array_type
     ArrayType_HorzJoinList,
     ArrayType_IntersectNode,
     ArrayType_VertexLists,
-    ArrayType_DeallocateList,
+    ArrayType_DeallocateActivesList,
+    ArrayType_DeallocateOutPtsList,
 
     ArrayType_Count,
 };

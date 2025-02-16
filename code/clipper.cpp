@@ -38,6 +38,7 @@ InitClipper(clipper *Clipper, s32 Precision)
 
     Clipper->VertexLists = MallocArray(BASIC_ALLOCATE_COUNT, vertex_list);
     Clipper->DeallocActivesList = MallocArray(BASIC_ALLOCATE_COUNT, void *);
+    Clipper->DeallocOutPtsList = MallocArray(BASIC_ALLOCATE_COUNT, void *);
     
 #if RECORD_MEMORY_USEAGE
     for(u32 I = 0;
@@ -769,7 +770,7 @@ AddLocalMinPoly(clipper *Clipper, active *e1, active *e2, v2_s64 pt, b32 is_new 
         }
     }
 
-    output_point *op = GetOutPt(pt, outrecIndex);
+    output_point *op = GetOutPt(Clipper, pt, outrecIndex);
     outrec->Points = op;
     return op;
 }
@@ -849,7 +850,7 @@ AddOutPt(clipper *Clipper, active *e, v2_s64 pt)
     else if (PointsAreEqual(pt, op_back->P))
         return op_back;
 
-    new_op = GetOutPt(pt, outrecIndex);
+    new_op = GetOutPt(Clipper, pt, outrecIndex);
     op_back->Prev = new_op;
     new_op->Prev = op_front;
     new_op->Next = op_back;
@@ -1122,7 +1123,7 @@ StartOpenPath(clipper *Clipper, active *e, v2_s64 pt)
 
     e->outrecIndex = outrecIndex;
 
-    output_point *op = GetOutPt(pt, outrecIndex);
+    output_point *op = GetOutPt(Clipper, pt, outrecIndex);
     outrec->Points = op;
     return op;
 }
@@ -2007,8 +2008,6 @@ SetHorzSegHeadingForward(horz_segment *hs, output_point *opP, output_point *opN)
 inline b32
 UpdateHorzSegment(clipper *Clipper, horz_segment *hs)
 {
-     
-
     output_point *op = hs->left_op;
     output_rectangle *outrec = GetOutRec(Clipper, GetRealOutRec(Clipper, GetOutRec(Clipper, op->OutRectIndex)));
     b32 outrecHasEdges = (outrec->FrontEdge) ? 1 : 0;
@@ -2048,11 +2047,9 @@ UpdateHorzSegment(clipper *Clipper, horz_segment *hs)
 }
 
 inline output_point *
-DuplicateOp(output_point *op, b32 insert_after)
+DuplicateOp(clipper *Clipper, output_point *op, b32 insert_after)
 {
-     
-
-    output_point *result = GetOutPt(op->P, op->OutRectIndex);
+    output_point *result = GetOutPt(Clipper, op->P, op->OutRectIndex);
 
     if(insert_after)
     {
@@ -2124,8 +2121,8 @@ ConvertHorzSegsToJoins(clipper *Clipper)
                        hs2->left_op->Prev->P.x <= hs1->left_op->P.x)
                     hs2->left_op = hs2->left_op->Prev;
 
-                horz_join Join = HorzJoin(DuplicateOp(hs1->left_op, true),
-                                          DuplicateOp(hs2->left_op, false));
+                horz_join Join = HorzJoin(DuplicateOp(Clipper, hs1->left_op, true),
+                                          DuplicateOp(Clipper, hs2->left_op, false));
 
                 Clipper->HorzJoinList[Clipper->JointCount++] = Join;
             }
@@ -2139,8 +2136,8 @@ ConvertHorzSegsToJoins(clipper *Clipper)
                        hs2->left_op->Next->P.x <= hs1->left_op->P.x)
                     hs2->left_op = hs2->left_op->Next;
 
-                horz_join Join = HorzJoin(DuplicateOp(hs1->left_op, true),
-                                          DuplicateOp(hs2->left_op, false));
+                horz_join Join = HorzJoin(DuplicateOp(Clipper, hs1->left_op, true),
+                                          DuplicateOp(Clipper, hs2->left_op, false));
 
                 Clipper->HorzJoinList[Clipper->JointCount++] = Join;
             }
@@ -2696,10 +2693,8 @@ IsValidClosedPath(output_point *op)
 }
 
 inline void
-DisposeOutPts(output_rectangle *outrec)
+DisposeOutPts(clipper *Clipper, output_rectangle *outrec)
 {
-     
-
     output_point *op = outrec->Points;
     op->Prev->Next = 0;
     while(op)
@@ -2707,20 +2702,20 @@ DisposeOutPts(output_rectangle *outrec)
         output_point *tmp = op;
         op = op->Next;
 
-        Free(tmp, sizeof(output_point));
+        FreeOutPt(Clipper, tmp);
     };
 
     outrec->Points = 0;
 }
 
 inline output_point *
-DisposeOutPt(output_point *op)
+DisposeOutPt(clipper *Clipper, output_point *op)
 {
     output_point *result = op->Next;
     op->Prev->Next = op->Next;
     op->Next->Prev = op->Prev;
 
-    Free(op, sizeof(output_point));
+    FreeOutPt(Clipper, op);
 
     return result;
 }
@@ -2767,7 +2762,7 @@ DoSplitOp(clipper *Clipper, output_rectangle *outrec, output_point *splitOp)
     f64 absArea1 = fabs(area1);
     if (absArea1 < 2)
     {
-        DisposeOutPts(outrec);
+        DisposeOutPts(Clipper, outrec);
         return;
     }
 
@@ -2783,7 +2778,7 @@ DoSplitOp(clipper *Clipper, output_rectangle *outrec, output_point *splitOp)
     }
     else
     {
-        output_point *newOp2 = GetOutPt(ip, prevOp->OutRectIndex);
+        output_point *newOp2 = GetOutPt(Clipper, ip, prevOp->OutRectIndex);
         newOp2->Prev = prevOp;
         newOp2->Next = nextNextOp;
         nextNextOp->Prev = newOp2;
@@ -2804,7 +2799,7 @@ DoSplitOp(clipper *Clipper, output_rectangle *outrec, output_point *splitOp)
         splitOp->OutRectIndex = newOr->Index;
         splitOp->Next->OutRectIndex = newOr->Index;
 
-        output_point *newOp = GetOutPt(ip, newOr->Index);
+        output_point *newOp = GetOutPt(Clipper, ip, newOr->Index);
         newOp->Prev = splitOp->Next;
         newOp->Next = splitOp;
         newOr->Points = newOp;
@@ -2853,15 +2848,13 @@ FixSelfIntersects(clipper *Clipper, output_rectangle *outrec)
 internal void
 CleanCollinear(clipper *Clipper, output_rectangle *outrec)
 {
-     
-
     outrec = GetOutRec(Clipper, GetRealOutRec(Clipper, outrec));
     if (!outrec || outrec->IsOpen)
         return;
 
     if (!IsValidClosedPath(outrec->Points))
     {
-        DisposeOutPts(outrec);
+        DisposeOutPts(Clipper, outrec);
         return;
     }
 
@@ -2879,10 +2872,10 @@ CleanCollinear(clipper *Clipper, output_rectangle *outrec)
             if (op2 == outrec->Points)
                 outrec->Points = op2->Prev;
 
-            op2 = DisposeOutPt(op2);
+            op2 = DisposeOutPt(Clipper, op2);
             if (!IsValidClosedPath(op2))
             {
-                DisposeOutPts(outrec);
+                DisposeOutPts(Clipper, outrec);
                 return;
             }
             startOp = op2;
@@ -2972,22 +2965,13 @@ BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen
 inline void
 DeleteEdges(clipper *Clipper)
 {
-#if 0
-    while(e)
-    {
-        active *e2 = e;
-        e = e->next_in_ael;
-        Free(e2, sizeof(active));
-    }
-#else
     for(u32 I = 0;
-        I < Clipper->DeallocCount;
+        I < Clipper->DeallocActivesCount;
         ++I)
     {
         void *Address = Clipper->DeallocActivesList[I];
-        Free(Address, sizeof(active)*10);
+        Free(Address, sizeof(active)*BASIC_ALLOCATE_COUNT);
     }
-#endif
 }
 
 inline void
@@ -3001,17 +2985,22 @@ DeleteEdges(active *e)
     }
 }
 
-void
-DisposeAllOutRecs(clipper *Clipper)
+inline void
+DisposeOutPtsCleanUp(clipper *Clipper)
 {
     for(u32 I = 0;
-        I < Clipper->OutputRectCount;
+        I < Clipper->DeallocOutPtsCount;
         ++I)
     {
-        output_rectangle *O = Clipper->OutRecList + I;
-        if(O->Points)
-            DisposeOutPts(O);
+        void *Address = Clipper->DeallocOutPtsList[I];
+        Free(Address, sizeof(output_point)*BASIC_ALLOCATE_COUNT);
     }
+}
+
+inline void
+DisposeAllOutRecs(clipper *Clipper)
+{
+    DisposeOutPtsCleanUp(Clipper);
 
 #if RECORD_MEMORY_USEAGE
     Free(Clipper->OutRecList, ArrayMaxSizes[ArrayType_OutRec]*sizeof(output_rectangle));
@@ -3048,7 +3037,8 @@ CleanUp(clipper *Clipper)
 
     Free(Clipper->VertexLists, ArrayMaxSizes[ArrayType_VertexLists]*sizeof(vertex_list));
 
-    Free(Clipper->DeallocActivesList, ArrayMaxSizes[ArrayType_DeallocateList]*sizeof(void *));
+    Free(Clipper->DeallocActivesList, ArrayMaxSizes[ArrayType_DeallocateActivesList]*sizeof(void *));
+    Free(Clipper->DeallocOutPtsList, ArrayMaxSizes[ArrayType_DeallocateOutPtsList]*sizeof(void *));
 #else
     Free(Clipper->ScanLineMaxHeap.Nodes, 0);
     Free(Clipper->IntersectNodes, 0);
@@ -3066,6 +3056,8 @@ CleanUp(clipper *Clipper)
     }
 
     Free(Clipper->VertexLists, 0);
+    Free(Clipper->DeallocActivesList, 0);
+    Free(Clipper->DeallocOutPtsList, 0);
 #endif
 }
 
