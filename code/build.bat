@@ -14,8 +14,8 @@ pushd %BuildPath%\build
 REM 64-bit build
 
 REM RENEWED CLIPPER
-cl %CommonCompilerFlagsO% /std:c++17 ..\code\test_clippers.cpp -Fmtest_clippers.map /link %CommonLinkerFlags%
-cl %CommonCompilerFlagsD% ..\clipper\clipper_main.cpp -Fmclipper_main.map /link %CommonLinkerFlags%
+cl %CommonCompilerFlagsO% /std:c++17 ..\code\clipper_dev\test_clippers.cpp -Fmtest_clippers.map /link %CommonLinkerFlags%
+cl %CommonCompilerFlagsO% ..\code\clipper\clipper_main.cpp -Fmclipper_main.map /link %CommonLinkerFlags%
 
 REM ORIGINAL CLIPPER
 REM cl %CommonCompilerFlagsO% /std:c++17 ..\code\test_clipper2.cpp -Fmtest_clipper2.map /link %CommonLinkerFlags2% 
