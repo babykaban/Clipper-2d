@@ -1,4 +1,4 @@
-#if !defined(MAIN_H)
+#if !defined(CLIPPER_MAIN_H)
 /* ========================================================================
    $File: $
    $Date: 2024 $
@@ -7,7 +7,6 @@
    $Notice: $
    ======================================================================== */
 
-#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
@@ -119,5 +118,5 @@ struct test_result
     polygon_set Xor;
 };
 
-#define MAIN_H
+#define CLIPPER_MAIN_H
 #endif
