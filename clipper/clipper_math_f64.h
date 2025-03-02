@@ -125,7 +125,7 @@ operator*(f64 A, v2_f64 B)
 {
     v2_f64 Result;
 
-#if MATH_SIMD
+#if CLIPPER_SSE
     Result.W = _mm_mul_pd(B.W, _mm_set1_pd(A));
 #else
     Result.x = A*B.x;
@@ -140,7 +140,7 @@ operator*(v2_f64 A, v2_f64 B)
 {
     v2_f64 Result;
 
-#if MATH_SIMD
+#if CLIPPER_SSE
     Result.W = _mm_mul_pd(B.W, A.W);
 #else
     Result.x = A.x*B.x;
@@ -169,7 +169,7 @@ operator-(v2_f64 A)
 {
     v2_f64 Result;
 
-#if MATH_SIMD
+#if CLIPPER_SSE
     Result.W = _mm_xor_pd(A.W, _mm_set1_pd(-0.0));
 #else
     Result.x = -A.x;
@@ -184,7 +184,7 @@ operator+(v2_f64 A, v2_f64 B)
 {
     v2_f64 Result;
 
-#if MATH_SIMD
+#if CLIPPER_SSE
     Result.W = _mm_add_pd(A.W, B.W);
 #else
     Result.x = A.x + B.x;
@@ -206,7 +206,7 @@ operator-(v2_f64 A, v2_f64 B)
 {
     v2_f64 Result;
 
-#if MATH_SIMD
+#if CLIPPER_SSE
     Result.W = _mm_sub_pd(A.W, B.W);
 #else
     Result.x = A.x - B.x;
@@ -226,7 +226,7 @@ operator-=(v2_f64 &A, v2_f64 B)
 inline f64
 Inner(v2_f64 A, v2_f64 B)
 {
-#if MATH_SIMD
+#if CLIPPER_SSE
     v2_f64 Mul = A*B;
     f64 Result = _mm_cvtsd_f64(_mm_hadd_pd(Mul.W, Mul.W));
 #else
@@ -613,16 +613,6 @@ IsPositive(path_f64 *Poly)
 inline b32
 IsCollinear(v2_f64 p1, v2_f64 SharedP, v2_f64 p2) // #777
 {
-#if 0
-    s64 Vals[4] = {};
-    v2_s64 A = {};
-    A.W = _mm_cvtpd_epi64(_mm_round_pd(_mm_set_pd(SharedP.x - p1.x, p2.y - SharedP.y),
-                                       _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-    v2_s64 B = {};
-    B.W = _mm_cvtpd_epi64(_mm_round_pd(_mm_set_pd(SharedP.y - p1.y, p2.x - SharedP.x),
-                                       _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
-    b32 Result = ProductsAreEqual(A.x, A.y, B.x, B.y);
-#endif    
     s64 a = RoundF64ToInt64(SharedP.x - p1.x);
     s64 b = RoundF64ToInt64(p2.y - SharedP.y);
     s64 c = RoundF64ToInt64(SharedP.y - p1.y);
@@ -634,11 +624,8 @@ IsCollinear(v2_f64 p1, v2_f64 SharedP, v2_f64 p2) // #777
     return(Result);
 }
 
-#define CLIPPER2_HI_PRECISION 0
-#if CLIPPER2_HI_PRECISION
+#if CLIPPER_HI_PRECISION
 // caution: this will compromise performance
-// https://github.com/AngusJohnson/Clipper2/issues/317#issuecomment-1314023253
-// See also CPP/BenchMark/GetIntersectPtBenchmark.cpp
 #define CC_MIN(x,y) ((x)>(y)?(y):(x))
 #define CC_MAX(x,y) ((x)<(y)?(y):(x))
 
@@ -706,14 +693,6 @@ GetSegmentIntersectPt(v2_f64 a, v2_f64 b, v2_f64 c, v2_f64 d, v2_f64 *p)
     return true;
 }
 #endif
-
-inline v2_f64
-TranslatePoint(v2_f64 p, v2_f64 Offset)
-{
-    // TODO(babykaban): Eliminate
-    v2_f64 Result = p + Offset;
-    return(Result);
-}
 
 inline v2_f64
 ReflectPoint(v2_f64 p, v2_f64 pivot)

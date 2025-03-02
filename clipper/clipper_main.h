@@ -12,7 +12,7 @@
 #include <memory.h>
 
 #include "math.h"
-#include <intrin.h>
+//#include <intrin.h>
 #include <stdint.h>
 #include <stddef.h>
 #include <limits.h>

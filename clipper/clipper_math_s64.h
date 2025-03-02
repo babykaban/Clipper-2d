@@ -30,25 +30,29 @@ V2S64(s64 X, s64 Y)
 }
 
 inline v2_s64
+CastV2S64(v2_f64 A)
+{
+    v2_s64 Result = {(s64)A.x, (s64)A.y}; 
+
+    return(Result);
+}
+
+inline v2_s64
 V2S64(f64 X, f64 Y)
 {
     v2_s64 Result = {};
-#if MATH_SIMD
+#if CLIPPER_AVX512
     Result.W = _mm_cvtpd_epi64(_mm_round_pd(_mm_set_pd(X, Y),
                                             _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
+#elif CLIPPER_SSE
+    v2_f64 T = {};
+    T.W = _mm_round_pd(_mm_set_pd(X, Y), _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
+    Result = CastV2S64(T);
 #else
     Result.x = (s64)round(X);
     Result.y = (s64)round(Y);
 #endif
     
-    return(Result);
-}
-
-inline v2_s64
-CastV2S64(v2_f64 A)
-{
-    v2_s64 Result = {(s64)A.x, (s64)A.y}; 
-
     return(Result);
 }
 
@@ -98,7 +102,7 @@ operator+(v2_s64 A, v2_s64 B)
 {
     v2_s64 Result;
 
-#if MATH_SIMD
+#if CLIPPER_SSE
     Result.W = _mm_add_epi64(A.W, B.W);
 #else
     Result.x = A.x + B.x;
@@ -120,7 +124,7 @@ operator-(v2_s64 A, v2_s64 B)
 {
     v2_s64 Result;
 
-#if MATH_SIMD
+#if CLIPPER_SSE
     Result.W = _mm_sub_epi64(A.W, B.W);
 #else
     Result.x = A.x - B.x;
@@ -455,15 +459,8 @@ PerpDistFromLineSq(v2_s64 p, v2_s64 a, v2_s64 b)
     
     // r = (s[0] - s[2])^2 / (s[1] + s[3]);
     f64 Result = 0.0;
-#if 0
-    v2_f64 ap = V2F64(p - a);
-    v2_f64 ab = V2F64(b - a);
-    
-    if(!((ab.x == 0) && (ab.y == 0)))
-    {
-        Result = Square(Cross(ap, ab)) / Inner(ab, ab);
-    }
-#else
+
+#if CLIPPER_AVX
     f64 buf[4] = {};
     __m256d Sub = _mm256_sub_pd(_mm256_set_pd((f64)p.x, (f64)b.x, (f64)p.y, (f64)b.y),
                                 _mm256_set_pd((f64)a.x, (f64)a.x, (f64)a.y, (f64)a.y));
@@ -477,6 +474,14 @@ PerpDistFromLineSq(v2_s64 p, v2_s64 a, v2_s64 b)
         _mm256_store_pd(buf, Mul);
 
         Result = Square(buf[3] - buf[1]) / (buf[2] + buf[0]);
+    }
+#else
+    v2_f64 ap = V2F64(p - a);
+    v2_f64 ab = V2F64(b - a);
+    
+    if(!((ab.x == 0) && (ab.y == 0)))
+    {
+        Result = Square(Cross(ap, ab)) / Inner(ab, ab);
     }
 #endif    
 
@@ -558,7 +563,6 @@ IsCollinear(v2_s64 p1, v2_s64 SharedP, v2_s64 p2) // #777
     return(Result);
 }
 
-#define CLIPPER2_HI_PRECISION 0
 #if CLIPPER2_HI_PRECISION
 // caution: this will compromise performance
 // https://github.com/AngusJohnson/Clipper2/issues/317#issuecomment-1314023253

@@ -2373,9 +2373,6 @@ ProcessIntersectList(clipper *Clipper)
 inline void
 DoIntersections(clipper *Clipper, s64 top_y)
 {
-#if TIME_NEW
-    TimeFunction;
-#endif
     if(BuildIntersectList(Clipper, top_y))
     {
         ProcessIntersectList(Clipper);
@@ -2468,11 +2465,6 @@ DoMaxima(clipper *Clipper, active *e)
 inline void
 DoTopOfScanbeam(clipper *Clipper, s64 y)
 {
-#if TIME_NEW
-    TimeFunction;
-#endif
-//    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
-
     Clipper->StoredEdgeList = 0;  // StoredEdgeList is reused to flag horizontals (see PushHorz below)
     active *e = Clipper->ActiveEdgeList;
     while(e)
@@ -2898,11 +2890,6 @@ CountPathCount(clipper *Clipper)
 internal void
 BuildPathsD(clipper *Clipper, paths_f64 *solutionClosed, paths_f64 *solutionOpen)
 {
-#if TIME_NEW
-    TimeFunction;
-#endif
-//    RecordFunction(0, Clipper->ClipType, Clipper->FillRule);
-
     *solutionClosed = GetPathsF64(CountPathCount(Clipper));
     if(solutionOpen)
     {
@@ -3003,11 +2990,8 @@ DisposeAllOutRecs(clipper *Clipper)
 void
 CleanUp(clipper *Clipper)
 {
-//    TimeFunction;
-    
-//    DeleteEdges(Clipper->ActiveEdgeList);
-//    DeleteEdges(Clipper);
     DeleteEdges(Clipper);
+
 #if RECORD_MEMORY_USEAGE
     Free(Clipper->ScanLineMaxHeap.Nodes, Clipper->ScanLineMaxHeap.MaxSize*sizeof(sort_entry));
     Free(Clipper->IntersectNodes, ArrayMaxSizes[ArrayType_IntersectNode]*sizeof(intersect_node));

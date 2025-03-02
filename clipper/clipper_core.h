@@ -15,10 +15,10 @@
   global_variable f64 PI = 3.141592653589793238;
 #endif
 
-#ifdef CLIPPER2_MAX_DECIMAL_PRECISION
-  global_variable s32 CLIPPER2_MAX_DEC_PRECISION = CLIPPER2_MAX_DECIMAL_PRECISION;
+#ifdef CLIPPER_MAX_DECIMAL_PRECISION
+  global_variable s32 CLIPPER_MAX_DEC_PRECISION = CLIPPER_MAX_DECIMAL_PRECISION;
 #else
-  global_variable s32 CLIPPER2_MAX_DEC_PRECISION = 8; // see Discussions #564
+  global_variable s32 CLIPPER_MAX_DEC_PRECISION = 8; // see Discussions #564
 #endif
 
 #define MAX_COORD (INT64_MAX >> 2)
@@ -34,6 +34,196 @@
 #define InvalidPointF64 PointF64(DBL_MAX, DBL_MAX)
 
 #define InvalidPointRectF64 InvertedInfinityRectangle2()
+
+#define RECORD_MEMORY_USEAGE 0
+
+#if RECORD_MEMORY_USEAGE
+global_variable u64 MemoryAllocated = 0;
+global_variable u64 PathMemoryUsed = 0;
+
+enum array_type
+{
+    ArrayType_OutRec,
+    ArrayType_MinimaList,
+    ArrayType_HorzSegList,
+    ArrayType_HorzJoinList,
+    ArrayType_IntersectNode,
+    ArrayType_VertexLists,
+    ArrayType_DeallocateActivesList,
+    ArrayType_DeallocateOutPtsList,
+
+    ArrayType_Count,
+};
+
+global_variable u32 ArrayMaxSizes[ArrayType_Count] = {};
+#endif
+
+#define BASIC_ALLOCATE_COUNT 16
+
+#define Kilobytes(Value) ((Value)*1024LL)
+#define Megabytes(Value) (Kilobytes(Value)*1024LL)
+#define Gigabytes(Value) (Megabytes(Value)*1024LL)
+#define Terabytes(Value) (Gigabytes(Value)*1024LL)
+
+#define ZeroStruct(Instance) ZeroSize(sizeof(Instance), &(Instance))
+#define ZeroArray(Count, Pointer) ZeroSize(Count*sizeof((Pointer)[0]), Pointer)
+inline void
+ZeroSize(umm Size, void *Ptr)
+{
+    u8 *Byte = (u8 *)Ptr;
+
+#if CLIPPER_AVX
+    __m256i Zero_32x = _mm256_set1_epi8(0);
+    if(Size >= 32)
+    {
+        umm AVXSize = Size / 32;
+        Size %= 32;
+
+        for(umm I = 0; I < AVXSize; ++I)
+        {
+            _mm256_store_si256((__m256i *)Byte, Zero_32x);
+            Byte += 32;
+        }
+    }
+#elif CLIPPER_SSE
+    __m128i Zero_16x = _mm_set1_epi8(0);
+    if(Size >= 16)
+    {
+        umm SSESize = Size / 16;
+        Size %= 16;
+
+        for(umm I = 0; I < SSESize; ++I)
+        {
+            _mm_store_si128((__m128i *)Byte, Zero_16x);
+            Byte += 16;
+        }
+    }
+#endif
+    
+    while(Size--)
+    {
+        *Byte++ = 0;
+    }
+}
+
+#define PushStruct(type, ...) (type *)PushSize_(sizeof(type), ## __VA_ARGS__)
+#define PushArray(Count, type, ...) (type *)PushSize_((Count)*sizeof(type), ## __VA_ARGS__)
+#define PushSize(Size, ...) PushSize_(Size, ## __VA_ARGS__)
+#define PushCopy(Size, Source, ...) Copy(Size, Source, PushSize_(Arena, Size, ## __VA_ARGS__))
+
+inline void *
+PushSize_(umm SizeInit)
+{
+    void *Result = malloc(SizeInit);
+    ZeroSize(SizeInit, Result);
+    
+#if RECORD_MEMORY_USEAGE
+    MemoryAllocated += SizeInit;
+#endif
+    
+    return(Result);
+}
+
+inline void *
+Copy(umm Size, void *SourceInit, void *DestInit)
+{
+    u8 *Source = (u8 *)SourceInit;
+    u8 *Dest = (u8 *)DestInit;
+#if CLIPPER_AVX
+    if(Size >= 32)
+    {
+        umm AVXSize = Size / 32;
+        Size %= 32;
+
+        for(umm I = 0; I < AVXSize; ++I)
+        {
+            __m256i Data = _mm256_load_si256((__m256i *)Source);
+            _mm256_store_si256((__m256i *)Dest, Data);
+            Source += 32;
+            Dest += 32;
+        }
+    }
+#elif CLIPPER_SSE
+    if(Size >= 16)
+    {
+        umm SSESize = Size / 16;
+        Size %= 16;
+
+        for(umm I = 0; I < SSESize; ++I)
+        {
+            __m128i Data = _mm_load_si128((__m128i *)Source);
+            _mm_store_si128((__m128i *)Dest, Data);
+            Source += 16;
+            Dest += 16;
+        }
+    }
+#endif
+
+    while(Size--) {*Dest++ = *Source++;}
+
+    return(DestInit);
+}
+
+inline void *
+Realloc(void *Base, umm Size, umm NewSize)
+{
+    void *Result = PushSize_(NewSize);
+    if(Base)
+    {
+        Copy(Size, Base, Result);
+        free(Base);
+    }
+
+#if RECORD_MEMORY_USEAGE
+    MemoryAllocated -= Size;
+#endif    
+    return(Result);
+}
+
+#define ReallocArray(Base, OldCount, NewCount, type) (type *)Realloc(Base, (OldCount)*sizeof(type), (NewCount)*sizeof(type)) 
+
+inline void *
+Malloc(umm Size)
+{
+    void *Result = malloc(Size);
+    ZeroSize(Size, Result);
+
+#if RECORD_MEMORY_USEAGE
+    MemoryAllocated += Size;
+#endif
+    
+    return(Result);
+}
+
+#define MallocArray(Count, type) (type *)Malloc(sizeof(type)*(Count)); 
+#define MallocStruct(type) (type *)Malloc(sizeof(type)) 
+
+#if RECORD_MEMORY_USEAGE
+inline void
+Free(void *Ptr, umm Size)
+{
+    MemoryAllocated -= Size;
+
+    free(Ptr);
+}
+
+#else
+
+inline void
+Free(void *Ptr, umm Size)
+{
+    free(Ptr);
+}
+
+#endif
+
+inline b32
+NeedIncrease(u32 Count)
+{
+    b32 Result = ((Count % BASIC_ALLOCATE_COUNT) == 0) && (Count != 0);
+    return(Result);
+}
+// ===========================================================================================================================================================
 
 inline path_f64
 GetPathF64(s32 Count)
@@ -137,10 +327,10 @@ IncreasePathS64(path_s64 *Path)
 inline void
 CheckPrecisionRange(s32 *Precision)
 {
-    if(!((*Precision >= -CLIPPER2_MAX_DEC_PRECISION) &&
-         (*Precision <= CLIPPER2_MAX_DEC_PRECISION)))
+    if(!((*Precision >= -CLIPPER_MAX_DEC_PRECISION) &&
+         (*Precision <= CLIPPER_MAX_DEC_PRECISION)))
     {
-        *Precision = (*Precision > 0) ? CLIPPER2_MAX_DEC_PRECISION : -CLIPPER2_MAX_DEC_PRECISION;
+        *Precision = (*Precision > 0) ? CLIPPER_MAX_DEC_PRECISION : -CLIPPER_MAX_DEC_PRECISION;
     }
 }
 
@@ -159,15 +349,10 @@ RectAsPath(rectangle2 Rect)
 inline path_f64
 ScalePath(path_f64 *Source, v2_f64 Scale)
 {
-    // TODO(babykaban): Error Handling
-
     path_f64 Result = GetPathF64(Source->Count);
     Result.Count = Source->Count;
     if((Scale.x == 0) || (Scale.y == 0))
     {
-//        error_code |= scale_error_i;
-//        DoError(scale_error_i);
-        // if no exception, treat as non-fatal error
         if(Scale.x == 0)
             Scale.x = 1.0;
         if(Scale.y == 0)
@@ -187,12 +372,8 @@ ScalePath(path_f64 *Source, v2_f64 Scale)
 inline void
 ScaleCurrentPath(path_f64 *Source, v2_f64 Scale)
 {
-    // TODO(babykaban): Error Handling
     if((Scale.x == 0) || (Scale.y == 0))
     {
-//        error_code |= scale_error_i;
-//        DoError(scale_error_i);
-        // if no exception, treat as non-fatal error
         if(Scale.x == 0)
             Scale.x = 1.0;
         if(Scale.y == 0)
@@ -210,15 +391,10 @@ ScaleCurrentPath(path_f64 *Source, v2_f64 Scale)
 inline path_f64
 ScaleConvertPathToF64(path_s64 *Source, v2_f64 Scale)
 {
-    // TODO(babykaban): Error Handling
-
     path_f64 Result = GetPathF64(Source->Count);
     Result.Count = Source->Count;
     if((Scale.x == 0) || (Scale.y == 0))
     {
-//        error_code |= scale_error_i;
-//        DoError(scale_error_i);
-        // if no exception, treat as non-fatal error
         if(Scale.x == 0)
             Scale.x = 1.0;
         if(Scale.y == 0)
@@ -266,30 +442,17 @@ ScaleConvertPathToF64(path_s64 *Source, v2_f64 Scale)
 inline path_s64
 ScaleConvertPathToS64(path_f64 *Source, v2_f64 Scale)
 {
-// TODO(babykaban): Error Handling
-
     path_s64 Result = GetPathS64(Source->Count);
     Result.Count = Source->Count;
     if((Scale.x == 0) || (Scale.y == 0))
     {
-//        error_code |= scale_error_i;
-//        DoError(scale_error_i);
-        // if no exception, treat as non-fatal error
         if(Scale.x == 0)
             Scale.x = 1.0;
         if(Scale.y == 0)
             Scale.y = 1.0;
     }
 
-#if 0
-// 461.81
-    for(s32 I = 0;
-        I < Source->Count;
-        ++I)
-    {
-        Result.Points[I] = V2S64(Scale*Source->Points[I]);
-    }
-#else
+#if CLIPPER_AVX512
     // TODO: NOTE(babykaban): Only avaliable with AVX+ set of instructions
     // 272.57
     v2_f64 *SourcePtr = Source->Points;
@@ -324,8 +487,15 @@ ScaleConvertPathToS64(path_f64 *Source, v2_f64 Scale)
             _mm_round_pd(Point.W, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC));
         _mm_store_si128((__m128i *)DestPtr, Point_s64);
     }
-
+#else
+    for(s32 I = 0;
+        I < Source->Count;
+        ++I)
+    {
+        Result.Points[I] = V2S64(Scale*Source->Points[I]);
+    }
 #endif    
+
     return(Result);
 }
 
@@ -710,6 +880,246 @@ StripDuplicates(paths_s64 *Source, b32 IsClosedPath)
     {
         StripDuplicates(Source->Paths + I, IsClosedPath);
     }
+}
+
+enum heap_type
+{
+    HeapType_S32,
+    HeapType_S64,
+    HeapType_U32,
+    HeapType_U64,
+};
+
+struct sort_entry
+{
+    union
+    {
+        s32 Value_S32;
+        s64 Value_S64;
+        u32 Value_U32;
+        u64 Value_U64;
+    };
+};
+
+struct heap
+{
+    heap_type Type;
+
+    sort_entry *Nodes;
+    u32 MaxSize;
+    u32 Size;
+
+    void *Free;
+};
+
+inline void
+InitHeap(heap *Heap, u32 MaxSize, heap_type Type)
+{
+    Heap->Type = Type;
+    Heap->MaxSize = MaxSize;
+    Heap->Size = 0;
+    Heap->Nodes = MallocArray(Heap->MaxSize, sort_entry);
+    Heap->Free = Heap->Nodes;
+}
+
+inline void
+S32RemoveAt(s32 *Array, s32 Count, s32 Index)
+{
+    Array[Index] = 0;
+    for(s32 I = Index;
+        I < Count - 1;
+        ++I)
+    {
+        Array[I] = Array[I + 1];
+    }
+
+    Array[Count] = 0;
+}
+
+inline void
+Swap(sort_entry *A, sort_entry *B)
+{
+    sort_entry Temp = *B;
+    *B = *A;
+    *A = Temp;
+}
+
+inline b32
+HeapifyDownComp(heap_type HeapType, sort_entry A, sort_entry B, b32 IsMaxHeap)
+{
+    b32 Result = false;
+    switch(HeapType)
+    {
+        case HeapType_S32: {Result = IsMaxHeap ? (A.Value_S32 > B.Value_S32) : (A.Value_S32 < B.Value_S32);} break;
+        case HeapType_S64: {Result = IsMaxHeap ? (A.Value_S64 > B.Value_S64) : (A.Value_S64 < B.Value_S64);} break;
+        case HeapType_U32: {Result = IsMaxHeap ? (A.Value_U32 > B.Value_U32) : (A.Value_U32 < B.Value_U32);} break;
+        case HeapType_U64: {Result = IsMaxHeap ? (A.Value_U64 > B.Value_U64) : (A.Value_U64 < B.Value_U64);} break;
+            InvalidDefaultCase;
+    }
+
+    return(Result);
+}
+
+inline b32
+HeapifyUpComp(heap_type HeapType, sort_entry A, sort_entry B, b32 IsMaxHeap)
+{
+    b32 Result = false;
+    switch(HeapType)
+    {
+        case HeapType_S32: {Result = IsMaxHeap ? (A.Value_S32 < B.Value_S32) : (A.Value_S32 > B.Value_S32);} break;
+        case HeapType_S64: {Result = IsMaxHeap ? (A.Value_S64 < B.Value_S64) : (A.Value_S64 > B.Value_S64);} break;
+        case HeapType_U32: {Result = IsMaxHeap ? (A.Value_U32 < B.Value_U32) : (A.Value_U32 > B.Value_U32);} break;
+        case HeapType_U64: {Result = IsMaxHeap ? (A.Value_U64 < B.Value_U64) : (A.Value_U64 > B.Value_U64);} break;
+            InvalidDefaultCase;
+    }
+
+    return(Result);
+}
+
+inline void
+MinHeapifyDown(heap *Heap, u32 Index)
+{
+    u32 Smallest = Index;
+    u32 Left = 2*Index + 1;
+    u32 Right = 2*Index + 2;
+
+    if((Left < Heap->Size) &&
+       HeapifyDownComp(Heap->Type, Heap->Nodes[Left], Heap->Nodes[Smallest], false))
+    {
+        Smallest = Left;
+    }
+
+    if((Right < Heap->Size) &&
+       HeapifyDownComp(Heap->Type, Heap->Nodes[Right], Heap->Nodes[Smallest], false))
+    {
+        Smallest = Right;
+    }
+
+    if(Smallest != Index)
+    {
+        Swap(Heap->Nodes + Index, Heap->Nodes + Smallest);
+        MinHeapifyDown(Heap, Smallest);
+    }
+}
+
+inline void
+MaxHeapifyDown(heap *Heap, u32 Index)
+{
+    u32 Largest = Index;
+    u32 Left = 2*Index + 1;
+    u32 Right = 2*Index + 2;
+
+    if((Left < Heap->Size) &&
+       HeapifyDownComp(Heap->Type, Heap->Nodes[Left], Heap->Nodes[Largest], true))
+    {
+        Largest = Left;
+    }
+
+    if((Right < Heap->Size) &&
+       HeapifyDownComp(Heap->Type, Heap->Nodes[Right], Heap->Nodes[Largest], true))
+    {
+        Largest = Right;
+    }
+
+    if(Largest != Index)
+    {
+        Swap(Heap->Nodes + Index, Heap->Nodes + Largest);
+        MaxHeapifyDown(Heap, Largest);
+    }
+}
+
+inline void
+MinHeapifyUp(heap *Heap, u32 Index)
+{
+    u32 Parent = (Index - 1) / 2;
+
+    if(Index &&
+       HeapifyUpComp(Heap->Type, Heap->Nodes[Parent], Heap->Nodes[Index], false))
+    {
+        Swap(Heap->Nodes + Index, Heap->Nodes + Parent);
+        MinHeapifyUp(Heap, Parent);
+    }
+}
+
+inline void
+MaxHeapifyUp(heap *Heap, u32 Index)
+{
+    u32 Parent = (Index - 1) / 2;
+
+    if(Index &&
+       HeapifyUpComp(Heap->Type, Heap->Nodes[Parent], Heap->Nodes[Index], true))
+    {
+        Swap(Heap->Nodes + Index, Heap->Nodes + Parent);
+        MaxHeapifyUp(Heap, Parent);
+    }
+}
+
+inline void
+IncreaseHeapSize(heap *Heap)
+{
+    Heap->Nodes = ReallocArray(Heap->Nodes, Heap->MaxSize,
+                               Heap->MaxSize + BASIC_ALLOCATE_COUNT, sort_entry);
+    Heap->MaxSize = Heap->MaxSize + BASIC_ALLOCATE_COUNT;
+}
+ 
+inline void
+MinHeapInsertNode(heap *Heap, sort_entry Key)
+{
+    if(Heap->Size == Heap->MaxSize)
+    {
+        IncreaseHeapSize(Heap);
+    }
+
+    Assert(Heap->Size != Heap->MaxSize);
+
+    Heap->Nodes[Heap->Size] = Key;
+    ++Heap->Size;
+    MinHeapifyUp(Heap, Heap->Size - 1);
+}
+
+inline void
+MaxHeapInsertNode(heap *Heap, sort_entry Key)
+{
+    if(Heap->Size == Heap->MaxSize)
+    {
+        IncreaseHeapSize(Heap);
+    }
+
+    Assert(Heap->Size != Heap->MaxSize);
+
+    Heap->Nodes[Heap->Size] = Key;
+    ++Heap->Size;
+    MaxHeapifyUp(Heap, Heap->Size - 1);
+}
+
+inline sort_entry
+MinHeapExtractNode(heap *Heap)
+{
+    Assert(Heap->Size > 0);
+
+    sort_entry Result = {};
+    Result = Heap->Nodes[0];
+    Heap->Nodes[0] = Heap->Nodes[Heap->Size - 1];
+    --Heap->Size;
+
+    MinHeapifyDown(Heap, 0);
+
+    return(Result);
+}
+
+inline sort_entry
+MaxHeapExtractNode(heap *Heap)
+{
+    Assert(Heap->Size > 0);
+
+    sort_entry Result = {};
+    Result = Heap->Nodes[0];
+    Heap->Nodes[0] = Heap->Nodes[Heap->Size - 1];
+    --Heap->Size;
+
+    MaxHeapifyDown(Heap, 0);
+
+    return(Result);
 }
 
 #define CLIPPER_CORE_H
