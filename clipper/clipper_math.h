@@ -7,7 +7,7 @@
    $Notice: $
    ======================================================================== */
 
-#define MATH_SIMD 1
+#define CLIPPER_HI_PRECISION 0
 
 union v2_s64
 {
